@@ -788,6 +788,7 @@
     "source_note_herospeed": "The firmware lists of Herospeed, Longse's firmware house: the boards Longse's IP cameras are built on, each with its builds, and the chip the builds name (captured 2026).",
     "source_note_jftech": "JFTech's product catalogue: Xiongmai's product line under its current brand, with the same module codes and firmware from the same download servers (captured 2026).",
     "source_note_longse": "Longse's catalogue of network cameras: photos, datasheets and specifications, and the board each is built on, which its model name ends in (captured 2026).",
+    "source_note_ruision": "Ruision's camera boards: the IP camera modules on its current site (photos, spec sheets and specifications) and the IP camera boards of its earlier sites from 2016 on, from the Wayback Machine, with the chip and sensor where those name them (captured 2026).",
     "source_note_tehno32": "Xiongmai's board documentation (interface descriptions with connector drawings and pinouts, parameter sheets and board outlines) from the archive kept by tehno32.ru (2026).",
     "source_note_xmupdates": "Boards known only from their stock firmware: the chip and device ID each Xiongmai build names, from the lists OpenIPC/xmupdates mirrors.",
     "sources_label": "Where the boards come from",

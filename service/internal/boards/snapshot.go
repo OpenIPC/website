@@ -78,6 +78,11 @@ var Snapshots = map[string]string{
 	// which 16 carry), the catalogue's 21 with their photos; the list's Chinese
 	// with English from the dictionary.
 	"haixin": "81b26adff472ae6bb6b22e6c17ca66f11997b684283811d986091d54e5eb5206",
+	// boards-donors/ruision/snapshot-86462735f1a0.tar: Ruision's IP camera boards,
+	// 61: the live site's 31 modules (photos, spec sheets, specifications;
+	// PCB markings and three chips read from the photos) and 30 from its
+	// 2017-2025 sites in the Wayback Machine, 13 with a chip, 6 with a sensor.
+	"ruision": "86462735f1a058e748ca0fb02a0cf749abfccf92ba3a32eeee6f6ce52d837307",
 }
 
 type Snapshot struct {
@@ -190,6 +195,11 @@ var socShorthand = map[string]string{
 	"xm510a": "xm510", "xm530ai": "xm530", "xm550ai": "xm550",
 	// SigmaStar's parts as MStar's name marks them, as module makers still write them.
 	"msc339g": "ssc339g", "msc359g": "ssc359g",
+	// Hi3516CV610 as its package is marked (RNCV610-10B): the catalogue names
+	// the variants by their memory, with the u-boot each one's -10B, -20S or
+	// -00S takes (boot-hi3516cv610-10b-nor.bin is the DDR2 64M one's).
+	"hi3516cv610-10b": "hi3516cv610-ddr2-64m", "hi3516cv610-20s": "hi3516cv610-ddr3-128m",
+	"hi3516cv610-00s": "hi3516cv610-ddr3-512m",
 }
 
 //go:embed aliases.yml

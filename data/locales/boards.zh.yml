@@ -455,6 +455,7 @@ zh:
     source_note_herospeed: "Longse 的固件研发方 Herospeed 的固件列表：Longse 网络摄像机所用的主板、各自的固件版本，以及固件标明的芯片（2026 年存档）。"
     source_note_longse: "Longse 的网络摄像机目录：照片、规格书和参数，以及每款摄像机所用的主板，即型号末尾的方案（2026 年存档）。"
     source_note_haixin: "深圳海芯威视的网络摄像机模组（其目录以 CamHi 名义流传）：2026 年英文目录（照片与参数）、中文模组目录（传感器与芯片）以及 SigmaStar 方案模组规格表，发布于 Boards Grabber 群组（2026 年）。"
+    source_note_ruision: "睿视科技的摄像机主板：其现网站上的网络摄像机模组（照片、规格书与参数），以及 Wayback Machine 中自 2016 年起旧网站上的网络摄像机主板，注明了芯片与传感器之处一并收录（2026 年采集）。"
     link_stock_firmware: 原厂固件
     link_successor: 后继型号
     link_predecessor: 取代型号

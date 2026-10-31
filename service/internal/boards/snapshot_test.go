@@ -1102,6 +1102,38 @@ func TestAHaixinModuleIsFiledUnderItsMaker(t *testing.T) {
 	}
 }
 
+// Ruision's boards come from its own catalogues: a new maker, filed under its
+// name with the names it also goes by, a board the archive names a chip for
+// linked to its SoC, and a current one that names none.
+func TestARuisionBoardIsFiledUnderItsMaker(t *testing.T) {
+	pool, root := imported(t)
+	im := &Importer{Pool: pool, Log: quiet(), Root: root, Resolve: supported}
+	ctx := context.Background()
+	if _, err := im.FromSnapshot(ctx, donor(t, "ruision",
+		model("ruision", "RS-H647JAI-A0", map[string]any{
+			"category": "IP Camera Module", "soc_label": "Hi3516CV300", "sensor": "IMX291",
+			"original": []string{"en"}, "translated_from": "", "tags": []string{"discontinued"}}),
+		model("ruision", "H2", map[string]any{
+			"category": "IP Camera Module", "soc_label": "", "sensor": "",
+			"original": []string{"en"}, "translated_from": ""}))); err != nil {
+		t.Fatal(err)
+	}
+	var name, soc string
+	var aliases []string
+	if err := pool.QueryRow(ctx, `SELECT f.name, f.aliases, coalesce(m.soc, '') FROM board_models m JOIN board_manufacturers f ON f.id = m.manufacturer_id WHERE m.id = 'ruision-rs-h647jai-a0'`).Scan(&name, &aliases, &soc); err != nil {
+		t.Fatal(err)
+	}
+	if name != "Ruision" || len(aliases) != 3 || aliases[0] != "睿视科技" || aliases[1] != "芯睿视" || aliases[2] != "Corevision" {
+		t.Errorf("RS-H647JAI-A0's maker: %q, also %v", name, aliases)
+	}
+	if soc != "hi3516cv300" {
+		t.Errorf("RS-H647JAI-A0's SoC: %q", soc)
+	}
+	if n := count(t, pool, `SELECT count(*) FROM board_units WHERE model_id IN ('ruision-rs-h647jai-a0', 'ruision-h2') AND source = 'ruision'`); n != 2 {
+		t.Errorf("%d ruision units, want one on each board", n)
+	}
+}
+
 // Migration 014 drops the family links relate() wrote once per source, and
 // only those: a related link a source brings itself stays, and outranks a
 // generated copy of it.
