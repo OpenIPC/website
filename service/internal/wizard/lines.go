@@ -21,12 +21,34 @@ var caveats = [][2]string{
 	{"&&", "compound_caveat_html"},
 }
 
-func caveatsFor(lines []string) []string {
+// defibAgents are the chips defib's flash agent runs on, so the ones it can
+// unlock a protected NOR chip on: the keys of `_CHIP_TO_AGENT` in defib's
+// src/defib/agent/client.py. Elsewhere lock_caveat_html's way out through
+// defib does not exist (#537), and the note names the programmer alone. A
+// catalogue row for one memory variant (HI3516CV610-DDR3-128M) is its chip.
+var defibAgents = map[string]bool{
+	"hi3516ev300": true, "hi3516ev200": true, "gk7205v200": true, "gk7205v300": true,
+	"gk7202v300": true, "gk7605v100": true, "hi3516cv300": true, "hi3516cv500": true,
+	"hi3516av300": true, "hi3516dv300": true, "hi3519v101": true, "hi3516av200": true,
+	"hi3516cv610": true, "hi3516cv608": true, "hi3518ev200": true, "hi3520dv200": true,
+	"hi3536dv100": true, "gk7205v500": true, "gk7205v510": true, "gk7205v530": true,
+}
+
+func (c *camera) defibAgent() bool {
+	chip, _, _ := strings.Cut(c.soc.ModelDowncase(), "-")
+	return defibAgents[chip]
+}
+
+func (c *camera) caveatsFor(lines []string) []string {
 	notes := []string{}
-	for _, c := range caveats {
+	for _, cv := range caveats {
 		for _, l := range lines {
-			if strings.Contains(l, c[0]) {
-				notes = append(notes, c[1])
+			if strings.Contains(l, cv[0]) {
+				note := cv[1]
+				if note == "lock_caveat_html" && !c.defibAgent() {
+					note = "lock_caveat_programmer_html"
+				}
+				notes = append(notes, note)
 				break
 			}
 		}
