@@ -9,11 +9,12 @@ import (
 
 // A photo published as sent is still not published with what the phone
 // wrote into it: EXIF carries where it was taken (GPS), when, the phone's
-// make and serial; XMP and IPTC the same again, and a JPEG's trailer can
-// hold a second picture (a depth or gain map) with EXIF of its own. Every
-// public copy of a photo is StripPhoto's: the picture's own bytes, untouched
-// (nothing is re-encoded), with its metadata dropped and only its
-// orientation kept, so it is shown the way up the sender saw it.
+// make and serial; XMP and IPTC the same again, and a JPEG's trailer or
+// thumbnail can hold another picture with EXIF of its own. Every public
+// copy of a photo is StripPhoto's: the picture's own bytes, untouched
+// (nothing is re-encoded), with only what draws it kept -- an allowlist,
+// so an application's own chunk goes too -- and its orientation, so it is
+// shown the way up the sender saw it.
 
 // ErrUnreadablePhoto is a photo whose structure cannot be walked, so what
 // it carries cannot be told: it is not published as sent.
@@ -68,10 +69,10 @@ func exifTIFFOrientation(b []byte) int {
 }
 
 // stripJPEG walks a JPEG's segments to its end of image. It keeps the
-// frame, tables, scans, JFIF (APP0), the colour profile (APP2 ICC_PROFILE)
-// and Adobe's colour transform (APP14); it drops EXIF and XMP (APP1), MPF
-// and FlashPix (the rest of APP2), every other APPn, comments, and what
-// follows the end of image.
+// frame, tables, scans, JFIF's header (APP0, without its thumbnail), the
+// colour profile (APP2 ICC_PROFILE) and Adobe's colour transform (APP14);
+// it drops EXIF and XMP (APP1), JFXX thumbnails, MPF and FlashPix (the rest
+// of APP2), every other APPn, comments, and what follows the end of image.
 func stripJPEG(b []byte) ([]byte, error) {
 	out := []byte{0xFF, 0xD8}
 	orientation := 1
@@ -109,6 +110,16 @@ func stripJPEG(b []byte) ([]byte, error) {
 		seg, body := b[p:p+2+n], b[p+4:p+2+n]
 		p += 2 + n
 		switch {
+		case m == 0xE0:
+			// JFIF's header, without the thumbnail it may carry; a JFXX
+			// extension is a thumbnail, with EXIF of its own in it.
+			if len(body) < 14 || !bytes.HasPrefix(body, []byte("JFIF\x00")) || len(out) != 2 {
+				continue
+			}
+			jfif := jpegSegmentOf(0xE0, append(append([]byte{}, body[:12]...), 0, 0))
+			out = append(out, jfif...)
+			at = len(out)
+			continue
 		case m == 0xE1:
 			if bytes.HasPrefix(body, []byte("Exif\x00\x00")) && orientation == 1 {
 				orientation = exifTIFFOrientation(body)
@@ -118,9 +129,6 @@ func stripJPEG(b []byte) ([]byte, error) {
 			continue
 		case m >= 0xE3 && m <= 0xEF && m != 0xEE, m == 0xFE:
 			continue
-		}
-		if m == 0xE0 && len(out) == 2 {
-			at = 2 + len(seg)
 		}
 		out = append(out, seg...)
 		if m == 0xDA {
@@ -143,17 +151,29 @@ func stripJPEG(b []byte) ([]byte, error) {
 	if orientation == 1 {
 		return out, nil
 	}
-	t := append([]byte("Exif\x00\x00"), orientationTIFF(orientation)...)
-	app1 := binary.BigEndian.AppendUint16([]byte{0xFF, 0xE1}, uint16(2+len(t)))
-	app1 = append(app1, t...)
+	app1 := jpegSegmentOf(0xE1, append([]byte("Exif\x00\x00"), orientationTIFF(orientation)...))
 	return append(out[:at:at], append(app1, out[at:]...)...), nil
+}
+
+func jpegSegmentOf(m byte, body []byte) []byte {
+	s := binary.BigEndian.AppendUint16([]byte{0xFF, m}, uint16(2+len(body)))
+	return append(s, body...)
 }
 
 var pngSignature = []byte("\x89PNG\r\n\x1a\n")
 
-// stripPNG keeps a PNG's chunks to its end but its text (tEXt, zTXt, iTXt),
-// its time (tIME) and its EXIF (eXIf), whose orientation, when not upright,
-// is put back as an eXIf of that one tag before the image data.
+// pngDraws is the chunks that draw a PNG, or say how (colour, transparency,
+// animation): the only ones a public copy keeps. Text, time, EXIF and any
+// chunk an application made up of its own go.
+var pngDraws = map[string]bool{
+	"IHDR": true, "PLTE": true, "IDAT": true, "IEND": true, "tRNS": true,
+	"cHRM": true, "gAMA": true, "iCCP": true, "sBIT": true, "sRGB": true, "cICP": true, "mDCV": true, "cLLI": true,
+	"bKGD": true, "pHYs": true, "acTL": true, "fcTL": true, "fdAT": true,
+}
+
+// stripPNG keeps the chunks of a PNG that draw it (pngDraws), to its end;
+// its EXIF's orientation, when not upright, is put back as an eXIf of that
+// one tag before the image data.
 func stripPNG(b []byte) ([]byte, error) {
 	out := append([]byte{}, pngSignature...)
 	orientation := 1
@@ -169,14 +189,13 @@ func stripPNG(b []byte) ([]byte, error) {
 		}
 		typ, chunk := string(b[p+4:p+8]), b[p:p+12+n]
 		p += 12 + n
+		if typ == "eXIf" && orientation == 1 {
+			orientation = exifTIFFOrientation(chunk[8 : 8+n])
+		}
+		if !pngDraws[typ] {
+			continue
+		}
 		switch typ {
-		case "eXIf":
-			if orientation == 1 {
-				orientation = exifTIFFOrientation(chunk[8 : 8+n])
-			}
-			continue
-		case "tEXt", "zTXt", "iTXt", "tIME":
-			continue
 		case "IDAT":
 			if at < 0 {
 				at = len(out)
@@ -198,9 +217,13 @@ func stripPNG(b []byte) ([]byte, error) {
 	return append(out[:at:at], append(c, out[at:]...)...), nil
 }
 
-// stripWebP keeps a WebP's chunks but EXIF and XMP, telling its VP8X
-// header so; an orientation other than upright is kept as an EXIF of that
-// one tag. A WebP without VP8X (a plain VP8 or VP8L) cannot carry metadata.
+// webpDraws is the chunks that draw a WebP: the only ones a public copy
+// keeps.
+var webpDraws = map[string]bool{"VP8X": true, "VP8 ": true, "VP8L": true, "ALPH": true, "ANIM": true, "ANMF": true, "ICCP": true}
+
+// stripWebP keeps the chunks of a WebP that draw it (webpDraws), telling
+// its VP8X header that EXIF and XMP are gone; an orientation other than
+// upright is kept as an EXIF of that one tag (which needs a VP8X).
 func stripWebP(b []byte) ([]byte, error) {
 	size := int(binary.LittleEndian.Uint32(b[4:]))
 	if size < 4 || 8+size > len(b) {
@@ -222,13 +245,10 @@ func stripWebP(b []byte) ([]byte, error) {
 		}
 		end = min(end, len(b))
 		typ, chunk := string(b[p:p+4]), b[p:end]
-		switch typ {
-		case "EXIF":
-			if orientation == 1 {
-				orientation = exifTIFFOrientation(b[p+8 : p+8+n])
-			}
-		case "XMP ":
-		default:
+		if typ == "EXIF" && orientation == 1 {
+			orientation = exifTIFFOrientation(b[p+8 : p+8+n])
+		}
+		if webpDraws[typ] {
 			if typ == "VP8X" && n >= 1 {
 				vp8x = len(out) + 8
 			}
@@ -237,6 +257,7 @@ func stripWebP(b []byte) ([]byte, error) {
 		p = end
 	}
 	if vp8x < 0 {
+		binary.LittleEndian.PutUint32(out[4:], uint32(len(out)-8))
 		return out, nil
 	}
 	const xmpFlag, exifFlag = 0x04, 0x08

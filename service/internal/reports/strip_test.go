@@ -52,7 +52,10 @@ func phoneJPEG(t *testing.T, o uint16) (photo, plain []byte) {
 	plain = encodeJPEG(t, label(64, 48))
 	var b []byte
 	b = append(b, plain[:2]...)
-	b = append(b, jpegSegment(0xE0, []byte("JFIF\x00\x01\x01\x00\x00\x01\x00\x01\x00\x00"))...)
+	// JFIF with a 1x1 thumbnail, and a JFXX thumbnail: a JPEG with EXIF of its own.
+	b = append(b, jpegSegment(0xE0, []byte("JFIF\x00\x01\x01\x00\x00\x01\x00\x01\x01\x01\x0a\x0b\x0c"))...)
+	thumb := append(append([]byte{0xFF, 0xD8}, jpegSegment(0xE1, gpsEXIF(1))...), 0xFF, 0xD9)
+	b = append(b, jpegSegment(0xE0, append([]byte("JFXX\x00\x10"), thumb...))...)
 	b = append(b, jpegSegment(0xE1, gpsEXIF(o))...)
 	b = append(b, jpegSegment(0xE1, []byte("http://ns.adobe.com/xap/1.0/\x00<x:xmpmeta>"+where+"</x:xmpmeta>"))...)
 	b = append(b, jpegSegment(0xE2, []byte("ICC_PROFILE\x00\x01\x01profile"))...)
@@ -99,7 +102,7 @@ func TestAPhonesJPEGIsPublishedWithoutWhereItWasTaken(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, s := range []string{where, "Xiaomi", "xmpmeta", "MPF", "Photoshop"} {
+	for _, s := range []string{where, "Xiaomi", "xmpmeta", "MPF", "Photoshop", "JFXX", "\x0a\x0b\x0c"} {
 		if bytes.Contains(out, []byte(s)) {
 			t.Errorf("%q is still in the photo", s)
 		}
@@ -163,13 +166,14 @@ func TestAPhonesPNGIsPublishedWithoutItsText(t *testing.T) {
 	b = append(b, pngChunk("tEXt", []byte("Location\x00"+where))...)
 	b = append(b, pngChunk("eXIf", gpsEXIF(8)[6:])...)
 	b = append(b, pngChunk("tIME", []byte{7, 234, 10, 31, 8, 0, 0})...)
+	b = append(b, pngChunk("prVt", []byte("an application's own "+where))...)
 	b = append(b, plain[idat:]...)
 	b = append(b, "trailing "+where...)
 	out, err := StripPhoto(b)
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, s := range []string{where, "tEXt", "tIME", "Xiaomi"} {
+	for _, s := range []string{where, "tEXt", "tIME", "Xiaomi", "prVt"} {
 		if bytes.Contains(out, []byte(s)) {
 			t.Errorf("%q is still in the photo", s)
 		}
@@ -205,6 +209,7 @@ func TestAWebPsMetadataGoesAndItsHeaderSaysSo(t *testing.T) {
 	body = append(body, chunk("VP8L", []byte("picture"))...)
 	body = append(body, chunk("EXIF", gpsEXIF(3)[6:])...)
 	body = append(body, chunk("XMP ", []byte("<x:xmpmeta>"+where+"</x:xmpmeta>"))...)
+	body = append(body, chunk("LOCA", []byte(where))...)
 	b := append([]byte("RIFF"), le.AppendUint32(nil, uint32(len(body)))...)
 	b = append(b, body...)
 	out, err := StripPhoto(b)
@@ -223,6 +228,17 @@ func TestAWebPsMetadataGoesAndItsHeaderSaysSo(t *testing.T) {
 	x := bytes.Index(out, []byte("EXIF"))
 	if x < 0 || exifTIFFOrientation(out[x+8:]) != 3 || !bytes.Contains(out, []byte("picture")) {
 		t.Error("the orientation or the picture was lost")
+	}
+
+	// A plain VP8L has no VP8X to say it carries EXIF, and one sent anyway
+	// goes, its RIFF size told.
+	plain := []byte("WEBP")
+	plain = append(plain, chunk("VP8L", []byte("picture"))...)
+	plain = append(plain, chunk("EXIF", gpsEXIF(1)[6:])...)
+	b = append([]byte("RIFF"), le.AppendUint32(nil, uint32(len(plain)))...)
+	b = append(b, plain...)
+	if out, err = StripPhoto(b); err != nil || bytes.Contains(out, []byte("EXIF")) || int(le.Uint32(out[4:])) != len(out)-8 {
+		t.Errorf("a plain WebP: %v, % x", err, out)
 	}
 }
 
