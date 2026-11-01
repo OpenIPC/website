@@ -456,6 +456,35 @@ func (a *API) prepare(p part, consent string, facts Facts, key string, places *[
 		ps := sha256.Sum256(pub)
 		f.PublicSHA256, f.PublicBytes = hex.EncodeToString(ps[:]), int64(len(pub))
 		*places = append(*places, func() error { _, err := a.Files.Put(pub); return err })
+	case p.kind == "photo":
+		// Made twice, here for its sum and when it is placed, so that a
+		// report of many photos does not hold every copy in memory.
+		pub, err := strippedOf(p.in)
+		if err != nil {
+			return f, err
+		}
+		ps := sha256.Sum256(pub)
+		f.PublicSHA256, f.PublicBytes = hex.EncodeToString(ps[:]), int64(len(pub))
+		if f.PublicSHA256 != f.SHA256 {
+			orig, want := f.SHA256, f.PublicSHA256
+			*places = append(*places, func() error {
+				// The original is in the store by now: the place before
+				// this one kept it.
+				src, err := a.Files.Read(orig)
+				if err != nil {
+					return err
+				}
+				pub, err := StripPhoto(src)
+				if err != nil {
+					return err
+				}
+				sum, err := a.Files.Put(pub)
+				if err == nil && sum != want {
+					err = fmt.Errorf("reports: a photo's stripped copy came out %s, not %s", sum, want)
+				}
+				return err
+			})
+		}
 	default:
 		f.PublicSHA256, f.PublicBytes = f.SHA256, f.Bytes
 	}
@@ -593,6 +622,9 @@ func (a *API) read(r *http.Request, edit bool) (*received, int, error) {
 			pt := part{kind: name, name: fileName(p.FileName(), name, len(in.parts)+1), in: inc}
 			in.parts = append(in.parts, pt)
 			mt, err := sniff(inc, name)
+			if err == nil && name == "photo" {
+				err = strippable(inc)
+			}
 			if err != nil {
 				return in, http.StatusUnsupportedMediaType, fmt.Errorf("%s %s: %v", name, pt.name, err)
 			}
@@ -645,6 +677,26 @@ func sniff(in *Incoming, kind string) (string, error) {
 		}
 		return "", errors.New("a console capture is text")
 	}
+}
+
+// strippable refuses a photo whose structure StripPhoto cannot walk: what
+// it carries cannot be told, so it could not be published.
+func strippable(in *Incoming) error {
+	_, err := strippedOf(in)
+	return err
+}
+
+// strippedOf is a received photo's public copy (StripPhoto).
+func strippedOf(in *Incoming) ([]byte, error) {
+	rd, err := in.Open()
+	if err != nil {
+		return nil, err
+	}
+	b, err := io.ReadAll(rd)
+	if err != nil {
+		return nil, err
+	}
+	return StripPhoto(b)
 }
 
 // printable: a console capture with a stray control byte is still text.

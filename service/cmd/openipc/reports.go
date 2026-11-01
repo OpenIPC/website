@@ -47,8 +47,9 @@ const reportsUsage = `usage: openipc reports
   photo/file on a boot log, U-Boot environment or note: private keeps it off the board,
                                                 as_sent publishes it again (redacted, as always)
   redact [<id>...] [--dry-run]                  redact the public YAML, note and text files again with
-                                                today's rules (every report when no id is named), and
-                                                say what changed (JSON)
+                                                today's rules, and strip the metadata (EXIF: GPS) from
+                                                photos published as sent (every report when no id is
+                                                named), and say what changed (JSON)
   verify                                        re-hash every stored file; non-zero on any missing or changed
 
 A link is confirmed (the default: a sticker, the device ID in its firmware),

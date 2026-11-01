@@ -35,6 +35,32 @@ func (s *Store) textCopy(ctx context.Context, tx pgx.Tx, id, sum string) (*Publi
 	return pc, func() error { _, err := s.Files.Put(pub); return err }, nil
 }
 
+// photoCopy is the public copy of a photo sent as sum: the original
+// without its metadata (StripPhoto), and its place, which puts it in the
+// store. It is the original itself when there was nothing to drop.
+func (s *Store) photoCopy(sum string) (*PublicCopy, func() error, error) {
+	if s.Files == nil {
+		return nil, nil, errors.New("reports: no file store to read the original from")
+	}
+	src, err := s.Files.Read(sum)
+	if errors.Is(err, fs.ErrNotExist) {
+		return nil, nil, ErrNotFound
+	}
+	if err != nil {
+		return nil, nil, err
+	}
+	pub, err := StripPhoto(src)
+	if err != nil {
+		return nil, nil, err
+	}
+	h := sha256.Sum256(pub)
+	pc := &PublicCopy{SHA256: hex.EncodeToString(h[:]), Bytes: int64(len(pub))}
+	if pc.SHA256 == sum {
+		return pc, func() error { return nil }, nil
+	}
+	return pc, func() error { _, err := s.Files.Put(pub); return err }, nil
+}
+
 // redactBy is what a report's text is redacted by: the facts of its YAML and
 // the database's key.
 func redactBy(ctx context.Context, q pgx.Tx, id string) (Facts, string, error) {
@@ -59,16 +85,21 @@ type Redone struct {
 	// YAML and Note: the public YAML or note changed.
 	YAML bool `json:"yaml,omitempty"`
 	Note bool `json:"note,omitempty"`
-	// Files: the positions of the text files given a new public copy.
+	// Files: the positions of the text files and photos given a new public copy.
 	Files []int `json:"files,omitempty"`
+	// Unreadable: the positions of photos published as sent whose
+	// structure StripPhoto cannot walk, left as they are for a reviewer
+	// (`reports photo <id> <pos> blur|private`).
+	Unreadable []int `json:"unreadable,omitempty"`
 }
 
-// Changed is whether anything public changed.
-func (r Redone) Changed() bool { return r.YAML || r.Note || len(r.Files) > 0 }
+// Changed is whether anything public changed, or a photo could not be.
+func (r Redone) Changed() bool { return r.YAML || r.Note || len(r.Files) > 0 || len(r.Unreadable) > 0 }
 
 // Redo redacts report id's public text again with today's Redact: its YAML,
 // its note and each text file that is published (a file kept private stays
-// so). When Redact learns a new identifier (a vendor's cloud ID),
+// so), and makes each photo published as sent over without its metadata
+// (StripPhoto). When Redact learns a new identifier (a vendor's cloud ID),
 // what was published before it is made over. dry says what would change
 // and changes nothing. Each file made over is logged in report_photo_reviews
 // (as_sent, by), which gives its board copy a new name (PublishedTexts): a
@@ -105,8 +136,13 @@ func (s *Store) Redo(ctx context.Context, id, by string, dry bool) (Redone, []st
 				return err
 			}
 		}
-		rows, err := tx.Query(ctx, `SELECT position, kind, sha256, public_sha256 FROM report_files
-			WHERE report_id = $1 AND public_sha256 IS NOT NULL ORDER BY position`, id)
+		// A photo a reviewer blurred is a copy made without metadata
+		// already, and keeps its regions; the rest are as sent.
+		rows, err := tx.Query(ctx, `SELECT position, kind, sha256, public_sha256 FROM report_files f
+			WHERE report_id = $1 AND public_sha256 IS NOT NULL
+			  AND coalesce((SELECT action FROM report_photo_reviews pr WHERE pr.report_id = f.report_id AND pr.position = f.position
+			    ORDER BY pr.id DESC LIMIT 1), '') <> 'blur'
+			ORDER BY position`, id)
 		if err != nil {
 			return err
 		}
@@ -120,7 +156,7 @@ func (s *Store) Redo(ctx context.Context, id, by string, dry bool) (Redone, []st
 			if err := rows.Scan(&f.pos, &f.kind, &f.sum, &f.pub); err != nil {
 				return err
 			}
-			if textKinds[f.kind] {
+			if textKinds[f.kind] || f.kind == "photo" {
 				files = append(files, f)
 			}
 		}
@@ -131,7 +167,15 @@ func (s *Store) Redo(ctx context.Context, id, by string, dry bool) (Redone, []st
 			if _, err := tx.Exec(ctx, lockFileSh, f.sum); err != nil {
 				return err
 			}
-			pc, place, err := s.textCopy(ctx, tx, id, f.sum)
+			copyOf := func() (*PublicCopy, func() error, error) { return s.textCopy(ctx, tx, id, f.sum) }
+			if f.kind == "photo" {
+				copyOf = func() (*PublicCopy, func() error, error) { return s.photoCopy(f.sum) }
+			}
+			pc, place, err := copyOf()
+			if errors.Is(err, ErrUnreadablePhoto) {
+				done.Unreadable = append(done.Unreadable, f.pos)
+				continue
+			}
 			if err != nil {
 				return err
 			}

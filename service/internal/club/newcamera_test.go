@@ -14,12 +14,15 @@ import (
 	"github.com/OpenIPC/website/service/internal/boards"
 )
 
-var photo = append([]byte{0xff, 0xd8, 0xff, 0xe0, 0, 0x10, 'J', 'F', 'I', 'F', 0}, bytes.Repeat([]byte{7}, 2000)...)
+// photo is no picture, but a JPEG's segments as the reports' StripPhoto
+// walks them, with nothing to strip.
+var photo = append(append([]byte{0xff, 0xd8, 0xff, 0xe0, 0, 0x10, 'J', 'F', 'I', 'F', 0, 1, 1, 0, 0, 1, 0, 1, 0, 0,
+	0xff, 0xda, 0, 8, 1, 1, 0, 0, 0x3f, 0}, bytes.Repeat([]byte{7}, 2000)...), 0xff, 0xd9)
 
 // photoN is another photo: the same bytes twice earn once.
 func photoN(n byte) []byte {
 	p := append([]byte{}, photo...)
-	p[len(p)-1] = n
+	p[len(p)-3] = n // before the end of image
 	return p
 }
 

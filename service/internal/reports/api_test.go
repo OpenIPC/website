@@ -91,7 +91,10 @@ func (e *env) get(t *testing.T, path string) (*httptest.ResponseRecorder, map[st
 	return rec, out
 }
 
-var jpeg = append([]byte{0xff, 0xd8, 0xff, 0xe0, 0, 0x10, 'J', 'F', 'I', 'F', 0}, bytes.Repeat([]byte{7}, 2000)...)
+// jpeg is no picture, but a JPEG's segments as StripPhoto walks them: JFIF,
+// a scan and its end, with nothing to strip.
+var jpeg = append(append([]byte{0xff, 0xd8, 0xff, 0xe0, 0, 0x10, 'J', 'F', 'I', 'F', 0, 1, 1, 0, 0, 1, 0, 1, 0, 0,
+	0xff, 0xda, 0, 8, 1, 1, 0, 0, 0x3f, 0}, bytes.Repeat([]byte{7}, 2000)...), 0xff, 0xd9)
 
 // The whole path: ipctool's output with a private backup, a photo and a boot
 // log arrives; the receipt shows only what arrived; a maintainer publishes it
@@ -218,6 +221,7 @@ func TestWhatIsNotAReportIsRefusedAndNothingIsKept(t *testing.T) {
 		"foreign backup":  {fields: map[string]string{"yaml": yaml}, files: map[string][]byte{"backup": backupOf(other, []byte("x"))}},
 		"broken backup":   {files: map[string][]byte{"backup": []byte("chip:\n")}},
 		"photo not image": {fields: map[string]string{"yaml": yaml}, files: map[string][]byte{"photo": []byte("<html>")}},
+		"photo cut short": {fields: map[string]string{"yaml": yaml}, files: map[string][]byte{"photo": jpeg[:len(jpeg)-2]}},
 		"unknown part":    {fields: map[string]string{"yaml": yaml, "password": "x"}},
 		"bad consent":     {fields: map[string]string{"consent": "maybe"}, files: map[string][]byte{"backup": backupOf(yaml, []byte("x"))}},
 		"bad channel":     {fields: map[string]string{"yaml": yaml, "channel": "email"}},

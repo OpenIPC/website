@@ -248,8 +248,11 @@ func (s *Store) memberReport(ctx context.Context, id string, book *cameraBook) (
 	}
 	rows, err := s.DB.Query(ctx, `
 		SELECT position, kind, name, bytes, public_sha256 IS NULL, coalesce(own_photo, false),
-		  CASE WHEN public_sha256 IS NULL THEN 'private' WHEN public_sha256 = sha256 THEN 'as_sent' ELSE 'blurred' END
-		FROM report_files WHERE report_id = $1 ORDER BY position`, id)
+		  CASE WHEN public_sha256 IS NULL THEN 'private'
+		    WHEN kind = 'photo' AND (SELECT action FROM report_photo_reviews pr WHERE pr.report_id = f.report_id AND pr.position = f.position
+		      ORDER BY pr.id DESC LIMIT 1) = 'blur' THEN 'blurred'
+		    ELSE 'as_sent' END
+		FROM report_files f WHERE report_id = $1 ORDER BY position`, id)
 	if err != nil {
 		return nil, err
 	}
