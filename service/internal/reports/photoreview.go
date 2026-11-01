@@ -138,6 +138,25 @@ func (s *Store) SetPhotoPublic(ctx context.Context, id string, position int, act
 				return err
 			}
 			pub, pubBytes = &pc.SHA256, &pc.Bytes
+		case action == PhotoAsSent && kind == "photo":
+			// What was sent, without what the phone wrote into it.
+			if _, err := tx.Exec(ctx, lockFileSh, sum); err != nil {
+				return err
+			}
+			pc, place, err := s.photoCopy(sum)
+			if err != nil {
+				return err
+			}
+			if pc.SHA256 != sum {
+				made = pc
+			}
+			if _, err := tx.Exec(ctx, lockFileSh, pc.SHA256); err != nil {
+				return err
+			}
+			if err := place(); err != nil {
+				return err
+			}
+			pub, pubBytes = &pc.SHA256, &pc.Bytes
 		case action == PhotoAsSent:
 			pub, pubBytes = &sum, &bytes
 		case action == PhotoBlur:

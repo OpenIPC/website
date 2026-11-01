@@ -17,9 +17,10 @@ import (
 	_ "golang.org/x/image/webp"
 )
 
-// A photo is published as sent unless a reviewer says otherwise (migration
-// 038): a public copy with regions blurred -- a label with a serial number,
-// a QR code -- or no public copy at all, for a picture that is not of the
+// A photo is published as sent -- its picture, without its metadata
+// (StripPhoto) -- unless a reviewer says otherwise (migration 038): a
+// public copy with regions blurred -- a label with a serial number, a QR
+// code -- or no public copy at all, for a picture that is not of the
 // sender's unit (a photo of a screen showing someone else's board). The
 // original stays stored and is served to its sender and the maintainers.
 

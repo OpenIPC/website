@@ -456,6 +456,24 @@ func (a *API) prepare(p part, consent string, facts Facts, key string, places *[
 		ps := sha256.Sum256(pub)
 		f.PublicSHA256, f.PublicBytes = hex.EncodeToString(ps[:]), int64(len(pub))
 		*places = append(*places, func() error { _, err := a.Files.Put(pub); return err })
+	case p.kind == "photo":
+		rd, err := p.in.Open()
+		if err != nil {
+			return f, err
+		}
+		src, err := io.ReadAll(rd)
+		if err != nil {
+			return f, err
+		}
+		pub, err := StripPhoto(src)
+		if err != nil {
+			return f, err
+		}
+		ps := sha256.Sum256(pub)
+		f.PublicSHA256, f.PublicBytes = hex.EncodeToString(ps[:]), int64(len(pub))
+		if f.PublicSHA256 != f.SHA256 {
+			*places = append(*places, func() error { _, err := a.Files.Put(pub); return err })
+		}
 	default:
 		f.PublicSHA256, f.PublicBytes = f.SHA256, f.Bytes
 	}
@@ -593,6 +611,9 @@ func (a *API) read(r *http.Request, edit bool) (*received, int, error) {
 			pt := part{kind: name, name: fileName(p.FileName(), name, len(in.parts)+1), in: inc}
 			in.parts = append(in.parts, pt)
 			mt, err := sniff(inc, name)
+			if err == nil && name == "photo" {
+				err = strippable(inc)
+			}
 			if err != nil {
 				return in, http.StatusUnsupportedMediaType, fmt.Errorf("%s %s: %v", name, pt.name, err)
 			}
@@ -645,6 +666,21 @@ func sniff(in *Incoming, kind string) (string, error) {
 		}
 		return "", errors.New("a console capture is text")
 	}
+}
+
+// strippable refuses a photo whose structure StripPhoto cannot walk: what
+// it carries cannot be told, so it could not be published.
+func strippable(in *Incoming) error {
+	rd, err := in.Open()
+	if err != nil {
+		return err
+	}
+	b, err := io.ReadAll(rd)
+	if err != nil {
+		return err
+	}
+	_, err = StripPhoto(b)
+	return err
 }
 
 // printable: a console capture with a stray control byte is still text.

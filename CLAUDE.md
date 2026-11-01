@@ -171,6 +171,10 @@ restores the image but never the schema, so keep migrations additive.
   (`report_photo_reviews`, migration 038); the send forms flag a QR code or
   barcode in a photo with the browser's BarcodeDetector, blur in a canvas,
   and ask the sender to confirm the photos are their own (`own_photo`).
+  Even "as sent" is never the original's bytes when it carries metadata:
+  the public copy drops EXIF (a phone's GPS), XMP, text chunks and a JPEG's
+  trailer, losslessly, keeping only the orientation (`reports.StripPhoto`);
+  a photo it cannot walk is refused at upload.
 - `internal/club` -- **the OpenIPC Club**: signing in with Telegram (the bot
   takes Start with a code the asking browser shows, then tells the member
   what happened to what they sent), GitHub (a member of `CLUB_MAINTAINER_ORG`
