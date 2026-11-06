@@ -10,7 +10,7 @@ import ru from '../../i18n/boards.ru.json';
 import zh from '../../i18n/boards.zh.json';
 import {
   KNOWN_LINES, MODEL_FIRMWARE_MAKERS, lineLabel,
-  addsIPeye, buildGroups, bySeller, cardFiles, formatDay, foundIn, insideOf, cardPhotos, codeIndex, couplerDevices, deviceIdOf, entries, kindOf, tally, filterBoards, filterHits, heading, matchBoards, newestFirst, printedCode, firstMissing, flashOf, formatBytes, frontPhoto,
+  addsIPeye, ownersFirst, buildGroups, bySeller, cardFiles, formatDay, foundIn, insideOf, cardPhotos, codeIndex, couplerDevices, deviceIdOf, entries, kindOf, tally, filterBoards, filterHits, heading, matchBoards, newestFirst, printedCode, firstMissing, flashOf, formatBytes, frontPhoto,
   highlight, layout, lead, lineOptions, linkCodes, lines, normaliseCode, ownPhoto, paragraphs, sensorKey, sensorOptions, sentBy, slug, snippet,
   countByScope, socKey, socOptions, stats, subtitle, unitFiles, unitPhotos,
 } from './model';
@@ -455,6 +455,7 @@ describe('a card', () => {
     const both = model('b', { units: [m.units[0]!, owner] });
     expect(cardPhotos(both).map((f) => f.name)).toEqual(['own1.jpg', 'own2.jpg', 'f1.jpg', 'b.jpg']);
     expect(frontPhoto(both)?.name).toBe('own1.jpg');
+    expect(ownersFirst(both.units).map((u) => u.id)).toEqual(['owner', 'e-u1']);
   });
 
   test('lists every file that is not a picture', () => {

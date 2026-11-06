@@ -601,10 +601,18 @@ export function socName(key: string, names: Record<string, string>): string {
 const PHOTO_ORDER: BoardFile['kind'][] = ['photo_front', 'photo_back', 'pinout', 'photo_other'];
 
 /**
- * Up to four pictures for a card: what an owner sent first, the unit they
- * hold being the board as it is, then the catalogues'. Within each, one of
- * each kind -- front, back, pinout, other -- then whatever else there is, in
- * the same order.
+ * The units as a board shows them: what an owner sent first, being the board
+ * as it is, then the catalogues'.
+ */
+export function ownersFirst(units: Unit[]): Unit[] {
+  const own = (u: Unit) => u.source === 'contributor';
+  return [...units.filter(own), ...units.filter((u) => !own(u))];
+}
+
+/**
+ * Up to four pictures for a card: an owner's first (ownersFirst), then the
+ * catalogues'. Within each, one of each kind -- front, back, pinout, other --
+ * then whatever else there is, in the same order.
  */
 export function cardPhotos(m: Model, max = 4): BoardFile[] {
   const ordered = (units: Unit[]) => {
@@ -615,8 +623,7 @@ export function cardPhotos(m: Model, max = 4): BoardFile[] {
     return [...firsts, ...rest];
   };
   const owners = m.units.filter((u) => u.source === 'contributor');
-  const others = m.units.filter((u) => u.source !== 'contributor');
-  return [...ordered(owners), ...ordered(others)].slice(0, max);
+  return [...ordered(owners), ...ordered(m.units.filter((u) => !owners.includes(u)))].slice(0, max);
 }
 
 /** The front photo, or failing that any picture at all. */

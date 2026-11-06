@@ -299,6 +299,20 @@ type pageView struct {
 	Catalogue   string
 }
 
+// ownersFirst is the units as a board shows them, as the site's does: what an
+// owner sent first, being the board as it is, then the catalogues'.
+func ownersFirst(units []*unitJSON) []*unitJSON {
+	out := make([]*unitJSON, 0, len(units))
+	for _, own := range []bool{true, false} {
+		for _, u := range units {
+			if (u.Source == Contributors) == own {
+				out = append(out, u)
+			}
+		}
+	}
+	return out
+}
+
 func (p *Pages) view(b *boardPage, locale string) pageView {
 	l := labelsFor(locale)
 	m := b.Model
@@ -411,10 +425,8 @@ func (p *Pages) view(b *boardPage, locale string) pageView {
 		}
 	}
 
-	// What an owner sent leads, as on the card (cardPhotos in the site).
-	var sent []photoView
 	seen := map[string]bool{}
-	for _, u := range m.Units {
+	for _, u := range ownersFirst(m.Units) {
 		for _, f := range u.Files {
 			if seen[f.URL] {
 				continue
@@ -423,19 +435,13 @@ func (p *Pages) view(b *boardPage, locale string) pageView {
 			if strings.HasPrefix(f.Kind, "photo_") && f.ThumbURL != "" {
 				// The photo's own size: a thumbnail keeps its shape, so the
 				// browser holds the place before it arrives.
-				p := photoView{URL: f.URL, Thumb: f.ThumbURL, Width: f.Width, Height: f.Height,
-					Alt: l.photoAlt(firstOf(l.FileKinds[f.Kind], l.FileKinds["photo_other"]), v.Heading)}
-				if u.Source == Contributors {
-					sent = append(sent, p)
-				} else {
-					v.Photos = append(v.Photos, p)
-				}
+				v.Photos = append(v.Photos, photoView{URL: f.URL, Thumb: f.ThumbURL, Width: f.Width, Height: f.Height,
+					Alt: l.photoAlt(firstOf(l.FileKinds[f.Kind], l.FileKinds["photo_other"]), v.Heading)})
 				continue
 			}
 			v.Files = append(v.Files, fileView{URL: f.URL, Name: f.Name, Kind: firstOf(l.FileKinds[f.Kind], f.Kind), Size: size(f.Bytes)})
 		}
 	}
-	v.Photos = append(sent, v.Photos...)
 
 	for _, k := range m.Links {
 		switch {

@@ -20,7 +20,7 @@ import OwnerReports from '../reports/OwnerReports';
 import LinkCertainty from '../reports/LinkCertainty';
 import SendForm, { type SendKind } from '../club/SendForm';
 import {
-  HEADING_CLASS, couplerDevices, foundIn, frontPhoto, insideOf, firstMissing, formatBytes, heading, linkCodes, lines, paragraphs, printedCode, sentBy, subtitle, unitFiles, unitPhotos,
+  HEADING_CLASS, couplerDevices, foundIn, frontPhoto, insideOf, firstMissing, formatBytes, heading, linkCodes, lines, paragraphs, printedCode, ownersFirst, sentBy, subtitle, unitFiles, unitPhotos,
   type CodeIndex, type Entry, type Heading, type Inside,
 } from '../../lib/boards/model';
 import type { BoardsT } from '../../lib/boards-i18n';
@@ -119,7 +119,7 @@ export default function BoardPanel({ id, entry, all, loaded, locale, t, sources,
   const notFound = detail.state === 'error' && detail.error === 'HTTP 404';
   const photoAlt = (f: BoardFile) => t('photo_alt', { what: t(`tag_${f.kind}`, { fallback: t('tag_photo_other') }), board: title });
   // Every unit's pictures as one set: the viewer goes from one source's photos to the next without closing.
-  const gallery = galleryOf((entry?.units ?? []).flatMap((u) => unitPhotos(u.files)), photoAlt);
+  const gallery = galleryOf(ownersFirst(entry?.units ?? []).flatMap((u) => unitPhotos(u.files)), photoAlt);
 
   return (
     <Frame inline={inline} dialog={dialog} onClose={onClose}>
@@ -253,7 +253,7 @@ export default function BoardPanel({ id, entry, all, loaded, locale, t, sources,
         {entry && entry.units.length > 0 && (
           <section aria-labelledby="board-panel-files" class="grid gap-4">
             <h3 id="board-panel-files" class={`${HEADING} mb-0`}>{t('files_title')}</h3>
-            {entry.units.map((u) => {
+            {ownersFirst(entry.units).map((u) => {
               const photos = unitPhotos(u.files);
               const files = unitFiles(u.files);
               const sent = sentBy(u);
