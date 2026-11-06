@@ -277,3 +277,16 @@ func TestTheTreeNarrowsToOneBoard(t *testing.T) {
 		t.Errorf("a model that is not an id: %d", bad.StatusCode)
 	}
 }
+
+func TestAnOwnersPhotosLeadTheBoardsPage(t *testing.T) {
+	photo := func(name string) fileJSON {
+		return fileJSON{Kind: "photo_other", URL: "/f/" + name, ThumbURL: "/f/t-" + name}
+	}
+	v := (&Pages{}).view(&boardPage{Maker: &makerJSON{ID: "m", Name: "M"}, Model: &modelJSON{ID: "b", Units: []*unitJSON{
+		{Source: "hikvision", Files: []fileJSON{photo("maker.jpg"), {Kind: "document", URL: "/f/d.pdf"}}},
+		{Source: Contributors, Files: []fileJSON{photo("own.jpg")}},
+	}}}, "en")
+	if len(v.Photos) != 2 || v.Photos[0].URL != "/f/own.jpg" || v.Photos[1].URL != "/f/maker.jpg" {
+		t.Errorf("photos %+v: the owner's first, then the maker's", v.Photos)
+	}
+}

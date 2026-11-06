@@ -208,8 +208,8 @@ func (im *Importer) apply(ctx context.Context, fsys fs.FS, load func(context.Con
 			continue
 		}
 		keep = append(keep, c.Unit)
-		// After every catalogue's own units of the model: the source's photos
-		// and pinout lead, what an owner sent follows.
+		// After every catalogue's own units of the model: the source's files
+		// are listed first. Photos go the other way (cardPhotos in the site).
 		u := &Unit{ID: c.Unit, Sensor: c.Sensor, FlashChip: c.FlashChip, FlashSizeMB: c.FlashMB,
 			SourceRef: c.Evidence[0], Position: contributedPosition + i, Source: Contributors, ContributedBy: c.By}
 		for _, f := range c.Files {

@@ -411,6 +411,8 @@ func (p *Pages) view(b *boardPage, locale string) pageView {
 		}
 	}
 
+	// What an owner sent leads, as on the card (cardPhotos in the site).
+	var sent []photoView
 	seen := map[string]bool{}
 	for _, u := range m.Units {
 		for _, f := range u.Files {
@@ -421,13 +423,19 @@ func (p *Pages) view(b *boardPage, locale string) pageView {
 			if strings.HasPrefix(f.Kind, "photo_") && f.ThumbURL != "" {
 				// The photo's own size: a thumbnail keeps its shape, so the
 				// browser holds the place before it arrives.
-				v.Photos = append(v.Photos, photoView{URL: f.URL, Thumb: f.ThumbURL, Width: f.Width, Height: f.Height,
-					Alt: l.photoAlt(firstOf(l.FileKinds[f.Kind], l.FileKinds["photo_other"]), v.Heading)})
+				p := photoView{URL: f.URL, Thumb: f.ThumbURL, Width: f.Width, Height: f.Height,
+					Alt: l.photoAlt(firstOf(l.FileKinds[f.Kind], l.FileKinds["photo_other"]), v.Heading)}
+				if u.Source == Contributors {
+					sent = append(sent, p)
+				} else {
+					v.Photos = append(v.Photos, p)
+				}
 				continue
 			}
 			v.Files = append(v.Files, fileView{URL: f.URL, Name: f.Name, Kind: firstOf(l.FileKinds[f.Kind], f.Kind), Size: size(f.Bytes)})
 		}
 	}
+	v.Photos = append(sent, v.Photos...)
 
 	for _, k := range m.Links {
 		switch {
