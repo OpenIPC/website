@@ -404,11 +404,10 @@ func spellings(id Identifier) *regexp.Regexp {
 // cloudKeys are the names firmware prints a camera's vendor-cloud identity
 // under -- the ID its app is paired by, which anyone who reads it can pair
 // or impersonate it with: Xiongmai's uuid, authcode and SerialNumber, UBIA's
-// gUID, HiChip's hichipuuid, the P2P DIDs of the HY and ThroughTek stacks,
-// the serialno in the U-Boot environment of a TRASSIR.
+// gUID, HiChip's hichipuuid, the P2P DIDs of the HY and ThroughTek stacks.
 // A value is taken only with a digit in it, six to sixty-four characters,
 // so "uuid[%s]", "SN: none" or "uuid : General" are left as they are.
-var cloudKeys = regexp.MustCompile(`(?i)\b(uuid|guid|authcode|serialnumber|serialno|newversionsn|oldversionsn|cloud_?id|sn|hichipuuid|p2p\w{0,8}(?:did|uid)|did)\b["']?\s*(?:[:=]\s*\[?|\[)\s*["']?([A-Za-z0-9][A-Za-z0-9_-]{5,63})`)
+var cloudKeys = regexp.MustCompile(`(?i)\b(uuid|guid|authcode|serialnumber|newversionsn|oldversionsn|cloud_?id|sn|hichipuuid|p2p\w{0,8}(?:did|uid)|did)\b["']?\s*(?:[:=]\s*\[?|\[)\s*["']?([A-Za-z0-9][A-Za-z0-9_-]{5,63})`)
 
 // secretKeys are values a stock firmware prints beside its cloud ID: a
 // Xiongmai log's CapsCenter message (the per-camera crypto number, DevInfo's
@@ -430,11 +429,14 @@ var secretKeys = []*regexp.Regexp{
 	regexp.MustCompile(`\bSp_init\[Uidkey\]\s*=\s*\[([A-Za-z0-9_-]{4,64})\]`),
 }
 
-// cloudForms are the cloud ID where it is not written name=value: the
-// argument a TRASSIR starts its cloud client with, and a Reolink's Uid, as
-// its static parameters hold it and as it prints it. A bare uid= is left
-// alone: a kernel prints one for every PHY.
-var cloudForms = []*regexp.Regexp{
+// deviceForms are the cloud ID of makers whose IDs are no Xiongmai serial, so
+// a value is replaced whole, under its own name: one that happens to start
+// like a Xiongmai serial must not lose only its head. They are a TRASSIR's
+// serialno and the argument it starts its cloud client with, and a Reolink's
+// Uid, as its static parameters hold it and as it prints it. A bare uid= is
+// left alone: a kernel prints one for every PHY.
+var deviceForms = []*regexp.Regexp{
+	regexp.MustCompile(`(?i)\bserialno["']?\s*[:=]\s*["']?([A-Za-z0-9][A-Za-z0-9_-]{5,63})`),
 	regexp.MustCompile(`--device_id\s+([A-Za-z0-9][A-Za-z0-9_-]{5,63})`),
 	regexp.MustCompile(`<Uid>([A-Za-z0-9_-]{6,64})</Uid>`),
 	regexp.MustCompile(`\bSp_init\[Uid\]\s*=\s*\[([A-Za-z0-9_-]{6,64})\]`),
@@ -501,7 +503,7 @@ func textIdentifiers(text string) []Identifier {
 	var out []Identifier
 	seen := map[string]int{}
 	add := func(name, v string) {
-		if ((name == "cloud_id" || name == "hik_serial") && !strings.ContainsAny(v, "0123456789")) || !alnum.MatchString(v) || zeroish(v) {
+		if ((name == "cloud_id" || name == "hik_serial" || name == "device_id") && !strings.ContainsAny(v, "0123456789")) || !alnum.MatchString(v) || zeroish(v) {
 			return
 		}
 		k := strings.ToLower(v)
@@ -528,9 +530,9 @@ func textIdentifiers(text string) []Identifier {
 		}
 		add("cloud_id", v)
 	}
-	for _, re := range cloudForms {
+	for _, re := range deviceForms {
 		for _, m := range re.FindAllStringSubmatch(text, -1) {
-			add("cloud_id", m[1])
+			add("device_id", m[1])
 		}
 	}
 	for _, re := range secretKeys {

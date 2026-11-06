@@ -300,6 +300,19 @@ func TestATrassirAndAReolinkIdentifiersAreRedacted(t *testing.T) {
 			t.Errorf("%s stayed: %s", c.gone, got)
 		}
 	}
+	// Whole, even where it starts as a Xiongmai serial does.
+	const xmLike = "0123456789abcdefWXYZ"
+	for _, line := range []string{
+		"serialno=" + xmLike + "_TAIL",
+		"serialno=" + xmLike + "-TAIL",
+		"--device_id " + xmLike + "_TAIL",
+		"<Uid>" + xmLike + "-TAIL</Uid>",
+		"Sp_init[Uid] = [" + xmLike + "_TAIL]",
+	} {
+		if got := Redact(line, Facts{}, "k"); strings.Contains(got, "TAIL") || strings.Contains(got, xmLike) {
+			t.Errorf("%q left part of the ID: %s", line, got)
+		}
+	}
 	// Taken out wherever the ID goes on to appear.
 	got := Redact(strings.Join([]string{
 		"--device_id " + device,
