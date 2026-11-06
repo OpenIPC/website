@@ -334,27 +334,31 @@ func (f Facts) anyka() bool {
 // is the camera's, and all some lines print.
 func Redact(text string, f Facts, key string) string {
 	ids := f.Identifiers()
+	hik := map[string]string{}
 	for _, id := range textIdentifiers(text) {
+		if id.Name == "hik_serial" {
+			v := strings.ToUpper(id.Value)
+			hik[v] = "<hik_serial:" + Keyed(key, id.Name, v) + ">"
+			continue
+		}
 		if !slices.ContainsFunc(ids, func(o Identifier) bool { return sameIdentifier(o.Value, id.Value) }) {
 			ids = append(ids, id)
 		}
 	}
+	// The serial may reach here as ipctool's cloud ID too: it is one
+	// identifier, and only this way are its NUL spellings found.
+	ids = slices.DeleteFunc(ids, func(o Identifier) bool { _, ok := hik[strings.ToUpper(o.Value)]; return ok })
 	text = hikSerial.ReplaceAllStringFunc(text, func(m string) string {
-		tail := hikSerial.FindStringSubmatch(m)[1]
-		if !strings.ContainsAny(tail, "0123456789") {
-			return m
+		if mark, ok := hik[strings.ToUpper(hikSerial.FindStringSubmatch(m)[1])]; ok {
+			return mark
 		}
-		return "<hik_serial:" + Keyed(key, "hik_serial", strings.ToUpper(tail)) + ">"
+		return m
 	})
+	text = redactHikTails(text, hik)
 	// Longest first: a value that holds another is replaced whole.
 	slices.SortStableFunc(ids, func(a, b Identifier) int { return len(b.Value) - len(a.Value) })
 	for _, id := range ids {
 		mark := "<" + id.Name + ":" + Keyed(key, id.Name, id.Value) + ">"
-		if id.Name == "hik_serial" {
-			mark = "<hik_serial:" + Keyed(key, id.Name, strings.ToUpper(id.Value)) + ">"
-			text = hikSpelling(id.Value).ReplaceAllString(text, mark)
-			continue
-		}
 		// A Xiongmai serial is sixteen hex digits and four letters, and the
 		// firmware glues the letters to what follows ("SN:...xdjhd_common_init"):
 		// the digits are the camera's, and the letters go with them.
@@ -431,13 +435,40 @@ var hikSerial = regexp.MustCompile(`(?i)\b(?:i?DS|IPC)-[A-Z0-9/+()-]{3,40}?20\d{
 // them from a fixed field, with NUL bytes among them ("E\0\012345678").
 var hikShort = regexp.MustCompile(`(?i)\bext_tag\s+\S+?,\s*sn\s+((?:[A-Z0-9]\x00*){8}[A-Z0-9])\b`)
 
-// hikSpelling finds a serial's nine characters, NUL bytes among them or not.
-func hikSpelling(v string) *regexp.Regexp {
-	parts := make([]string, 0, len(v))
-	for _, c := range v {
-		parts = append(parts, regexp.QuoteMeta(string(c)))
+// hikRun is a run of letters and digits, NUL bytes among them.
+var hikRun = regexp.MustCompile(`[0-9A-Za-z][0-9A-Za-z\x00]*`)
+
+const hikTail = 9
+
+// redactHikTails replaces each serial's nine characters, NUL bytes among them
+// or not, in one pass over the text: a file can name a serial a line, and one
+// expression each would rescan it for every one of them.
+func redactHikTails(text string, marks map[string]string) string {
+	if len(marks) == 0 {
+		return text
 	}
-	return regexp.MustCompile(`(?i)` + strings.Join(parts, `\x00*`))
+	return hikRun.ReplaceAllStringFunc(text, func(run string) string {
+		plain := strings.ReplaceAll(run, "\x00", "")
+		upper := strings.ToUpper(plain)
+		var b strings.Builder
+		found := false
+		for i := 0; i < len(plain); {
+			if i+hikTail <= len(plain) {
+				if mark, ok := marks[upper[i:i+hikTail]]; ok {
+					b.WriteString(mark)
+					i += hikTail
+					found = true
+					continue
+				}
+			}
+			b.WriteByte(plain[i])
+			i++
+		}
+		if !found {
+			return run
+		}
+		return b.String()
+	})
 }
 
 // xmSerial is a Xiongmai cloud serial: its sixteen hex digits, then letters.
@@ -459,6 +490,9 @@ func textIdentifiers(text string) []Identifier {
 			k = strings.ToLower(head)
 		}
 		if i, ok := seen[k]; ok {
+			if name == "hik_serial" {
+				out[i].Name = name
+			}
 			if !strings.EqualFold(out[i].Value, v) && countFold(text, v) > countFold(text, out[i].Value) {
 				out[i].Value = v
 			}

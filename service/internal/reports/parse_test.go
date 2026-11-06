@@ -3,9 +3,11 @@ package reports
 import (
 	"bytes"
 	"encoding/binary"
+	"fmt"
 	"os"
 	"strings"
 	"testing"
+	"time"
 )
 
 func fixture(t *testing.T, name string) string {
@@ -328,6 +330,46 @@ func TestAHikvisionSerialIsOneIdentifierWholeOrShort(t *testing.T) {
 		if got := Redact(s, Facts{}, "k"); got != mark {
 			t.Errorf("%s reads as %s", s, got)
 		}
+	}
+}
+
+// The nine characters can also reach Redact as a cloud ID, from ipctool or
+// from a line the cloud patterns know. They are still one identifier, and its
+// NUL spelling is still found.
+func TestAHikvisionSerialThatIsAlsoACloudID(t *testing.T) {
+	const tail = "E12345678"
+	watermark := "ext_tag X,sn E\x00\x0012345678 \n"
+	mark := "<hik_serial:" + Keyed("k", "hik_serial", tail) + ">"
+	for name, got := range map[string]string{
+		"from ipctool":  Redact(watermark+"plain "+tail+"\n", Facts{CloudID: tail}, "k"),
+		"from the text": Redact("sn: "+tail+"\n"+watermark, Facts{}, "k"),
+	} {
+		if strings.Contains(got, "12345678") {
+			t.Errorf("%s: the serial stayed:\n%q", name, got)
+		}
+		if n := strings.Count(got, mark); n != 2 {
+			t.Errorf("%s: the placeholder %d times, not 2:\n%q", name, n, got)
+		}
+		if strings.Contains(got, "<cloud_id:") {
+			t.Errorf("%s: a second placeholder:\n%q", name, got)
+		}
+	}
+}
+
+// A file can name a different serial on every line, up to the upload limit.
+// One pass takes a moment; a pass per serial would take many minutes.
+func TestManyHikvisionSerialsAreOnePass(t *testing.T) {
+	var b strings.Builder
+	for i := 0; b.Len() < maxText; i++ {
+		fmt.Fprintf(&b, "ext_tag X,sn E%08d \n", i)
+	}
+	start := time.Now()
+	got := Redact(b.String(), Facts{}, "k")
+	if d := time.Since(start); d > 20*time.Second {
+		t.Errorf("%v for %d bytes", d, b.Len())
+	}
+	if strings.Contains(got, "sn E0") {
+		t.Errorf("a serial stayed: %.80q", got)
 	}
 }
 
