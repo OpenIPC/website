@@ -109,7 +109,7 @@ func reportUnits(ctx context.Context, cfg *config.Config, pool *pgxpool.Pool) ([
 		// the unit's, as published (redacted).
 		// The link's certainty goes with it, so the board's files say how
 		// sure it is that the report is this board's.
-		c := boards.Contribution{Unit: t.Model + "-" + t.Report, Model: t.Model, By: by, Note: t.Note,
+		c := boards.Contribution{Unit: t.Model + "-" + t.Report, Model: t.Model, By: by, Note: t.Note, Sensor: t.Sensor,
 			Evidence:      []string{cfg.ClubSiteURL + boards.ReceiptMark + t.Report + "&board=" + t.Model},
 			LinkCertainty: t.Certainty, LinkEvidence: t.Evidence, PrivateDumps: t.PrivateDumps}
 		for _, f := range t.Files {
