@@ -83,6 +83,11 @@ var Snapshots = map[string]string{
 	// PCB markings and three chips read from the photos) and 31 from its
 	// 2016-2025 sites in the Wayback Machine, 14 with a chip, 7 with a sensor.
 	"ruision": "be6f5bf024c5d416f1b309c708c1cee475a4fe36cb340b19f214af293b59ab2c",
+	// boards-donors/hikvision/snapshot-4449e3fa0d9a.tar: Hikvision's network cameras,
+	// 1,429 from 1,479 product pages in the Wayback Machine: specifications,
+	// 1,008 photos, 1,080 with datasheets, and the firmware platform 585 of them name.
+	// No chip: its pages name none (a unit does, as the DS-2CD2423G0-I's did).
+	"hikvision": "4449e3fa0d9ad6e85b64b1e643abb86868c1e3ae68e8531fe387206719a913c9",
 }
 
 type Snapshot struct {

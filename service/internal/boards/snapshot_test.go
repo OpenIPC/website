@@ -1134,6 +1134,96 @@ func TestARuisionBoardIsFiledUnderItsMaker(t *testing.T) {
 	}
 }
 
+// A Hikvision page covers several sub-models, and the catalogue has to answer
+// to each: an owner of a DS-2CD2423G0-IW sends that marking and lands on the
+// page's camera, not on a twin. The pages name no chip, so a
+// camera is filed with none.
+func TestAHikvisionCameraAnswersToItsSubModels(t *testing.T) {
+	pool, root := imported(t)
+	im := &Importer{Pool: pool, Log: quiet(), Root: root, Resolve: supported}
+	ctx := context.Background()
+	if _, err := im.FromSnapshot(ctx, donor(t, "hikvision",
+		model("hikvision", "DS-2CD2423G0-I", map[string]any{
+			"category": "Pro Series (EasyIP)", "soc_label": "", "sensor": "", "kind": "camera",
+			"aliases":  []string{"DS-2CD2423G0-IW", "DS-2CD2423G0-I-W"},
+			"original": []string{"en"}, "translated_from": "", "tags": []string{"discontinued"}}))); err != nil {
+		t.Fatal(err)
+	}
+	var name, kind, soc string
+	var aliases []string
+	if err := pool.QueryRow(ctx, `SELECT f.name, f.aliases, m.kind, coalesce(m.soc, '') FROM board_models m JOIN board_manufacturers f ON f.id = m.manufacturer_id WHERE m.id = 'hikvision-ds-2cd2423g0-i'`).Scan(&name, &aliases, &kind, &soc); err != nil {
+		t.Fatal(err)
+	}
+	if name != "Hikvision" || len(aliases) != 2 || aliases[0] != "海康威视" || aliases[1] != "HiLook" {
+		t.Errorf("the camera's maker: %q, also %v", name, aliases)
+	}
+	if kind != "camera" || soc != "" {
+		t.Errorf("the camera is a %q on %q, want a camera on no SoC", kind, soc)
+	}
+	for _, marking := range []string{"DS-2CD2423G0-I", "DS-2CD2423G0-IW", "ds-2cd2423g0-i w"} {
+		s, err := Suggest(ctx, pool, "HiLook", marking, "")
+		if err != nil {
+			t.Fatal(err)
+		}
+		if s.MakerID != "hikvision" || s.Existing != "hikvision-ds-2cd2423g0-i" {
+			t.Errorf("%s suggests maker %q, board %q", marking, s.MakerID, s.Existing)
+		}
+	}
+}
+
+// The lab's camera reached the catalogue through a report before the snapshot
+// did: importing it fills that board in, under the same id, and adds no twin.
+func TestAHikvisionCameraFromAReportIsFoundByTheImport(t *testing.T) {
+	pool, root := imported(t)
+	im := &Importer{Pool: pool, Log: quiet(), Root: root, Resolve: supported}
+	ctx := context.Background()
+	tx, err := pool.Begin(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer tx.Rollback(ctx)
+	id, err := CreateModel(ctx, tx, NewModel{MakerID: "hikvision", MakerName: "Hikvision", ModelID: "hikvision-ds-2cd2423g0-i",
+		Model: "DS-2CD2423G0-I", Kind: "camera", SoC: "Hi3516CV300", Aliases: []string{"2A067"}}, func(string) string { return "hi3516cv300" })
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := tx.Commit(ctx); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := im.FromSnapshot(ctx, donor(t, "hikvision",
+		model("hikvision", "DS-2CD2423G0-I", map[string]any{
+			"category": "Pro Series (EasyIP)", "soc_label": "", "sensor": "", "kind": "camera",
+			"aliases":  []string{"DS-2CD2423G0-IW"},
+			"original": []string{"en"}, "translated_from": ""}))); err != nil {
+		t.Fatal(err)
+	}
+	if n := count(t, pool, `SELECT count(*) FROM board_models WHERE manufacturer_id = 'hikvision'`); n != 1 {
+		t.Errorf("%d Hikvision models, want the one", n)
+	}
+	var soc, kind string
+	if err := pool.QueryRow(ctx, `SELECT coalesce(soc, ''), kind FROM board_models WHERE id = $1`, id).Scan(&soc, &kind); err != nil {
+		t.Fatal(err)
+	}
+	// The snapshot names no chip; the owner's report did, and it stands.
+	if soc != "hi3516cv300" || kind != "camera" {
+		t.Errorf("after the import the camera is a %q on %q", kind, soc)
+	}
+	s, err := Suggest(ctx, pool, "Hikvision", "DS-2CD2423G0-IW", "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if s.Existing != id {
+		t.Errorf("DS-2CD2423G0-IW finds %q, want %q", s.Existing, id)
+	}
+	s, err = Suggest(ctx, pool, "Hikvision", "2A067", "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if s.Existing != id {
+		t.Errorf("the PCB marking finds %q, want %q", s.Existing, id)
+	}
+}
+
 // Migration 014 drops the family links relate() wrote once per source, and
 // only those: a related link a source brings itself stays, and outranks a
 // generated copy of it.

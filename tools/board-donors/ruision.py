@@ -71,6 +71,7 @@ CHROME = re.compile(r"/(?:templates|static|resources/sys|images?/(?:Heads|Bottom
 # for many minutes once it has. Its pages are fetched through curl, paced.
 # The vendors' CDNs want a referrer.
 WAYBACK_GAP = 3.0
+CURL_UA = "Mozilla/5.0"
 REFERER = {"Referer": "http://ruision.com/"}
 _last_wb = [0.0]
 
@@ -78,7 +79,7 @@ _last_wb = [0.0]
 def curl(cap, url):
     """url through curl, kept and logged as Capture keeps a body."""
     entry = {"url": url, "fetched_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()), "via": "direct"}
-    r = subprocess.run(["curl", "-s", "-L", "--proto", "=https,http", "--proto-redir", "=https,http", "--max-time", "120", "-A", "Mozilla/5.0", "-w", "\n%{http_code} %{content_type}",
+    r = subprocess.run(["curl", "-s", "-L", "--proto", "=https,http", "--proto-redir", "=https,http", "--max-time", "120", "-A", CURL_UA, "-w", "\n%{http_code} %{content_type}",
                         url], capture_output=True)
     body, _, tail = r.stdout.rpartition(b"\n")
     status, _, ctype = tail.decode("latin-1").partition(" ")

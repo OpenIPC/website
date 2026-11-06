@@ -85,7 +85,11 @@ var makers = map[string]Manufacturer{
 	// Corevision): IP camera boards from its live and archived catalogues, a
 	// donor snapshot only.
 	"RUISION": {ID: "ruision", Name: "Ruision", Aliases: []string{"睿视科技", "芯睿视", "Corevision"}, Position: 9},
-	"?":       {ID: "unknown", Name: "Unidentified maker", Position: 99},
+	// Hikvision (海康威视): its network cameras from its product pages in the
+	// Wayback Machine, a donor snapshot only. HiLook is its value brand, and
+	// sells the same DS- models.
+	"HIKVISION": {ID: "hikvision", Name: "Hikvision", Aliases: []string{"海康威视", "HiLook"}, Position: 10},
+	"?":         {ID: "unknown", Name: "Unidentified maker", Position: 99},
 }
 
 // socFixes are the archive's typos, one per line, with the reason.
