@@ -1,7 +1,7 @@
 ---
 title: The Novatek boot ROM opened, and a radio network of our own
 date: 2026-11-06
-summary: "A bricked Novatek board now comes back over Ethernet because we reconstructed its mask ROM, Xiongmai cameras became proper cameras, a camera reads your power draw off a meter's blinking LED, and cheap Wi-Fi cards are being scheduled like a mobile network."
+summary: "A bricked Novatek board now comes back over Ethernet because we reconstructed its mask ROM, Xiongmai cameras became proper cameras, a camera reads your power draw off a meter's blinking LED, and cheap Wi-Fi cards turned out capable of the timing a mobile-style network needs."
 author: OpenIPC team
 ---
 
@@ -69,25 +69,26 @@ drone can least afford it. And when a device crosses from one access point to
 the next, the link goes away for more than a tenth of a second: scan,
 re-associate, re-acquire the clock. For live video that is a frozen picture.
 
-We are doing it differently. Every radio holds the same clock to within a
-microsecond: ordinary Ethernet carries the time to the access points, each
-spreads it over the air with its beacon, and any device picks it up passively.
-On a cheap 8821CE card the sync loop closed at 0.67 microseconds — mobile
-operator territory, on hardware off the shelf.
+We want to hand out the air by schedule instead, the way a mobile network
+does: a slot for each device, and the access point decides who gets which. The
+first question was whether cheap Realtek cards can do that at all, and this
+autumn we finished measuring it. They can. A card can pin its beacon to an
+absolute moment without disturbing its own clock, report when a frame actually
+left the antenna, acknowledge in hardware, and retune quickly. On an 8821CE one
+access point disciplined its beacon to PTP time arriving over Ethernet to
+within 0.67 microseconds.
 
-Once everyone shares a clock the access points stop elbowing each other and
-divide the air by schedule: a slot for each device, and a slot boundary that is
-the same instant across the whole network. A robot driving between cells holds
-slots in both during the crossing and duplicates its stream into each, and its
-schedule simply moves to the new cell. No scan, no re-association, no gap.
+That is the foundation rather than the network. The scheduler on top of it is
+what we are writing now, in order: one cell on a fixed grid of slots, then
+reliable delivery, then letting new devices in, then one clock shared across
+cells, and last the crossing between them, where a moving robot would hold
+slots in both cells at once. [The tracking
+issue](https://github.com/OpenIPC/devourer/issues/254) carries the order of work and
+the measurements behind it.
 
-What it is for: live video from a moving camera, where Wi-Fi cannot cope at
-all. A robot in a warehouse, a drone on its rounds, machinery on a site —
-anything that keeps moving and keeps showing a picture. The per-link pieces are
-bench-proven; the multi-cell layer is being built, and
-[the tracking issue](https://github.com/OpenIPC/devourer/issues/254) is where it
-is happening.
-
+What it is all for: live video from something that keeps moving, where
+ordinary Wi-Fi gives up. A robot in a warehouse, a drone on its rounds,
+machinery on a site.
 ## Compressed swap turned 215 seconds into 11
 
 When a camera runs out of memory, the kernel does not kill anything at first:
