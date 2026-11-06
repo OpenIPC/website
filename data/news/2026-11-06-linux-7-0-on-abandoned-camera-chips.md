@@ -26,9 +26,9 @@ driver source now compiles for 4.9, 6.6, 6.18 and 7.0 with no conditional code
 in it. That is what breaks the tie between a camera's video pipeline and a
 frozen kernel.
 
-Moving to a current kernel is a security change: upstream fixes merged since
-4.9 reach these devices now. We test changes before they get near a camera.
-Our [qemu-bench](https://github.com/OpenIPC/qemu-bench) emulator models more
+Moving to a current kernel is a security change: once a camera runs the 7.0
+build, upstream fixes merged since 4.9 reach it. We try changes in an emulator
+before they reach hardware. Our [qemu-bench](https://github.com/OpenIPC/qemu-bench) emulator models more
 than a hundred surveillance machines from ten vendors and boots them on every
 push, and we checked the emulator itself against silicon — the hardware
 accelerator's output on a real Hi3516EV300 board matches it pixel for pixel,
