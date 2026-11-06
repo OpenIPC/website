@@ -404,10 +404,11 @@ func spellings(id Identifier) *regexp.Regexp {
 // cloudKeys are the names firmware prints a camera's vendor-cloud identity
 // under -- the ID its app is paired by, which anyone who reads it can pair
 // or impersonate it with: Xiongmai's uuid, authcode and SerialNumber, UBIA's
-// gUID, HiChip's hichipuuid, the P2P DIDs of the HY and ThroughTek stacks.
+// gUID, HiChip's hichipuuid, the P2P DIDs of the HY and ThroughTek stacks,
+// the serialno in the U-Boot environment of a TRASSIR.
 // A value is taken only with a digit in it, six to sixty-four characters,
 // so "uuid[%s]", "SN: none" or "uuid : General" are left as they are.
-var cloudKeys = regexp.MustCompile(`(?i)\b(uuid|guid|authcode|serialnumber|newversionsn|oldversionsn|cloud_?id|sn|hichipuuid|p2p\w{0,8}(?:did|uid)|did)\b["']?\s*(?:[:=]\s*\[?|\[)\s*["']?([A-Za-z0-9][A-Za-z0-9_-]{5,63})`)
+var cloudKeys = regexp.MustCompile(`(?i)\b(uuid|guid|authcode|serialnumber|serialno|newversionsn|oldversionsn|cloud_?id|sn|hichipuuid|p2p\w{0,8}(?:did|uid)|did)\b["']?\s*(?:[:=]\s*\[?|\[)\s*["']?([A-Za-z0-9][A-Za-z0-9_-]{5,63})`)
 
 // secretKeys are values a stock firmware prints beside its cloud ID: a
 // Xiongmai log's CapsCenter message (the per-camera crypto number, DevInfo's
@@ -419,6 +420,24 @@ var secretKeys = []*regexp.Regexp{
 	regexp.MustCompile(`(?i)"CloudCryNum"\s*:\s*"([^"]{6,128})"`),
 	regexp.MustCompile(`(?i)"DevInfo"\s*:\s*\{[^}]*?"Data"\s*:\s*"([^"]{6,128})"`),
 	regexp.MustCompile(`(?i)"DevInfo"\s*:\s*\{[^}]*?"Key"\s*:\s*"([^"]{6,128})"`),
+	// A TRASSIR's per-camera licence, in its environment and in its log. Hex
+	// only: "license 'PROPRIETARY'" and "license authorize" are the kernel's
+	// and the firmware's own words.
+	regexp.MustCompile(`(?i)\blicense["']?\s*[:=]\s*["']?([0-9a-f]{16,128})\b`),
+	// A Reolink's key to its Uid. Four characters on the units seen, so
+	// shorter than the keys above.
+	regexp.MustCompile(`<Uidkey>([A-Za-z0-9_-]{4,64})</Uidkey>`),
+	regexp.MustCompile(`\bSp_init\[Uidkey\]\s*=\s*\[([A-Za-z0-9_-]{4,64})\]`),
+}
+
+// cloudForms are the cloud ID where it is not written name=value: the
+// argument a TRASSIR starts its cloud client with, and a Reolink's Uid, as
+// its static parameters hold it and as it prints it. A bare uid= is left
+// alone: a kernel prints one for every PHY.
+var cloudForms = []*regexp.Regexp{
+	regexp.MustCompile(`--device_id\s+([A-Za-z0-9][A-Za-z0-9_-]{5,63})`),
+	regexp.MustCompile(`<Uid>([A-Za-z0-9_-]{6,64})</Uid>`),
+	regexp.MustCompile(`\bSp_init\[Uid\]\s*=\s*\[([A-Za-z0-9_-]{6,64})\]`),
 }
 
 // apName is the access point a camera opens for pairing, named after its
@@ -508,6 +527,11 @@ func textIdentifiers(text string) []Identifier {
 			v = xm
 		}
 		add("cloud_id", v)
+	}
+	for _, re := range cloudForms {
+		for _, m := range re.FindAllStringSubmatch(text, -1) {
+			add("cloud_id", m[1])
+		}
 	}
 	for _, re := range secretKeys {
 		for _, m := range re.FindAllStringSubmatch(text, -1) {

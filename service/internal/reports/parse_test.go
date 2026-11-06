@@ -281,6 +281,50 @@ func TestAVendorCloudIDATextNamesIsRedacted(t *testing.T) {
 	}
 }
 
+// What a TRASSIR and a Reolink print of themselves, in the shapes r-iyu833qv,
+// r-fn65gu3u and r-9vhtbwc5 carried, with made-up values. Each form is tried
+// alone: in a whole log one form's value takes the others' with it.
+func TestATrassirAndAReolinkIdentifiersAreRedacted(t *testing.T) {
+	const license, serial, device, uid, key = "0123456789abcdef0123456789abcdef", "T1234AB5C6DEF789G012345678", "X1Y2M207Z012345678", "123456789ABCDEFG", "KEY7"
+	for _, c := range []struct{ line, gone string }{
+		{"license=" + license, license},
+		{"[ipcam_authorize_license:125] license:" + license + " expired:0", license},
+		{"serialno=" + serial, serial},
+		{"exec[./dssl/tube 80 554 --model TR-X --device_id " + device + "]", device},
+		{"<Uid>" + uid + "</Uid>", uid},
+		{"Sp_init[Uid] = [" + uid + "]", uid},
+		{"<Uidkey>" + key + "</Uidkey>", key},
+		{"Sp_init[Uidkey] = [" + key + "]", key},
+	} {
+		if got := Redact(c.line, Facts{}, "k"); strings.Contains(got, c.gone) {
+			t.Errorf("%s stayed: %s", c.gone, got)
+		}
+	}
+	// Taken out wherever the ID goes on to appear.
+	got := Redact(strings.Join([]string{
+		"--device_id " + device,
+		"exec[qrencode TR-X_" + device + " -o www/logo/qrcode.png]",
+		`and ssid "TR-` + device + `"`,
+	}, "\n"), Facts{}, "k")
+	if strings.Contains(got, device) {
+		t.Errorf("the ID survived in what repeats it:\n%s", got)
+	}
+	// None of these names a camera.
+	for _, line := range []string{
+		"<WifiSSID></WifiSSID>",
+		"[uid=11112222, driver=SStar 10/100 Ethernet Phy]",
+		"mhal: module license 'PROPRIETARY' taints kernel.",
+		"license authorize success expire:0",
+		`## Error: "ivalicense" not defined`,
+		"uToken.a                             1.00.000      SHA.B64411EB",
+		"--model TR-X",
+	} {
+		if got := Redact(line, Facts{}, "k"); got != line {
+			t.Errorf("%q became %q", line, got)
+		}
+	}
+}
+
 // ipctool's cloudId is often the sixteen digits alone; the log's longer
 // spelling of the same serial is the same identifier, one placeholder,
 // nothing of it left beside the mark.

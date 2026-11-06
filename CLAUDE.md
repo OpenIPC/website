@@ -159,7 +159,8 @@ restores the image but never the schema, so keep migrations additive.
   nothing). Public only after `openipc reports publish`; identifiers replaced
   by keyed hashes in the public copy -- ipctool's, any MAC, and a vendor-cloud
   ID a text names itself (a Xiongmai serial, a UBIA gUID, a Hikvision serial
-  whole or as its last nine characters; `openipc reports
+  whole or as its last nine characters, a TRASSIR's serial and licence, a
+  Reolink's Uid and key; `openipc reports
   redact` redoes what was published before a rule); a backup served only with
   `consent=public`. **Nothing but this package may write them**: triggers
   refuse changes, board links are `ON DELETE RESTRICT`, files are
