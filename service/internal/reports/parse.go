@@ -419,6 +419,27 @@ var secretKeys = []*regexp.Regexp{
 	regexp.MustCompile(`(?i)"CloudCryNum"\s*:\s*"([^"]{6,128})"`),
 	regexp.MustCompile(`(?i)"DevInfo"\s*:\s*\{[^}]*?"Data"\s*:\s*"([^"]{6,128})"`),
 	regexp.MustCompile(`(?i)"DevInfo"\s*:\s*\{[^}]*?"Key"\s*:\s*"([^"]{6,128})"`),
+	// A TRASSIR's per-camera licence, in its environment and in its log. Hex
+	// only: "license 'PROPRIETARY'" and "license authorize" are the kernel's
+	// and the firmware's own words.
+	regexp.MustCompile(`(?i)\blicense["']?\s*[:=]\s*["']?([0-9a-f]{16,128})\b`),
+	// A Reolink's key to its Uid. Four characters on the units seen, so
+	// shorter than the keys above.
+	regexp.MustCompile(`<Uidkey>([A-Za-z0-9_-]{4,64})</Uidkey>`),
+	regexp.MustCompile(`\bSp_init\[Uidkey\]\s*=\s*\[([A-Za-z0-9_-]{4,64})\]`),
+}
+
+// deviceForms are the cloud ID of makers whose IDs are no Xiongmai serial, so
+// a value is replaced whole, under its own name: one that happens to start
+// like a Xiongmai serial must not lose only its head. They are a TRASSIR's
+// serialno and the argument it starts its cloud client with, and a Reolink's
+// Uid, as its static parameters hold it and as it prints it. A bare uid= is
+// left alone: a kernel prints one for every PHY.
+var deviceForms = []*regexp.Regexp{
+	regexp.MustCompile(`(?i)\bserialno["']?\s*[:=]\s*["']?([A-Za-z0-9][A-Za-z0-9_-]{5,63})`),
+	regexp.MustCompile(`--device_id\s+([A-Za-z0-9][A-Za-z0-9_-]{5,63})`),
+	regexp.MustCompile(`<Uid>([A-Za-z0-9_-]{6,64})</Uid>`),
+	regexp.MustCompile(`\bSp_init\[Uid\]\s*=\s*\[([A-Za-z0-9_-]{6,64})\]`),
 }
 
 // apName is the access point a camera opens for pairing, named after its
@@ -482,7 +503,7 @@ func textIdentifiers(text string) []Identifier {
 	var out []Identifier
 	seen := map[string]int{}
 	add := func(name, v string) {
-		if ((name == "cloud_id" || name == "hik_serial") && !strings.ContainsAny(v, "0123456789")) || !alnum.MatchString(v) || zeroish(v) {
+		if ((name == "cloud_id" || name == "hik_serial" || name == "device_id") && !strings.ContainsAny(v, "0123456789")) || !alnum.MatchString(v) || zeroish(v) {
 			return
 		}
 		k := strings.ToLower(v)
@@ -508,6 +529,11 @@ func textIdentifiers(text string) []Identifier {
 			v = xm
 		}
 		add("cloud_id", v)
+	}
+	for _, re := range deviceForms {
+		for _, m := range re.FindAllStringSubmatch(text, -1) {
+			add("device_id", m[1])
+		}
 	}
 	for _, re := range secretKeys {
 		for _, m := range re.FindAllStringSubmatch(text, -1) {
