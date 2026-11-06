@@ -4055,6 +4055,27 @@
     <xhtml:link rel="alternate" hreflang="x-default" href="https://openipc.org/news"/>
   </url>
   <url>
+    <loc>https://openipc.org/news/linux-7-0-on-abandoned-camera-chips</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://openipc.org/news/linux-7-0-on-abandoned-camera-chips"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://openipc.org/ru/news/linux-7-0-on-abandoned-camera-chips"/>
+    <xhtml:link rel="alternate" hreflang="zh" href="https://openipc.org/zh/news/linux-7-0-on-abandoned-camera-chips"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://openipc.org/news/linux-7-0-on-abandoned-camera-chips"/>
+  </url>
+  <url>
+    <loc>https://openipc.org/ru/news/linux-7-0-on-abandoned-camera-chips</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://openipc.org/news/linux-7-0-on-abandoned-camera-chips"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://openipc.org/ru/news/linux-7-0-on-abandoned-camera-chips"/>
+    <xhtml:link rel="alternate" hreflang="zh" href="https://openipc.org/zh/news/linux-7-0-on-abandoned-camera-chips"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://openipc.org/news/linux-7-0-on-abandoned-camera-chips"/>
+  </url>
+  <url>
+    <loc>https://openipc.org/zh/news/linux-7-0-on-abandoned-camera-chips</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://openipc.org/news/linux-7-0-on-abandoned-camera-chips"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://openipc.org/ru/news/linux-7-0-on-abandoned-camera-chips"/>
+    <xhtml:link rel="alternate" hreflang="zh" href="https://openipc.org/zh/news/linux-7-0-on-abandoned-camera-chips"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://openipc.org/news/linux-7-0-on-abandoned-camera-chips"/>
+  </url>
+  <url>
     <loc>https://openipc.org/news/the-novatek-boot-rom-and-a-network-of-our-own</loc>
     <xhtml:link rel="alternate" hreflang="en" href="https://openipc.org/news/the-novatek-boot-rom-and-a-network-of-our-own"/>
     <xhtml:link rel="alternate" hreflang="ru" href="https://openipc.org/ru/news/the-novatek-boot-rom-and-a-network-of-our-own"/>
