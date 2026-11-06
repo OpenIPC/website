@@ -208,8 +208,8 @@ func (im *Importer) apply(ctx context.Context, fsys fs.FS, load func(context.Con
 			continue
 		}
 		keep = append(keep, c.Unit)
-		// After every catalogue's own units of the model: the source's photos
-		// and pinout lead, what an owner sent follows.
+		// After every catalogue's own units of the model, as the API lists
+		// them; a board shows an owner's first (ownersFirst).
 		u := &Unit{ID: c.Unit, Sensor: c.Sensor, FlashChip: c.FlashChip, FlashSizeMB: c.FlashMB,
 			SourceRef: c.Evidence[0], Position: contributedPosition + i, Source: Contributors, ContributedBy: c.By}
 		for _, f := range c.Files {

@@ -601,15 +601,29 @@ export function socName(key: string, names: Record<string, string>): string {
 const PHOTO_ORDER: BoardFile['kind'][] = ['photo_front', 'photo_back', 'pinout', 'photo_other'];
 
 /**
- * Up to four pictures for a card: one of each kind first -- front, back,
- * pinout, other -- then whatever else there is, in the same order.
+ * The units as a board shows them: what an owner sent first, being the board
+ * as it is, then the catalogues'.
+ */
+export function ownersFirst(units: Unit[]): Unit[] {
+  const own = (u: Unit) => u.source === 'contributor';
+  return [...units.filter(own), ...units.filter((u) => !own(u))];
+}
+
+/**
+ * Up to four pictures for a card: an owner's first (ownersFirst), then the
+ * catalogues'. Within each, one of each kind -- front, back, pinout, other --
+ * then whatever else there is, in the same order.
  */
 export function cardPhotos(m: Model, max = 4): BoardFile[] {
-  const all = m.units.flatMap((u) => u.files.filter((f) => f.thumb_url && PHOTO_ORDER.includes(f.kind)));
-  const rank = (f: BoardFile) => PHOTO_ORDER.indexOf(f.kind);
-  const firsts = PHOTO_ORDER.map((k) => all.find((f) => f.kind === k)).filter((f): f is BoardFile => !!f);
-  const rest = all.filter((f) => !firsts.includes(f)).sort((a, b) => rank(a) - rank(b));
-  return [...firsts, ...rest].slice(0, max);
+  const ordered = (units: Unit[]) => {
+    const all = units.flatMap((u) => u.files.filter((f) => f.thumb_url && PHOTO_ORDER.includes(f.kind)));
+    const rank = (f: BoardFile) => PHOTO_ORDER.indexOf(f.kind);
+    const firsts = PHOTO_ORDER.map((k) => all.find((f) => f.kind === k)).filter((f): f is BoardFile => !!f);
+    const rest = all.filter((f) => !firsts.includes(f)).sort((a, b) => rank(a) - rank(b));
+    return [...firsts, ...rest];
+  };
+  const owners = m.units.filter((u) => u.source === 'contributor');
+  return [...ordered(owners), ...ordered(m.units.filter((u) => !owners.includes(u)))].slice(0, max);
 }
 
 /** The front photo, or failing that any picture at all. */

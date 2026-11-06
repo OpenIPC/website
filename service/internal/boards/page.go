@@ -299,6 +299,20 @@ type pageView struct {
 	Catalogue   string
 }
 
+// ownersFirst is the units as a board shows them, as the site's does: what an
+// owner sent first, being the board as it is, then the catalogues'.
+func ownersFirst(units []*unitJSON) []*unitJSON {
+	out := make([]*unitJSON, 0, len(units))
+	for _, own := range []bool{true, false} {
+		for _, u := range units {
+			if (u.Source == Contributors) == own {
+				out = append(out, u)
+			}
+		}
+	}
+	return out
+}
+
 func (p *Pages) view(b *boardPage, locale string) pageView {
 	l := labelsFor(locale)
 	m := b.Model
@@ -412,7 +426,7 @@ func (p *Pages) view(b *boardPage, locale string) pageView {
 	}
 
 	seen := map[string]bool{}
-	for _, u := range m.Units {
+	for _, u := range ownersFirst(m.Units) {
 		for _, f := range u.Files {
 			if seen[f.URL] {
 				continue
