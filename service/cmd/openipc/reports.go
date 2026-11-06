@@ -35,6 +35,9 @@ const reportsUsage = `usage: openipc reports
                                                 say which board a report is from
   certainty <id> <board model id> <confirmed|probable|guess> [--evidence why]
                                                 say how sure an existing link is now
+  sensor <id> <board model id> <part number> [--by who]
+                                                name the sensor of the report's unit on that board, read
+                                                from what it shows when its YAML has none ("" takes it back)
   photo <id> <position> blur|private|as_sent [--region x,y,w,h]...
                                                 what a photo publishes: a copy with the regions blurred
                                                 (fractions of the photo, upright), nothing (not the
@@ -239,6 +242,16 @@ func reportsCommand(ctx context.Context, cfg *config.Config, log *slog.Logger, a
 		// The report's unit on the board says it too.
 		refreshReportUnits(ctx, cfg, log, pool)
 		log.Info("reports: link certainty", "report", pos[0], "model", pos[1], "certainty", pos[2], "evidence", *evidence, "by", *by)
+		return nil
+	case "sensor":
+		if err := need(3); err != nil {
+			return err
+		}
+		if err := st.SetSensor(ctx, pos[0], pos[1], pos[2]); err != nil {
+			return err
+		}
+		refreshReportUnits(ctx, cfg, log, pool)
+		log.Info("reports: sensor", "report", pos[0], "model", pos[1], "sensor", pos[2], "by", *by)
 		return nil
 	case "photo", "file":
 		if err := need(3); err != nil {

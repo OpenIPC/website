@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"regexp"
 	"strings"
 	"time"
 	"unicode/utf8"
@@ -423,8 +424,8 @@ func (s *Store) Unlink(ctx context.Context, id, model string) error {
 }
 
 // SetCertainty is a maintainer saying how sure a link is now: a photo of
-// the PCB confirmed it, or it turned out a guess. It is the one UPDATE of
-// report_models the guard lets through, of these two columns only.
+// the PCB confirmed it, or it turned out a guess. With SetSensor it is the
+// only UPDATE of report_models the guard lets through, of these two columns.
 func (s *Store) SetCertainty(ctx context.Context, id, model string, b Basis) error {
 	b, err := b.Checked()
 	if err != nil {
@@ -443,7 +444,27 @@ func (s *Store) SetCertainty(ctx context.Context, id, model string, b Basis) err
 	})
 }
 
-// ErrNoLink is SetCertainty's answer for a report not linked to the board.
+// sensorName is a part number as a data sheet or a boot log prints it.
+var sensorName = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9 ._/+-]{0,99}$`)
+
+// SetSensor is a maintainer naming the sensor of the unit a report is on a
+// board, read from what the report shows; empty takes it back. The report's
+// own sensor, ipctool's, is not touched.
+func (s *Store) SetSensor(ctx context.Context, id, model, sensor string) error {
+	if sensor != "" && !sensorName.MatchString(sensor) {
+		return fmt.Errorf("sensor %q is not a part number", sensor)
+	}
+	return Unguarded(ctx, s.DB, func(tx pgx.Tx) error {
+		tag, err := tx.Exec(ctx, `UPDATE report_models SET sensor = $3 WHERE report_id = $1 AND model_id = $2`, id, model, sensor)
+		if err == nil && tag.RowsAffected() == 0 {
+			return ErrNoLink
+		}
+		return err
+	})
+}
+
+// ErrNoLink is SetCertainty's and SetSensor's answer for a report not linked
+// to the board.
 var ErrNoLink = errors.New("the report is not linked to that board")
 
 // How sure a link is (migration 036): the board itself says so, a good

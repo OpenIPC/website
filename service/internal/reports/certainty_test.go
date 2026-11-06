@@ -234,3 +234,58 @@ func TestEvidenceIsPublishedRedacted(t *testing.T) {
 		}
 	}
 }
+
+// A review may name the sensor of a report's unit, and only SetSensor can.
+func TestASensorIsNamedOnTheLinkOnly(t *testing.T) {
+	e := newEnv(t)
+	ctx := context.Background()
+	st := &Store{DB: e.pool}
+	rec, out := e.post(t, upload{fields: map[string]string{"yaml": fixture(t, "xiongmai-50h20l-readme.yml"), "note": "bought in 2019"}}, "203.0.113.32")
+	if rec.Code != 201 {
+		t.Fatal(rec.Body)
+	}
+	id := out["id"].(string)
+	if _, err := st.Decide(ctx, id, "publish", "test", "", []string{"xiongmai-50h20l"}, Basis{Certainty: Confirmed}, nil, nil, nil); err != nil {
+		t.Fatal(err)
+	}
+	var sent string
+	if err := e.pool.QueryRow(ctx, `SELECT sensor FROM reports WHERE id = $1`, id).Scan(&sent); err != nil {
+		t.Fatal(err)
+	}
+	sensorOf := func() string {
+		t.Helper()
+		texts, err := st.PublishedTexts(ctx)
+		if err != nil || len(texts) != 1 {
+			t.Fatalf("%v: %v", texts, err)
+		}
+		return texts[0].Sensor
+	}
+	if got := sensorOf(); got != "" {
+		t.Errorf("no review named one, yet %q", got)
+	}
+	if _, err := e.pool.Exec(ctx, `UPDATE report_models SET sensor = 'AR0237'`); err == nil {
+		t.Fatal("the guard let a sensor through")
+	}
+	if err := st.SetSensor(ctx, id, "xiongmai-50h20l", "<b>AR0237</b>"); err == nil {
+		t.Error("markup taken for a part number")
+	}
+	if err := st.SetSensor(ctx, id, "xiongmai-other", "AR0237"); !errors.Is(err, ErrNoLink) {
+		t.Errorf("a board the report is not linked to: %v", err)
+	}
+	if err := st.SetSensor(ctx, id, "xiongmai-50h20l", "AR0237"); err != nil {
+		t.Fatal(err)
+	}
+	if got := sensorOf(); got != "AR0237" {
+		t.Errorf("sensor %q", got)
+	}
+	var after string
+	if err := e.pool.QueryRow(ctx, `SELECT sensor FROM reports WHERE id = $1`, id).Scan(&after); err != nil || after != sent {
+		t.Errorf("the report's own sensor went from %q to %q: %v", sent, after, err)
+	}
+	if err := st.SetSensor(ctx, id, "xiongmai-50h20l", ""); err != nil {
+		t.Fatal(err)
+	}
+	if got := sensorOf(); got != "" {
+		t.Errorf("taken back, yet %q", got)
+	}
+}
