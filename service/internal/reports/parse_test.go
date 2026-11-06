@@ -291,6 +291,56 @@ func TestIpctoolsShortCloudIDAndTheLogsSerialAreOne(t *testing.T) {
 	}
 }
 
+// A Hikvision serial comes whole from prtHardInfo and as its last nine
+// characters from the DSP's watermark line, and a log can have either: both
+// are one placeholder, so two reports from one camera still read as one, and
+// nothing of it stays. Its model and date go with it; the model elsewhere in
+// the log does not.
+func TestAHikvisionSerialIsOneIdentifierWholeOrShort(t *testing.T) {
+	const tail = "E12345678"
+	full := "Serial NO :DS-2CD2423G0-I20201024AAWR" + tail + " \n"
+	// As the camera prints it: NUL bytes after the letter (lab unit, 2026-11).
+	short := "[DSP][LOG]<12>[DSP]<waterMark.c><53>:ext_tag X,sn E\x00\x0012345678 \n"
+	model := "dev_model:DS-2CD2423G0-I\n"
+	both := Redact(model+full+short, Facts{}, "k")
+	alone := Redact(short, Facts{}, "k")
+	mark := "<hik_serial:" + Keyed("k", "hik_serial", tail) + ">"
+	clean := Redact("ext_tag X,sn "+tail+" \n", Facts{}, "k")
+	for name, got := range map[string]string{"both": both, "alone": alone, "without NULs": clean, "lower case": Redact(strings.ToLower(short), Facts{}, "k")} {
+		if !strings.Contains(got, mark) {
+			t.Errorf("%s: no %s in:\n%q", name, mark, got)
+		}
+		if strings.Contains(got, "12345678") || strings.Contains(got, "20201024") {
+			t.Errorf("%s: the serial stayed:\n%s", name, got)
+		}
+	}
+	if n := strings.Count(both, mark); n != 2 {
+		t.Errorf("the placeholder %d times, not 2:\n%s", n, both)
+	}
+	if !strings.Contains(both, model) {
+		t.Errorf("the model line changed:\n%s", both)
+	}
+	if again := Redact(model+full+short, Facts{}, "k"); again != both {
+		t.Errorf("not stable:\n%s", again)
+	}
+	// An iDS- camera, a slash in a recorder's model, HiLook's IPC- names.
+	for _, s := range []string{"iDS-2CD7A46G0-IZHS20211130AACH" + tail, "DS-7604NI-K1/4P20190101CCRR" + tail, "IPC-B120-D20220312AAWR" + tail} {
+		if got := Redact(s, Facts{}, "k"); got != mark {
+			t.Errorf("%s reads as %s", s, got)
+		}
+	}
+}
+
+// What only looks like a Hikvision serial is left alone: a model with no
+// serial, and a serial masked by hand.
+func TestNotAHikvisionSerial(t *testing.T) {
+	for _, s := range []string{"DS-2CD2423G0-I", "DS-2CD2423G0-I20201024AAWRXXXXXXXXX", "ext_tag X,sn XXXXXXXXX", "ext_tag X,sn #########"} {
+		if got := Redact(s, Facts{}, "k"); got != s {
+			t.Errorf("%q became %q", s, got)
+		}
+	}
+}
+
 // A value its sender masked by hand is no identifier: the #s it was masked
 // with stay, and so do the log's other runs of them.
 func TestAValueMaskedByHandIsLeftAlone(t *testing.T) {

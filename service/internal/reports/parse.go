@@ -329,7 +329,9 @@ func (f Facts) anyka() bool {
 // carries its ethaddr all the same. So, too, every value the text itself
 // names as the camera's vendor-cloud identity (textIdentifiers): a stock
 // Xiongmai log prints its cloud serial a dozen times, a UBIA one its gUID
-// (r-7tb674nu, r-sfbcnir8).
+// (r-7tb674nu, r-sfbcnir8). A Hikvision serial is replaced whole, its model
+// and date with it, under the hash of its last nine characters: they are what
+// is the camera's, and all some lines print.
 func Redact(text string, f Facts, key string) string {
 	ids := f.Identifiers()
 	for _, id := range textIdentifiers(text) {
@@ -337,10 +339,22 @@ func Redact(text string, f Facts, key string) string {
 			ids = append(ids, id)
 		}
 	}
+	text = hikSerial.ReplaceAllStringFunc(text, func(m string) string {
+		tail := hikSerial.FindStringSubmatch(m)[1]
+		if !strings.ContainsAny(tail, "0123456789") {
+			return m
+		}
+		return "<hik_serial:" + Keyed(key, "hik_serial", strings.ToUpper(tail)) + ">"
+	})
 	// Longest first: a value that holds another is replaced whole.
 	slices.SortStableFunc(ids, func(a, b Identifier) int { return len(b.Value) - len(a.Value) })
 	for _, id := range ids {
 		mark := "<" + id.Name + ":" + Keyed(key, id.Name, id.Value) + ">"
+		if id.Name == "hik_serial" {
+			mark = "<hik_serial:" + Keyed(key, id.Name, strings.ToUpper(id.Value)) + ">"
+			text = hikSpelling(id.Value).ReplaceAllString(text, mark)
+			continue
+		}
 		// A Xiongmai serial is sixteen hex digits and four letters, and the
 		// firmware glues the letters to what follows ("SN:...xdjhd_common_init"):
 		// the digits are the camera's, and the letters go with them.
@@ -407,6 +421,25 @@ var secretKeys = []*regexp.Regexp{
 // cloud ID (UBIA's UCon_ and the first characters of the gUID).
 var apName = regexp.MustCompile(`\bAP:\s*([A-Za-z]+_[A-Za-z0-9]{4,32})`)
 
+// hikSerial is a Hikvision serial as prtHardInfo prints it: the model, the
+// date it was made, four letters, and nine characters that are the camera's
+// (DS-2CD2423G0-I20201024AAWRE12345678).
+var hikSerial = regexp.MustCompile(`(?i)\b(?:i?DS|IPC)-[A-Z0-9/+()-]{3,40}?20\d{6}[A-Z]{4}([A-Z0-9]{9})\b`)
+
+// hikShort is those nine characters alone, as a stock Hikvision log names
+// them: its DSP's watermark line ("ext_tag X,sn E12345678"), which prints
+// them from a fixed field, with NUL bytes among them ("E\0\012345678").
+var hikShort = regexp.MustCompile(`(?i)\bext_tag\s+\S+?,\s*sn\s+((?:[A-Z0-9]\x00*){8}[A-Z0-9])\b`)
+
+// hikSpelling finds a serial's nine characters, NUL bytes among them or not.
+func hikSpelling(v string) *regexp.Regexp {
+	parts := make([]string, 0, len(v))
+	for _, c := range v {
+		parts = append(parts, regexp.QuoteMeta(string(c)))
+	}
+	return regexp.MustCompile(`(?i)` + strings.Join(parts, `\x00*`))
+}
+
 // xmSerial is a Xiongmai cloud serial: its sixteen hex digits, then letters.
 var xmSerial = regexp.MustCompile(`(?i)^([0-9a-f]{16})[0-9a-z]{4}`)
 
@@ -418,7 +451,7 @@ func textIdentifiers(text string) []Identifier {
 	var out []Identifier
 	seen := map[string]int{}
 	add := func(name, v string) {
-		if (name == "cloud_id" && !strings.ContainsAny(v, "0123456789")) || !alnum.MatchString(v) || zeroish(v) {
+		if ((name == "cloud_id" || name == "hik_serial") && !strings.ContainsAny(v, "0123456789")) || !alnum.MatchString(v) || zeroish(v) {
 			return
 		}
 		k := strings.ToLower(v)
@@ -449,6 +482,11 @@ func textIdentifiers(text string) []Identifier {
 	}
 	for _, m := range apName.FindAllStringSubmatch(text, -1) {
 		add("cloud_ap", m[1])
+	}
+	for _, re := range []*regexp.Regexp{hikSerial, hikShort} {
+		for _, m := range re.FindAllStringSubmatch(text, -1) {
+			add("hik_serial", strings.ReplaceAll(m[1], "\x00", ""))
+		}
 	}
 	return out
 }
