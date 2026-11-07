@@ -1,6 +1,7 @@
-"""Capture SMTSEC's catalogue from its live site.
+"""Capture SMTSEC's catalogue from its live site and, with --archive, its
+earlier sites from the Wayback Machine.
 
-  python smtsec.py <capture-dir>
+  python smtsec.py <capture-dir> [--archive]
 
 SMTSEC (Shenzhen Shimaite, 深圳市视迈特科技有限公司) sells camera modules on a
 hosted site builder (Yibu), in Chinese and English. smtsec.com serves each page
@@ -21,6 +22,11 @@ What it keeps, in the layout capture.py uses: every response, logged with its
 sha256, and capture.json -- the categories, and per product its id, name,
 listing line, categories and the scripts' and pictures' addresses. A capture
 with a failed request writes no capture.json.
+
+The archive: the latest capture of each product page of the 2012, 2019 and
+2024 sites (the CDX's), its title and breadcrumb category, and, for a board's
+page, its pictures at the page's own time. capture.json lists them under
+"archived"; a board's has "pictures".
 """
 
 import argparse
@@ -141,7 +147,7 @@ def product(cap, pid, failed):
 
 # The archive is asked slowly, and a 429 that outlasts wb_get's waits ends the
 # archive's part of the run: it has told us to stop.
-ruision.WAYBACK_GAP = 6.0
+ruision.WAYBACK_GAP = 20.0
 CDX = ("https://web.archive.org/cdx/search/cdx?url=smtsec.com*&output=json"
        "&fl=timestamp,original,statuscode,mimetype,digest&filter=statuscode:200")
 GENERATIONS = [
@@ -169,8 +175,9 @@ def archived_pages(cap, skip, failed):
     if body is None:
         failed.append(f"CDX: {e.get('status')}")
         return []
-    latest = {}
+    latest, held = {}, set()
     for ts, orig, _, mime, _ in json.loads(body)[1:]:
+        held.add(held_key(orig))
         if "html" not in mime:
             continue
         for gen, pat in GENERATIONS:
@@ -181,7 +188,9 @@ def archived_pages(cap, skip, failed):
                     latest[k] = {"generation": gen, "id": m[1], "original": orig, "timestamp": ts}
                 break
     pages = []
-    for k in sorted(latest):
+    # The newest site first: its pages are the likeliest boards, should the
+    # archive stop answering before the end.
+    for k in sorted(latest, key=lambda k: (-int(k[0]), -int(k[1]))):
         p = latest[k]
         p["wayback_url"] = f"https://web.archive.org/web/{p['timestamp']}id_/{p['original']}"
         e, body = wb(cap, p["wayback_url"])
@@ -190,12 +199,89 @@ def archived_pages(cap, skip, failed):
             break
         if body is None:
             say(f"  {e.get('status')} {p['wayback_url']}")
+            if e.get("status", 0) >= 500:
+                failed.append(f"{e['status']} at {p['wayback_url']}")
             continue
-        m = re.search(r"(?is)<title>(.*?)</title>", decode(body))
+        page = decode(body)
+        m = re.search(r"(?is)<title>(.*?)</title>", page)
         p["title"] = re.sub(r"\s+", " ", m[1]).strip() if m else ""
+        p["category"] = archived_category(p["generation"], page)
+        if board_page(p):
+            p["pictures"] = archived_pictures(cap, p, page, held, failed)
         pages.append(p)
-    say(f"archived: {len(pages)} of {len(latest)} pages")
+    say(f"archived: {len(pages)} of {len(latest)} pages, {sum('pictures' in p for p in pages)} of them boards")
     return pages
+
+
+# The 2019 site's categories that hold boards: its "IPC Module"s, and the
+# resolutions under "H.265 IPC Board" -- whose other children are its
+# accessories (Wi-Fi, PoE and card boards), lenses and finished cameras.
+BOARD_RESOLUTIONS = {"12.0mp UHD 4K", "8.0mp UHD 4K", "5.0mp", "4.0mp", "3.0mp", "2.0mp"}
+
+
+def archived_category(gen, page):
+    """Where the page's breadcrumb files it, as "parent / category"."""
+    if gen == "2019":
+        m = re.search(r"(?is)id=\"gps\">(.*?)</div>", page)
+        names = re.findall(r"lei=\d+,\d+'>([^<]+)</a>", m[1]) if m else []
+    elif gen == "2024":
+        m = re.search(r'(?is)class="w-crumbs">(.*?)</div>', page)
+        names = [re.sub(r"\s+", " ", n).strip() for n in
+                 re.findall(r'(?is)<a [^>]*w-crumbs-category[^>]*>(.*?)</a>', m[1])] if m else []
+    else:
+        names = []
+    return " / ".join(n.strip() for n in names)
+
+
+def board_page(p):
+    """A camera board's page: by its category, and named by a model code (the
+    2019 site filed an article on H.265 among its modules). The 2012 site sold
+    analog cameras and peripherals only."""
+    if not re.match(r"SIP-", p["title"]):
+        return False
+    *parent, cat = p["category"].split(" / ") if p["category"] else [""]
+    if p["generation"] == "2019":
+        return "IPC Module" in cat or (parent == ["H.265 IPC Board"] and cat in BOARD_RESOLUTIONS)
+    return p["generation"] == "2024" and cat == "网络模组"
+
+
+def held_key(url):
+    """A URL as the CDX keys it: no scheme, www or port."""
+    s = urllib.parse.urlsplit(url)
+    return (s.hostname or "").removeprefix("www.") + s.path + ("?" + s.query if s.query else "")
+
+
+def archived_pictures(cap, p, page, held, failed):
+    """A board page's gallery, from the archive at the page's own time, of
+    what the archive holds (the CDX lists it). The 2024 site's pictures are
+    on the builder's CDN, which is asked first."""
+    if p["generation"] == "2024":
+        urls = pictures(page)
+    else:
+        urls = [urllib.parse.urljoin(p["original"], u) for u in
+                re.findall(r"""(?i)src=['"](/tr008/upimg/[^'"]+\.(?:jpe?g|png|gif))['"]""", page)]
+    kept = []
+    for u in dict.fromkeys(urls):
+        if p["generation"] == "2024":
+            e, body = cap.get("https://img.website.xin" + urllib.parse.urlsplit(u).path)
+            if body is not None:
+                kept.append(e["url"])
+                continue
+        if held_key(u) not in held:
+            say(f"  not archived: {u}")
+            continue
+        w = f"https://web.archive.org/web/{p['timestamp']}id_/{u}"
+        e, body = wb(cap, w)
+        if e.get("status") == 429:
+            failed.append(f"429 at {w}: stopped asking")
+            break
+        if body is not None:
+            kept.append(w)
+        elif e.get("status") == 404:
+            say(f"  not archived: {u}")
+        else:
+            failed.append(f"{e.get('status')} at {w}")
+    return kept
 
 
 def main():
@@ -203,7 +289,7 @@ def main():
     ap.add_argument("out")
     ap.add_argument("--delay", type=float, default=1.0)
     ap.add_argument("--archive", action="store_true",
-                    help="also the older sites' pages from the Wayback Machine; the snapshot does not read them yet")
+                    help="also the older sites' boards, from the Wayback Machine")
     args = ap.parse_args()
     cap = Capture(args.out, delay=args.delay)
     failed, cats, listed, lenses = [], [], {}, set()

@@ -1,6 +1,7 @@
-"""Build the smtsec snapshot: SMTSEC's camera modules, from its live site.
+"""Build the smtsec snapshot: SMTSEC's camera modules, from its live site and
+the Wayback Machine's copies of its earlier ones.
 
-  python3 tools/board-donors/smtsec.py ~/reports/boards-catalogue/donors/raw/smtsec
+  python3 tools/board-donors/smtsec.py ~/reports/boards-catalogue/donors/raw/smtsec --archive
   docker run --rm -v ~/reports/boards-catalogue/donors:/w -v $PWD/tools/board-donors:/t \\
     board-render:1 python3 /t/smtsec_snapshot.py /w/raw/smtsec /w/smtsec-work \\
     /w/snapshots/smtsec-snapshot.tar
@@ -17,6 +18,15 @@ does not decode is left out, because one bad image refuses a whole snapshot.
 
 The site's lenses are not cameras, and a page no category lists is kept only
 if its table says it is an IP camera module.
+
+The earlier sites' boards are the pages the capture marked as boards by their
+category (smtsec.py, board_page). Those pages are English, a column per
+variant: the variants' codes are aliases, and a chip or sensor is kept only
+where every variant has the same. Each is tagged "discontinued", listed in
+the year of its page's capture and linked to that capture. A page whose
+pictures were not archived keeps its specification; one with no
+specification either is left out. SIP-E327CVB's page is the current builder's,
+in Chinese, translated as a live page is.
 """
 
 import argparse
@@ -31,7 +41,8 @@ import tarfile
 
 SOURCE = {"id": "smtsec", "name": "SMTSEC", "url": "https://www.smtsec.com/cpzx",
           "note": "SMTSEC's IP camera modules on its current site: specifications, photos, and the chip and "
-                  "sensor each page names (captured 2026)."}
+                  "sensor each page names; and the boards of its earlier sites from the Wayback Machine, "
+                  "discontinued (captured 2026)."}
 CHIP = re.compile(r"(?<![A-Z0-9])((?:Hi|GK|SSD|SSC|SSM|RV|RK|AX|NT|T)\d{2,5}[A-Z]*\d*[A-Z]*\d*)", re.I)
 SENSOR = re.compile(r"(?<![A-Z0-9])((?:IMX|SC|GC|OS|OV|MIS|JX|PS|AR|SP)\d{3,5}[A-Z]*\d*)", re.I)
 
@@ -96,6 +107,27 @@ ZH_EN = {
     "内置人脸算法": "Built-in face algorithm", "支持快照对比": "Snapshot comparison",
     "5万张人脸数据库容量": "50,000 face database capacity", "每帧最多 32 个面孔": "Up to 32 faces per frame",
     "自动上传人脸图片和人物图": "Automatic upload of face and person pictures",
+    # SIP-E327CVB's archived page.
+    "传感器类型": "Sensor Type", "海思芯片": "DSP", "电子快门": "Electronic Shutter", "彩色": "Color ",
+    "黑白": "B/W ", "日夜转换模式": "Day/Night Mode", "光敏检测/视频检测/时间检测":
+    "Photosensor/video/schedule detection", "宽动态范围": "WDR Range", "数字降噪": "Digital Noise Reduction",
+    "降噪": "Noise Reduction", "视频压缩标准": "Video Compression", "编码类型": "Encoding Type",
+    "视频码率": "Video Bit Rate", "音频压缩格式": "Audio Compression", "图像设置": "Image Settings",
+    "可调节": "Adjustable ", "自动白平衡": "Auto White Balance", "白平衡": "White Balance", "自动增益": "Auto Gain",
+    "自动曝光控制": "Auto Exposure Control", "自动光圈校正": "Auto Iris Correction",
+    "支持隐私区遮挡": "Privacy masking", "OSD叠加": "OSD overlay",
+    "自动, 手动或自动彩转黑等多种切换方式": "Auto, manual or automatic day/night switching",
+    "最大图像尺寸": "Max Image Size", "视频分辨率": "Video Resolution", "辅码流": "Sub Stream",
+    "视频帧率": "Video Frame Rate", "字符叠加": "Text Overlay", "接入标准": "Access Standards",
+    "支持最新": "Latest ", "国标GB28181": "GB28181", "支持用户数": "Users",
+    "最多可支持": "Up to ", "个用户同时登入": " users logged in at the same time",
+    "支持手机监控": "Smart Phone", "平台": " platforms", "自适应以太网口": " adaptive Ethernet port",
+    "音频接口": "Audio Interface", "路音频输入": "Ch audio input", "路音频输出接口": "Ch audio output",
+    "路低电平报警信号输入": "Ch low-level alarm input", "路开关量报警信号输出": "Ch relay alarm output",
+    "个USB接口": " USB interface", "支持TF卡存储扩展": "TF card storage expansion", "最大": "max ",
+    "通用接口": "General Interface", "个复位按钮": " reset button", "支持一键恢复": "one-key restore",
+    "供电": "Power Supply", "功耗": "Power Consumption", "主板尺寸": "Board Size", "长": "L", "宽": "W",
+    "孔距": " hole spacing",
 }
 ZH_KEYS = sorted(ZH_EN, key=len, reverse=True)
 HAN = re.compile(r"[\u3400-\u9fff]")
@@ -188,6 +220,115 @@ def picture(src):
     return {"JPEG": ".jpg", "PNG": ".png"}.get(im.format)
 
 
+def old_table(page):
+    """The 2015-2021 site's specification: a column per variant, so a row is
+    its label and the variants' values, one where they agree. A one-cell row
+    heads a section and is left out."""
+    m = re.search(r'(?is)id="cp005A"[^>]*>(.*?)</table>', page)
+    rows = []
+    for tr in re.findall(r"(?is)<tr[^>]*>(.*?)</tr>", m[1] if m else ""):
+        cells = [cell(c) for c in re.findall(r"(?is)<td[^>]*>(.*?)</td>", tr)]
+        if len(cells) < 2 or not cells[0]:
+            continue
+        values = list(dict.fromkeys(c for c in cells[1:] if c))
+        if values:
+            rows.append([cells[0], " / ".join(values)])
+    return rows
+
+
+def archived_table(page):
+    """The current builder's table as the archive kept a page of it: rows led
+    by a section column, empty but where a section starts, which heads the
+    section in a row of its own. A row is its first two cells with text; a
+    row of one heads a section and is left out."""
+    page = re.sub(r"(?is)<(style|script)[^>]*>.*?</\1>", "", page)
+    i = page.find("w-detailcontent")
+    rows = []
+    for tr in re.findall(r"(?is)<tr[^>]*>(.*?)</tr>", page[i:] if i >= 0 else ""):
+        cells = [c for c in (cell(c) for c in re.findall(r"(?is)<t[dh][^>]*>(.*?)</t[dh]>", tr)) if c]
+        if len(cells) >= 2:
+            rows.append([cells[0], " ".join(cells[1:])])
+    return rows
+
+
+def old_chip(dsp):
+    """The chip every variant has, as the catalogue spells it (Hisilicon 3516A
+    is Hi3516A); none when the variants differ."""
+    chips = {chip_of(re.sub(r"(?i)\bHisilicon\s*(?=\d)", "Hi", v)) for v in dsp.split(" / ")} if dsp else set()
+    return chips.pop() if len(chips) == 1 and None not in chips else None
+
+
+def archived_models(cap, log, stored, left):
+    """The boards of the older sites the capture marked as boards, English
+    only, as they were on the archived page."""
+    models = []
+    for p in cap.get("archived", []):
+        if "pictures" not in p:
+            continue
+        page = open(log[p["wayback_url"]], "rb").read().decode("utf-8", "replace")
+        if p["generation"] == "2024":
+            # The live site's builder, as the archive kept it: a Chinese table.
+            zh = archived_table(page)
+            code = row(zh, "型号").strip().upper()
+            rows = [[to_en(a), to_en(b)] for a, b in zh]
+            specs = {"zh": zh, "en": rows} if zh else {}
+            texts = {"zh": {"name": row(zh, "摄像机类型")}, "en": {"name": to_en(row(zh, "摄像机类型"))}}
+            lang = {"original": ["zh"], "translated_from": "zh"}
+        else:
+            m = re.search(r'(?is)id="cp002A"[^>]*>(.*?)</div>', page)
+            code = (cell(m[1]) if m else "").upper()
+            rows = old_table(page)
+            m = re.search(r'(?is)id="cp003A"[^>]*>(.*?)</div>', page)
+            lines = [re.sub(r"^>\s*", "", cell(l)) for l in re.split(r"(?i)<br\s*/?>", m[1] if m else "")]
+            specs = {"en": rows} if rows else {}
+            texts = {"en": {"name": row(rows, "camera type"), "features": "\n".join(l for l in lines if l)}}
+            lang = {"original": ["en"]}
+        if not rows or not code:
+            # A board's name and nothing else, its pictures not archived.
+            left.append(f"{p['wayback_url']} {code or p['title']}: no specification")
+            continue
+        files = photos(code, p["pictures"], log, stored)
+        variants = row(rows, "model").split(" / ")
+        aliases = [c for c in dict.fromkeys([code.removeprefix("SIP-"), *variants, *(v.removeprefix("SIP-") for v in variants)])
+                   if c and c != code]
+        entry = {"maker": "smtsec", "code": code, "aliases": aliases, "category": p["category"],
+                 "texts": {l: {k: v for k, v in t.items() if v} for l, t in texts.items()}, **lang, "specs": specs,
+                 "tags": ["discontinued"], "listed_year": int(p["timestamp"][:4]),
+                 "links": [{"kind": "source_page", "label": f"smtsec.com ({p['timestamp'][:4]})",
+                            "url": p["wayback_url"]}], "files": files}
+        soc = old_chip(row(rows, "dsp")) or chip_of(row(specs.get("zh", []), "海思芯片", "处理器"))
+        # SIP-E400WA's page writes "OV 4689".
+        sensor = sensor_of(re.sub(r"(?i)\b(OV|IMX)\s+(?=\d{4})", r"\1", row(rows, "image sensor")))
+        if soc:
+            entry["soc_label"] = soc
+        if sensor:
+            entry["sensor"] = sensor
+        models.append(entry)
+    return models
+
+
+def photos(code, urls, log, stored):
+    """A product's pictures as files of the snapshot, each once; one that does
+    not decode is left out."""
+    files, shas = [], set()
+    for u in urls:
+        src = log.get(u)
+        ext = picture(src) if src else None
+        if not ext:
+            print(f"  {code}: {u} is no picture, left out", file=sys.stderr)
+            continue
+        h = hashlib.sha256(open(src, "rb").read()).hexdigest()
+        if h in shas:
+            continue
+        shas.add(h)
+        path = f"files/{h}{ext}"
+        stored[path] = src
+        n = len(files) + 1
+        files.append({"kind": "photo_front" if n == 1 else "photo_other",
+                      "name": f"{re.sub(r'[^A-Za-z0-9._-]+', '-', code)}-photo-{n}{ext}", "path": path})
+    return files
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("cap")
@@ -217,23 +358,7 @@ def main():
         line = " ".join(features(p["short"])[:1])
         soc = chip_of(line) or chip_of(row(en, "dsp", "processor") or row(zh, "处理器"))
         sensor = sensor_of(row(en, "image sensor") or row(zh, "图像传感器")) or sensor_of(line.split("+")[0])
-        used, files, shas, n = set(), [], set(), 0
-        for u in p["pictures"]:
-            src = log.get(u)
-            ext = picture(src) if src else None
-            if not ext:
-                print(f"  {code}: {u} is no picture, left out", file=sys.stderr)
-                continue
-            h = hashlib.sha256(open(src, "rb").read()).hexdigest()
-            if h in shas:
-                continue
-            shas.add(h)
-            n += 1
-            path = f"files/{h}{ext}"
-            stored[path] = src
-            name = f"{re.sub(r'[^A-Za-z0-9._-]+', '-', code)}-photo-{n}{ext}"
-            used.add(name)
-            files.append({"kind": "photo_front" if n == 1 else "photo_other", "name": name, "path": path})
+        files = photos(code, p["pictures"], log, stored)
         if not files:
             left.append(f"{pid} {code}: no picture")
             continue
@@ -259,6 +384,10 @@ def main():
         if sensor:
             entry["sensor"] = sensor
         models.append(entry)
+    live = len(models)
+    models += archived_models(cap, log, stored, left)
+    untranslated |= {x for m in models[live:] for t in [*m["texts"]["en"].values(), *(c for r in m["specs"].get("en", []) for c in r)]
+                     for x in t.split("\n") if HAN.search(x)}
     if untranslated:
         sys.exit("not in the dictionary:\n  " + "\n  ".join(sorted(untranslated)))
     codes = [m["code"] for m in models]
@@ -281,7 +410,7 @@ def main():
     h = hashlib.sha256(open(args.out, "rb").read()).hexdigest()
     for l in left:
         print(f"  left out: {l}", file=sys.stderr)
-    print(f"smtsec: {len(models)} models; {sum(1 for m in models if m.get('soc_label'))} with a chip, "
+    print(f"smtsec: {len(models)} models, {len(models) - live} of them discontinued; {sum(1 for m in models if m.get('soc_label'))} with a chip, "
           f"{sum(1 for m in models if m.get('sensor'))} with a sensor, {len(stored)} files; "
           f"{len(left)} left out; sha256 {h}", file=sys.stderr)
 

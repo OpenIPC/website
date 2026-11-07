@@ -1150,7 +1150,13 @@ func TestASMTSECModuleIsFiledUnderItsMaker(t *testing.T) {
 		model("smtsec", "SIP-K585U", map[string]any{
 			"aliases": []string{"K585U"}, "category": "Functional Module",
 			"soc_label": "SSD3403", "sensor": "IMX585",
-			"original": []string{"zh"}, "translated_from": "zh"}))); err != nil {
+			"original": []string{"zh"}, "translated_from": "zh"}),
+		// An earlier site's page, one column per variant, as the snapshot has it.
+		model("smtsec", "SIP-E178A/D", map[string]any{
+			"aliases":  []string{"E178A/D", "SIP-E178A", "SIP-E178D", "E178A", "E178D"},
+			"category": "H.265 IPC Board / H.265 IPC Module", "soc_label": "", "sensor": "IMX178",
+			"original": []string{"en"}, "translated_from": "", "tags": []string{"discontinued"},
+			"listed_year": 2019}))); err != nil {
 		t.Fatal(err)
 	}
 	var name, soc string
@@ -1173,6 +1179,18 @@ func TestASMTSECModuleIsFiledUnderItsMaker(t *testing.T) {
 	}
 	if label != "SSD3403" {
 		t.Errorf("SIP-K585U's chip: %q", label)
+	}
+	// The A and D variants have different chips, so the board is filed with
+	// none, and an owner's marking of either lands on it.
+	var year int
+	if err := pool.QueryRow(ctx, `SELECT coalesce(soc, ''), listed_year FROM board_models WHERE id = 'smtsec-sip-e178a-d'`).Scan(&soc, &year); err != nil {
+		t.Fatal(err)
+	}
+	if soc != "" || year != 2019 {
+		t.Errorf("SIP-E178A/D: SoC %q, listed %d", soc, year)
+	}
+	if n := count(t, pool, `SELECT count(*) FROM board_model_aliases WHERE model_id = 'smtsec-sip-e178a-d' AND code_norm = '`+NormCode("SIP-E178D")+`'`); n != 1 {
+		t.Errorf("SIP-E178D answers to %d boards, want SIP-E178A/D", n)
 	}
 }
 
