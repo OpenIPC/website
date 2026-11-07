@@ -10,6 +10,7 @@ import (
 	"os"
 	"strings"
 	"testing"
+	"time"
 )
 
 // ipctoolUpload is `ipctool upload --note <note>` as ipctool sends it: no
@@ -186,6 +187,40 @@ func TestAClubCodeIsNeverMisused(t *testing.T) {
 	}
 	if pub, _ := e.api.Reports.Store().Public(context.Background(), up["id"].(string)); len(pub.Models) != 1 || pub.Models[0].ID != "jooan-q9-v2" {
 		t.Errorf("ipctool's report is on %v, not the photos' board", pub.Models)
+	}
+}
+
+// /club gives a camera's code and a report's that look alike, and an owner
+// who sends the wrong one is told which to take, not that it is unknown
+// (firmware#2749). Nothing is stored, and the code stays the camera's.
+func TestACamerasCodeIsRefusedForAReportByWhatItIs(t *testing.T) {
+	e := newEnv(t)
+	e.withWall(t)
+	ivan := e.signedIn(t, 777, "ivan_k", "198.51.100.1")
+	_, c := ivan.json(t, "POST", "/api/v1/club/cameras/code", nil)
+	wall := c["code"].(map[string]any)["code"].(string)
+
+	status, out := e.ipctoolUpload(t, map[string]string{"club": wall})
+	msg, _ := out["error"].(string)
+	if status != 400 || !strings.Contains(msg, "Open Wall") || !strings.Contains(msg, "Send ipctool's report from a camera") {
+		t.Errorf("a camera's code: %d %v", status, out)
+	}
+	var reports int
+	if err := e.pool.QueryRow(context.Background(), `SELECT count(*) FROM reports`).Scan(&reports); err != nil {
+		t.Fatal(err)
+	}
+	if reports != 0 {
+		t.Errorf("%d reports stored from a refused code", reports)
+	}
+	var used *time.Time
+	if err := e.pool.QueryRow(context.Background(), `SELECT used_at FROM club_camera_codes WHERE code = $1`, wall).Scan(&used); err != nil || used != nil {
+		t.Errorf("the camera's code after the refusal: used %v, %v", used, err)
+	}
+
+	status, out = e.ipctoolUpload(t, map[string]string{"club": "club-2222-2222"})
+	msg, _ = out["error"].(string)
+	if status != 400 || !strings.Contains(msg, "unknown, used or expired") || strings.Contains(msg, "Open Wall") {
+		t.Errorf("a code nobody was given: %d %v", status, out)
 	}
 }
 

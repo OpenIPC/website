@@ -51,6 +51,9 @@ var (
 	ErrNotYours = errors.New("that report is not yours")
 	// ErrBadCode is a code no live, unused code matches.
 	ErrBadCode = errors.New("the club code is unknown, used or expired")
+	// ErrWallCode is a code /club gave to link a camera to the Open Wall. It
+	// looks like a report's, and is the first /club offers.
+	ErrWallCode = errors.New("this code links a camera to the Open Wall and cannot be used for a report")
 	// ErrNotACode is text meant as a code that is not one.
 	ErrNotACode = errors.New("is not a club code: club- and two groups of four letters and digits")
 	// ErrOthersCode is a code sent by another signed-in member.
@@ -152,6 +155,15 @@ func (s *Store) CodeLive(ctx context.Context, code string) (bool, error) {
 	err := s.DB.QueryRow(ctx, `SELECT EXISTS (SELECT 1 FROM report_codes WHERE code = $1 AND used_by IS NULL AND expires_at > now())`,
 		code).Scan(&ok)
 	return ok, err
+}
+
+// IsWallCode says whether a code refused for a report is an Open Wall
+// camera's, used or expired or not: it was never a report's, and its owner
+// only needs the other one.
+func (s *Store) IsWallCode(ctx context.Context, code string) (bool, error) {
+	var wall bool
+	err := s.DB.QueryRow(ctx, `SELECT EXISTS (SELECT 1 FROM club_camera_codes WHERE code = $1)`, code).Scan(&wall)
+	return wall, err
 }
 
 // useCode takes the code for report r inside its insert: the member it

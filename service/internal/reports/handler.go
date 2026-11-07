@@ -165,6 +165,15 @@ func (a *API) Submit(w http.ResponseWriter, r *http.Request, member string) {
 			return
 		}
 		if !live {
+			wall, err := st.IsWallCode(ctx, code)
+			if err != nil {
+				a.fail(w, "the club code", err)
+				return
+			}
+			if wall {
+				a.refuse(w, http.StatusBadRequest, code+": "+ErrWallCode.Error()+"; take a report's code with \"Send ipctool's report from a camera\" at "+clubURL(r)+" or send without it")
+				return
+			}
 			a.refuse(w, http.StatusBadRequest, code+": "+ErrBadCode.Error()+"; take a new one at "+clubURL(r)+" or send without it")
 			return
 		}
