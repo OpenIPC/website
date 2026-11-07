@@ -131,7 +131,7 @@ board (`model`, or `maker` and `board` with a photo), or answers another
 | `document` (file) | PDF | 20 MB |
 | `channel` | `agent` | |
 | `tool` | your name and version, e.g. `claude-code 2.x` | 200 chars |
-| `note` | a line of text: where the camera came from, what it is sold as | 4000 chars |
+| `note` (text, not a file) | a line of text: where the camera came from, what it is sold as. Longer text goes in the file above. | 4000 chars |
 
 For example (with your own name and version in `tool`):
 
@@ -146,6 +146,11 @@ a value that starts with `<` as a file name, so send none:
     curl -F channel=agent -F tool="claude-code 2.x" -F model=xiongmai-nbd8010s-kl-v2 \
          -F backup=@flash.bin -F boot_log=@boot.txt -F uboot_env=@printenv.txt \
          https://openipc.org/api/v1/reports
+
+Send the `note` line with `--form-string`, as in
+`--form-string note="sold as X; marking Y"`. curl's `-F` silently cuts a value
+at its first `;` and reads one that starts with `@` or `<` as a file name, and
+the receipt does not repeat the note, so nothing would tell you.
 
 `201` answers with the receipt:
 
