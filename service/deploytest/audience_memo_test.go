@@ -705,3 +705,39 @@ func TestAudienceMemoFPVEditionsMatchService(t *testing.T) {
 		t.Errorf("audience-memo.sh FPV_EDITIONS = %v, firmware.FPVEditions = %v", got, want)
 	}
 }
+
+// Yandex published nothing from 2026-10-07 for over a month. The fetcher's
+// 30-day window would have let those days fall out before it came back, so a
+// Yandex window reaches back to the day after the newest archived one (bounded),
+// and a week of silence is said on stderr instead of "nothing new" every night.
+func TestSearchQueriesYandexStall(t *testing.T) {
+	dir := t.TempDir()
+	if err := os.MkdirAll(filepath.Join(dir, "yandex"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	writeFile(t, filepath.Join(dir, "yandex", "2026-10-07.tsv"), "#total\t1\t10\t2.00\n")
+	writeFile(t, filepath.Join(dir, "yandex", "2026-05-01.tsv"), "#total\t1\t10\t2.00\n")
+	out := searchQueriesPy(t, "import datetime, contextlib, io\n"+
+		"D = datetime.date.fromisoformat\n"+
+		"def win(sub, since, last):\n"+
+		"    days = [D(since) + datetime.timedelta(days=n) for n in range((D(last) - D(since)).days + 1)]\n"+
+		"    s, d = sq.yandex_window(sub, D(since), days)\n"+
+		"    print('window', s, d[0], d[-1], len(d))\n"+
+		"win('"+filepath.Join(dir, "yandex")+"', '2026-10-09', '2026-11-07')\n"+
+		"win('"+filepath.Join(dir, "yandex")+"', '2026-10-01', '2026-10-30')\n"+
+		"win('"+filepath.Join(dir, "absent")+"', '2026-10-09', '2026-11-07')\n"+
+		"win('"+filepath.Join(dir, "yandex")+"', '2027-06-01', '2027-06-30')\n"+
+		"e = io.StringIO()\n"+
+		"with contextlib.redirect_stderr(e):\n"+
+		"    sq.yandex_stale('yandex x', '2026-10-06', D('2026-11-07'))\n"+
+		"    sq.yandex_stale('yandex y', '2026-11-02', D('2026-11-07'))\n"+
+		"    sq.yandex_stale('yandex z', None, D('2026-11-07'))\n"+
+		"print(e.getvalue())\n")
+	mustContain(t, out, "window 2026-10-08 2026-10-08 2026-11-07 31", "a stalled archive reaches back to the day after its newest file")
+	mustContain(t, out, "window 2026-10-01 2026-10-01 2026-10-30 30", "an archive within the window leaves it alone")
+	mustContain(t, out, "window 2026-10-09 2026-10-09 2026-11-07 30", "an empty archive keeps the usual window")
+	mustContain(t, out, "window 2027-03-02 2027-03-02 2027-06-30 121", "the reach back is bounded")
+	mustContain(t, out, "yandex x: STALE -- Yandex has published nothing after 2026-10-06 (32 days)", "a month of silence is said")
+	mustNotContain(t, out, "yandex y:", "five days is Yandex's normal batch delay, not a stall")
+	mustNotContain(t, out, "yandex z:", "nothing known, nothing said")
+}

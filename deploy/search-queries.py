@@ -34,7 +34,11 @@ final, two to three days after it ends.
 
 Yandex publishes in batches every few days, with no "final" flag. A day enters
 the archive once a LATER day has data, so the newest day in a batch, which may
-still be filling, is left for the next run. Its per-day list is complete where
+still be filling, is left for the next run. When Yandex goes quiet for longer
+than the window (it published nothing from 2026-10-07 for over a month), its
+window reaches back to the day after the newest archived one, up to 120 days,
+so the hole fills once it publishes again; a week of silence is said on
+stderr. Its per-day list is complete where
 Google's is not, but its daily total still carries queries it will not name.
 Its daily totals start only when the site was added to the account (for
 openipc.org, 2026-09-20), while its query lists go back further. A day with
@@ -330,9 +334,42 @@ def fetch_yandex(conf, args, since, days):
         raise RuntimeError("%d of %d Yandex host(s) failed" % (len(failed), len(conf["YANDEX_HOSTS"].split())))
 
 
+# How far back a stalled Yandex archive reaches to fill itself, and how long
+# Yandex may be quiet before the run says so.
+YANDEX_BACKFILL_DAYS = 120
+YANDEX_STALE_DAYS = 7
+
+
+def yandex_window(dirpath, since, days):
+    """The days to ask Yandex about: the usual window, reaching back to the day
+    after the newest one archived when that is older. Yandex stopped publishing
+    from 2026-10-07 for over a month (its data centres were hit); a 30-day
+    window alone would have let those days fall out before it came back, and
+    the archive would have a hole for good. Bounded, so a host whose archive
+    was never filled does not ask for years."""
+    have = sorted(os.path.basename(p)[:10] for p in glob.glob(os.path.join(dirpath, "*.tsv")))
+    if not have or not days:
+        return since, days
+    floor = days[-1] - datetime.timedelta(days=YANDEX_BACKFILL_DAYS)
+    start = max(datetime.date.fromisoformat(have[-1]) + datetime.timedelta(days=1), floor)
+    if start >= since:
+        return since, days
+    return start, [start + datetime.timedelta(days=n) for n in range((days[-1] - start).days + 1)]
+
+
+def yandex_stale(label, newest, today):
+    """A line on stderr when Yandex has published nothing for a week: "wrote
+    nothing new" every night is what hid the 2026-10 stall for a month."""
+    if newest is None or (today - datetime.date.fromisoformat(newest)).days <= YANDEX_STALE_DAYS:
+        return
+    print("%s: STALE -- Yandex has published nothing after %s (%d days); the archive fills from there "
+          "once it does" % (label, newest, (today - datetime.date.fromisoformat(newest)).days), file=sys.stderr)
+
+
 def fetch_yandex_host(get, user, host, args, since, days):
     label = "yandex %s" % host
     dirpath = os.path.join(args.dir, yandex_dir(host))
+    since, days = yandex_window(dirpath, since, days)
     have, gaps = missing(dirpath, days)
     if not gaps:
         print("%s: archive complete from %s" % (label, since))
@@ -349,6 +386,8 @@ def fetch_yandex_host(get, user, host, args, since, days):
     print("%s: wrote %s" % (label, ", ".join(wrote) or "nothing new"))
     if final:
         print("%s: through %s; Yandex publishes every few days" % (label, max(final)))
+    newest = max([d for d in final] + sorted(have)[-1:], default=None)
+    yandex_stale(label, newest, days[-1] + datetime.timedelta(days=1))
     return user
 
 
