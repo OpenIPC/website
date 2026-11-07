@@ -280,6 +280,90 @@ func TestTheTreeNarrowsToOneBoard(t *testing.T) {
 	}
 }
 
+// A list keeps the hashes something uses, and one board's answer keeps them all.
+func TestAListKeepsOnlyTheHashesItUses(t *testing.T) {
+	pool, _ := imported(t)
+	s := serve(t, pool)
+	type tree struct {
+		Manufacturers []struct {
+			Models []struct {
+				Units []struct {
+					Files []struct {
+						Kind   string
+						Shared int
+						SHA256 string
+					}
+				}
+			}
+		}
+		Totals struct {
+			FlashDumps int `json:"flash_dumps"`
+		}
+	}
+	var list, one tree
+	getJSON(t, s.URL+"/api/v1/boards", &list)
+	var dumps, hashes int
+	for _, mk := range list.Manufacturers {
+		for _, m := range mk.Models {
+			for _, u := range m.Units {
+				for _, f := range u.Files {
+					kept := f.SHA256 != ""
+					if want := f.Kind == "flash_dump" || f.Shared > 1; kept != want {
+						t.Errorf("%s shared by %d: hash kept %v", f.Kind, f.Shared, kept)
+					}
+					if f.Kind == "flash_dump" {
+						dumps++
+					}
+					if kept {
+						hashes++
+					}
+				}
+			}
+		}
+	}
+	if dumps == 0 || hashes == 0 || list.Totals.FlashDumps == 0 {
+		t.Errorf("the fixture shows nothing: %d dumps, %d hashes, totals %+v", dumps, hashes, list.Totals)
+	}
+	getJSON(t, s.URL+"/api/v1/boards?model=xiongmai-53h20-s", &one)
+	for _, u := range one.Manufacturers[0].Models[0].Units {
+		for _, f := range u.Files {
+			if f.SHA256 == "" {
+				t.Errorf("one board's %s has no hash", f.Kind)
+			}
+		}
+	}
+}
+
+// From a connection's sixth run PostgreSQL may keep a generic plan for a
+// prepared statement, which took the catalogue from 1 s to 9 s (#552). This
+// connection asks for generic plans outright, so the test does not depend on
+// the fixture being big enough for PostgreSQL to choose one.
+func TestATreeNeverRunsOnAGenericPlan(t *testing.T) {
+	pool, _ := imported(t)
+	ctx := context.Background()
+	cfg := pool.Config()
+	cfg.MaxConns = 1
+	cfg.ConnConfig.RuntimeParams["plan_cache_mode"] = "force_generic_plan"
+	one, err := pgxpool.NewWithConfig(ctx, cfg)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer one.Close()
+	for range 7 {
+		if _, err := Tree(ctx, one, "en", ""); err != nil {
+			t.Fatal(err)
+		}
+	}
+	var custom, generic int
+	if err := one.QueryRow(ctx, `SELECT coalesce(sum(custom_plans), 0)::int, coalesce(sum(generic_plans), 0)::int
+		FROM pg_prepared_statements WHERE statement LIKE '%FROM board_artifacts a%' AND statement NOT LIKE '%pg_prepared_statements%'`).Scan(&custom, &generic); err != nil {
+		t.Fatal(err)
+	}
+	if generic != 0 || custom == 0 {
+		t.Errorf("reading files: %d generic plans, %d custom", generic, custom)
+	}
+}
+
 func TestAnOwnersPhotosLeadTheBoardsPage(t *testing.T) {
 	photo := func(name string) fileJSON {
 		return fileJSON{Kind: "photo_other", URL: "/f/" + name, ThumbURL: "/f/t-" + name}

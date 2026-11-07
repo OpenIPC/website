@@ -63,7 +63,8 @@ type fileJSON struct {
 	ThumbURL string `json:"thumb_url,omitempty"`
 	Mime     string `json:"mime"`
 	Bytes    int64  `json:"bytes"`
-	SHA256   string `json:"sha256"`
+	// SHA256 is left out of a list where nothing there uses it (leanFiles).
+	SHA256   string `json:"sha256,omitempty"`
 	Width    int    `json:"width,omitempty"`
 	Height   int    `json:"height,omitempty"`
 	Lines    int    `json:"lines,omitempty"`
@@ -894,7 +895,11 @@ func (a *API) tree(w http.ResponseWriter, r *http.Request) {
 				m.About, m.Links = nil, nil
 			}
 		}
-		return treeDoc(locale, makers, sources), http.StatusOK, nil
+		doc := treeDoc(locale, makers, sources)
+		if model == "" {
+			leanFiles(makers)
+		}
+		return doc, http.StatusOK, nil
 	})
 }
 
@@ -964,6 +969,24 @@ func (a *API) serve(w http.ResponseWriter, r *http.Request, maxAge int, load fun
 	h.Set("ETag", etag)
 	w.WriteHeader(status)
 	_ = json.NewEncoder(w).Encode(v)
+}
+
+// leanFiles drops the hashes a list does not use, nearly half of it once
+// compressed, since a hash does not compress. A shared photo keeps its own, by
+// which the panel finds the other boards showing it, and a dump its own, for
+// whoever checks what they downloaded. One board's answer has them all.
+func leanFiles(makers []*makerJSON) {
+	for _, mk := range makers {
+		for _, m := range mk.Models {
+			for _, u := range m.Units {
+				for i := range u.Files {
+					if f := &u.Files[i]; f.Shared <= 1 && f.Kind != "flash_dump" {
+						f.SHA256 = ""
+					}
+				}
+			}
+		}
+	}
 }
 
 // failed answers a read that did not finish. A visitor who left stopped it

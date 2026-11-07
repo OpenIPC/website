@@ -11,13 +11,14 @@ back into the same bytes -- the same sha256 -- so a snapshot still matches
 its pin in service/internal/boards/snapshot.go.
 
     tarpack.py pack   --store s3://openipc-org-backup --stage DIR KEY...
-    tarpack.py unpack --blobs s3://openipc-org-backup|DIR RECIPE [-o OUT]
-    tarpack.py verify --blobs s3://openipc-org-backup|DIR RECIPE...
+    tarpack.py unpack [--store s3://openipc-org-backup] [--blobs DIR] RECIPE [-o OUT]
+    tarpack.py verify [--store s3://openipc-org-backup] [--blobs DIR] RECIPE...
 
-RECIPE is a local file, or a key in the bucket (boards/recipes/...). With
---blobs DIR the blobs are read from a local copy of boards/sha256/ (as
-`aws s3 sync s3://<bucket>/boards/sha256/ DIR` leaves it), one request for
-the lot instead of one per file. Standard library and the aws CLI only, like
+RECIPE is a local file, or a key in --store (boards/recipes/...). Blobs come
+from --store, one `aws s3 cp` per file: about 1.6 s each whatever its size, so
+5,000 files take over two hours. --blobs takes a local directory only, a copy
+of boards/sha256/ (as `aws s3 sync s3://<bucket>/boards/sha256/ DIR` leaves
+it), one request for the lot instead of one per file. Standard library and the aws CLI only, like
 the deploy scripts; the CLI takes its credentials and endpoint from the
 environment as usual.
 """
@@ -260,7 +261,7 @@ def main():
     for name in ("unpack", "verify"):
         p = sub.add_parser(name)
         p.add_argument("--store", default="s3://openipc-org-backup")
-        p.add_argument("--blobs", help="local copy of boards/sha256/ (default: fetch each blob)")
+        p.add_argument("--blobs", help="a local directory, a copy of boards/sha256/ (default: fetch each blob from --store)")
         p.add_argument("recipes", nargs=1 if name == "unpack" else "+")
         if name == "unpack":
             p.add_argument("-o", "--out")

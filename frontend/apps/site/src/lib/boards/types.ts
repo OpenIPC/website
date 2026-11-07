@@ -17,7 +17,8 @@ export interface BoardFile {
   thumb_url?: string;
   mime: string;
   bytes: number;
-  sha256: string;
+  /** In a list, only a shared photo's or a flash dump's; one board's answer has them all. */
+  sha256?: string;
   width?: number;
   height?: number;
   lines?: number;
