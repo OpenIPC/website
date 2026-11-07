@@ -89,7 +89,10 @@ var makers = map[string]Manufacturer{
 	// Wayback Machine, a donor snapshot only. HiLook is its value brand, and
 	// sells the same DS- models.
 	"HIKVISION": {ID: "hikvision", Name: "Hikvision", Aliases: []string{"海康威视", "HiLook"}, Position: 10},
-	"?":         {ID: "unknown", Name: "Unidentified maker", Position: 99},
+	// SMTSEC (Shenzhen Shimaite, 视迈特): its IP camera modules from its site,
+	// a donor snapshot only.
+	"SMTSEC": {ID: "smtsec", Name: "SMTSEC", Aliases: []string{"视迈特", "Shimaite"}, Position: 11},
+	"?":      {ID: "unknown", Name: "Unidentified maker", Position: 99},
 }
 
 // socFixes are the archive's typos, one per line, with the reason.
