@@ -147,6 +147,11 @@ a value that starts with `<` as a file name, so send none:
          -F backup=@flash.bin -F boot_log=@boot.txt -F uboot_env=@printenv.txt \
          https://openipc.org/api/v1/reports
 
+Send free text with `--form-string`, as in
+`--form-string note="sold as X; marking Y"`. curl's `-F` silently cuts a value
+at its first `;` and reads one that starts with `@` or `<` as a file name, and
+the receipt does not repeat the note, so nothing would tell you.
+
 `201` answers with the receipt:
 
 ```json
