@@ -457,6 +457,7 @@ zh:
     source_note_haixin: "深圳海芯威视的网络摄像机模组（其目录以 CamHi 名义流传）：2026 年英文目录（照片与参数）、中文模组目录（传感器与芯片）以及 SigmaStar 方案模组规格表，发布于 Boards Grabber 群组（2026 年）。"
     source_note_ruision: "睿视科技的摄像机主板：其现网站上的网络摄像机模组（照片、规格书与参数），以及 Wayback Machine 中自 2016 年起旧网站上的网络摄像机主板，注明了芯片与传感器之处一并收录（2026 年采集）。"
     source_note_hikvision: "海康威视的网络摄像机：其产品页面上的规格、照片和数据手册，以及各页面标明的固件平台，取自 Wayback Machine。页面未标明芯片；列入此目录并不表示摄像机可以运行 OpenIPC（2026 年采集）。"
+    source_note_smtsec: "SMTSEC 的 IP 摄像机模组：来自其现有网站的规格和照片，以及各页面标明的芯片和传感器；另有其旧网站上的模组，取自 Wayback Machine，标为已停产。列于此处并不代表 OpenIPC 可在该模组上运行（2026 年采集）。"
     link_stock_firmware: 原厂固件
     link_successor: 后继型号
     link_predecessor: 取代型号

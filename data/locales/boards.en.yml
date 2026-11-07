@@ -461,6 +461,7 @@ en:
     source_note_haixin: "The IP camera modules of Shenzhen Haixin Weishi, whose catalogue circulates as CamHi's: its 2026 English catalogue (photos and parameters), its Chinese module list (sensor and chip) and the sheet of its SigmaStar modules, as posted to the Boards Grabber group (2026)."
     source_note_ruision: "Ruision's camera boards: the IP camera modules on its current site (photos, spec sheets and specifications) and the IP camera boards of its earlier sites from 2016 on, from the Wayback Machine, with the chip and sensor where those name them (captured 2026)."
     source_note_hikvision: "Hikvision's network cameras: the specifications, photos and datasheets of its product pages, and the firmware platform each names, from the Wayback Machine. They name no chip, and being listed here says nothing about OpenIPC running on the camera (captured 2026)."
+    source_note_smtsec: "SMTSEC's IP camera modules: the specifications and photos of its current site, with the chip and sensor each page names, and the boards of its earlier sites from the Wayback Machine, marked discontinued. Being listed here says nothing about OpenIPC running on the module (captured 2026)."
     link_stock_firmware: Stock firmware
     link_successor: Replaced by
     link_predecessor: Replaces
