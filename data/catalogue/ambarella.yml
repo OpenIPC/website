@@ -20,7 +20,6 @@ socs:
   linux_filename: ''
   notes: ''
   urlname: s2l
-  build_status_url: https://img.shields.io/static/v1?label=AmbaS2L&message=%20&logo=github
   featured: false
   segment: null
 - family: S3L
@@ -34,6 +33,5 @@ socs:
   linux_filename: openipc.ambarella-s3l-nor-lite.tgz
   notes: ''
   urlname: s3l
-  build_status_url: https://github.com/OpenIPC/firmware/actions/workflows/ambarella-s3l_images.yml/badge.svg
   featured: false
   segment: null

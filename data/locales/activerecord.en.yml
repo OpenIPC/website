@@ -5,7 +5,6 @@ en:
       snapshot:
         mac_address: MAC address
       soc:
-        build_status_url: Build status URL
         kernel: Kernel
         linux_filename: Linux file
         load_address: Load address

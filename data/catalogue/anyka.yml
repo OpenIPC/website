@@ -20,7 +20,6 @@ socs:
   linux_filename: openipc.ak3916ev300-nor-lite.tgz
   notes: ''
   urlname: ak3916ev300
-  build_status_url: https://github.com/OpenIPC/firmware/actions/workflows/ak3916ev300_images.yml/badge.svg
   featured: false
   segment: null
 - family: null
@@ -34,7 +33,6 @@ socs:
   linux_filename: openipc.ak3918ev200-nor-lite.tgz
   notes: ''
   urlname: ak3916ev301
-  build_status_url: https://img.shields.io/static/v1?label=AK3916Ev301&message=%20&logo=github
   featured: false
   segment: null
 - family: AK3918EV200
@@ -48,7 +46,6 @@ socs:
   linux_filename: ''
   notes: ''
   urlname: ak3918ev200
-  build_status_url: https://github.com/OpenIPC/firmware/actions/workflows/ak3918ev200_images.yml/badge.svg
   featured: false
   segment: null
 - family: AK3918EV300
@@ -62,7 +59,6 @@ socs:
   linux_filename: openipc.ak3918ev300-nor-lite.tgz
   notes: ''
   urlname: ak3918ev300
-  build_status_url: https://github.com/OpenIPC/firmware/actions/workflows/ak3918ev300_images.yml/badge.svg
   featured: false
   segment: null
 - family: null
@@ -76,6 +72,5 @@ socs:
   linux_filename: ''
   notes: ''
   urlname: ak3918ev330
-  build_status_url: https://img.shields.io/static/v1?label=AK3918EV330&message=%20&logo=github
   featured: false
   segment: null

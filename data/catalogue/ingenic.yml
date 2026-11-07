@@ -22,7 +22,6 @@ socs:
     jxh62 ncu_os02b10 os02b10 os05a10 ov2710 ov2735 ov2735b ov4689 ov9712 ov9732 ov9750 sc1035 sc1045
     sc1135 sc1145 sc2135 sc2232 sc2235 sc3035 sc4236 sp1409
   urlname: t10
-  build_status_url: https://github.com/OpenIPC/firmware/actions/workflows/t10_images.yml/badge.svg
   featured: false
   segment: consumer
 - family: T21
@@ -36,7 +35,6 @@ socs:
   linux_filename: openipc.t20-nor-lite.tgz
   notes: ''
   urlname: t20
-  build_status_url: https://github.com/OpenIPC/firmware/actions/workflows/t20_images.yml/badge.svg
   featured: false
   segment: consumer
 - family: T21
@@ -50,7 +48,6 @@ socs:
   linux_filename: openipc.t21-nor-lite.tgz
   notes: ''
   urlname: t21
-  build_status_url: https://github.com/OpenIPC/firmware/actions/workflows/t21_images.yml/badge.svg
   featured: true
   segment: consumer
 - family: T23
@@ -64,7 +61,6 @@ socs:
   linux_filename: openipc.t23-nor-lite.tgz
   notes: ''
   urlname: t23n
-  build_status_url: https://github.com/OpenIPC/firmware/actions/workflows/build.yml/badge.svg
   featured: true
   segment: consumer
 - family: T30
@@ -78,7 +74,6 @@ socs:
   linux_filename: openipc.t30-nor-lite.tgz
   notes: ''
   urlname: t30l
-  build_status_url: https://github.com/OpenIPC/firmware/actions/workflows/t30_images.yml/badge.svg
   featured: false
   segment: consumer
 - family: T31
@@ -92,7 +87,6 @@ socs:
   linux_filename: openipc.t31-nor-lite.tgz
   notes: ''
   urlname: t31a
-  build_status_url: https://github.com/OpenIPC/firmware/actions/workflows/t31_images.yml/badge.svg
   featured: false
   segment: consumer
 - family: T31
@@ -106,7 +100,6 @@ socs:
   linux_filename: openipc.t31-nor-lite.tgz
   notes: ''
   urlname: t31al
-  build_status_url: https://github.com/OpenIPC/firmware/actions/workflows/t31_images.yml/badge.svg
   featured: true
   segment: consumer
 - family: T31
@@ -120,7 +113,6 @@ socs:
   linux_filename: openipc.t31-nor-lite.tgz
   notes: ''
   urlname: t31l
-  build_status_url: https://github.com/OpenIPC/firmware/actions/workflows/t31_images.yml/badge.svg
   featured: true
   segment: consumer
 - family: T31
@@ -134,7 +126,6 @@ socs:
   linux_filename: openipc.t31-nor-lite.tgz
   notes: ''
   urlname: t31lc
-  build_status_url: https://github.com/OpenIPC/firmware/actions/workflows/t31_images.yml/badge.svg
   featured: false
   segment: consumer
 - family: T31
@@ -148,7 +139,6 @@ socs:
   linux_filename: openipc.t31-nor-lite.tgz
   notes: ''
   urlname: t31n
-  build_status_url: https://github.com/OpenIPC/firmware/actions/workflows/build.yml/badge.svg
   featured: true
   segment: consumer
 - family: T31
@@ -162,7 +152,6 @@ socs:
   linux_filename: openipc.t31-nor-lite.tgz
   notes: ''
   urlname: t31x
-  build_status_url: https://github.com/OpenIPC/firmware/actions/workflows/t31_images.yml/badge.svg
   featured: true
   segment: consumer
 - family: T31
@@ -176,7 +165,6 @@ socs:
   linux_filename: openipc.t31-nor-lite.tgz
   notes: ''
   urlname: t31zl
-  build_status_url: https://github.com/OpenIPC/firmware/actions/workflows/t31_images.yml/badge.svg
   featured: true
   segment: consumer
 - family: T31
@@ -190,7 +178,6 @@ socs:
   linux_filename: openipc.t31-nor-lite.tgz
   notes: ''
   urlname: t31zx
-  build_status_url: https://github.com/OpenIPC/firmware/actions/workflows/t31_images.yml/badge.svg
   featured: true
   segment: consumer
 - family: T40
@@ -204,7 +191,6 @@ socs:
   linux_filename: openipc.t40-nor-lite.tgz
   notes: ''
   urlname: t40a
-  build_status_url: https://github.com/OpenIPC/firmware/actions/workflows/t40_images.yml/badge.svg
   featured: false
   segment: consumer
 - family: T40
@@ -218,7 +204,6 @@ socs:
   linux_filename: openipc.t40-nor-lite.tgz
   notes: ''
   urlname: t40n
-  build_status_url: https://github.com/OpenIPC/firmware/actions/workflows/t40_images.yml/badge.svg
   featured: true
   segment: consumer
 - family: T40
@@ -232,7 +217,6 @@ socs:
   linux_filename: openipc.t40-nor-lite.tgz
   notes: ''
   urlname: t40nn
-  build_status_url: https://github.com/OpenIPC/firmware/actions/workflows/t40_images.yml/badge.svg
   featured: false
   segment: consumer
 - family: T40
@@ -246,7 +230,6 @@ socs:
   linux_filename: openipc.t40-nor-lite.tgz
   notes: ''
   urlname: t40xp
-  build_status_url: https://github.com/OpenIPC/firmware/actions/workflows/t40_images.yml/badge.svg
   featured: true
   segment: consumer
 - family: T41
@@ -260,7 +243,6 @@ socs:
   linux_filename: ''
   notes: ''
   urlname: t41a
-  build_status_url: https://github.com/OpenIPC/firmware/actions/workflows/t41_images.yml/badge.svg
   featured: false
   segment: consumer
 - family: T41
@@ -274,7 +256,6 @@ socs:
   linux_filename: ''
   notes: ''
   urlname: t41l
-  build_status_url: https://github.com/OpenIPC/firmware/actions/workflows/t41_images.yml/badge.svg
   featured: false
   segment: consumer
 - family: T41
@@ -288,7 +269,6 @@ socs:
   linux_filename: ''
   notes: ''
   urlname: t41lc
-  build_status_url: https://github.com/OpenIPC/firmware/actions/workflows/t41_images.yml/badge.svg
   featured: false
   segment: consumer
 - family: T41
@@ -302,7 +282,6 @@ socs:
   linux_filename: ''
   notes: ''
   urlname: t41lq
-  build_status_url: https://github.com/OpenIPC/firmware/actions/workflows/t41_images.yml/badge.svg
   featured: false
   segment: consumer
 - family: T41
@@ -316,7 +295,6 @@ socs:
   linux_filename: ''
   notes: ''
   urlname: t41n
-  build_status_url: https://github.com/OpenIPC/firmware/actions/workflows/t41_images.yml/badge.svg
   featured: false
   segment: consumer
 - family: T41
@@ -330,7 +308,6 @@ socs:
   linux_filename: ''
   notes: ''
   urlname: t41nq
-  build_status_url: https://github.com/OpenIPC/firmware/actions/workflows/t41_images.yml/badge.svg
   featured: false
   segment: consumer
 - family: T41
@@ -344,7 +321,6 @@ socs:
   linux_filename: ''
   notes: ''
   urlname: t41xq
-  build_status_url: https://github.com/OpenIPC/firmware/actions/workflows/t41_images.yml/badge.svg
   featured: false
   segment: consumer
 - family: T41
@@ -358,7 +334,6 @@ socs:
   linux_filename: ''
   notes: ''
   urlname: t41zl
-  build_status_url: https://github.com/OpenIPC/firmware/actions/workflows/t41_images.yml/badge.svg
   featured: false
   segment: consumer
 - family: T41
@@ -372,7 +347,6 @@ socs:
   linux_filename: ''
   notes: ''
   urlname: t41zn
-  build_status_url: https://github.com/OpenIPC/firmware/actions/workflows/t41_images.yml/badge.svg
   featured: false
   segment: consumer
 - family: T41
@@ -386,6 +360,5 @@ socs:
   linux_filename: ''
   notes: ''
   urlname: t41zx
-  build_status_url: https://github.com/OpenIPC/firmware/actions/workflows/t41_images.yml/badge.svg
   featured: false
   segment: consumer

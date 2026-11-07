@@ -20,7 +20,6 @@ socs:
   linux_filename: ''
   notes: ''
   urlname: rv1109
-  build_status_url: https://github.com/OpenIPC/firmware/actions/workflows/rv1109_images.yml/badge.svg
   featured: false
   segment: null
 - family: RV11XX
@@ -34,6 +33,5 @@ socs:
   linux_filename: openipc.rv1126-nor-lite.tgz
   notes: ''
   urlname: rv1126
-  build_status_url: https://github.com/OpenIPC/firmware/actions/workflows/rv1126_images.yml/badge.svg
   featured: false
   segment: null
