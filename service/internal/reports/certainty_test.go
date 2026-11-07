@@ -5,6 +5,8 @@ import (
 	"errors"
 	"strings"
 	"testing"
+
+	"github.com/jackc/pgx/v5"
 )
 
 // sent is a report just sent: pending, linked to nothing.
@@ -235,8 +237,9 @@ func TestEvidenceIsPublishedRedacted(t *testing.T) {
 	}
 }
 
-// A review may name the sensor of a report's unit, and only SetSensor can.
-func TestASensorIsNamedOnTheLinkOnly(t *testing.T) {
+// A report's unit takes the part ipctool found when its link is confirmed. A
+// review may name another, and only SetSensor can.
+func TestAUnitsSensor(t *testing.T) {
 	e := newEnv(t)
 	ctx := context.Background()
 	st := &Store{DB: e.pool}
@@ -248,10 +251,6 @@ func TestASensorIsNamedOnTheLinkOnly(t *testing.T) {
 	if _, err := st.Decide(ctx, id, "publish", "test", "", []string{"xiongmai-50h20l"}, Basis{Certainty: Confirmed}, nil, nil, nil); err != nil {
 		t.Fatal(err)
 	}
-	var sent string
-	if err := e.pool.QueryRow(ctx, `SELECT sensor FROM reports WHERE id = $1`, id).Scan(&sent); err != nil {
-		t.Fatal(err)
-	}
 	sensorOf := func() string {
 		t.Helper()
 		texts, err := st.PublishedTexts(ctx)
@@ -260,8 +259,8 @@ func TestASensorIsNamedOnTheLinkOnly(t *testing.T) {
 		}
 		return texts[0].Sensor
 	}
-	if got := sensorOf(); got != "" {
-		t.Errorf("no review named one, yet %q", got)
+	if got := sensorOf(); got != "IMX291" {
+		t.Errorf("ipctool's Sony IMX291, on a confirmed link: %q", got)
 	}
 	if _, err := e.pool.Exec(ctx, `UPDATE report_models SET sensor = 'AR0237'`); err == nil {
 		t.Fatal("the guard let a sensor through")
@@ -276,16 +275,44 @@ func TestASensorIsNamedOnTheLinkOnly(t *testing.T) {
 		t.Fatal(err)
 	}
 	if got := sensorOf(); got != "AR0237" {
-		t.Errorf("sensor %q", got)
+		t.Errorf("a review's sensor: %q", got)
 	}
-	var after string
-	if err := e.pool.QueryRow(ctx, `SELECT sensor FROM reports WHERE id = $1`, id).Scan(&after); err != nil || after != sent {
-		t.Errorf("the report's own sensor went from %q to %q: %v", sent, after, err)
+	var sent string
+	if err := e.pool.QueryRow(ctx, `SELECT sensor FROM reports WHERE id = $1`, id).Scan(&sent); err != nil || sent != "Sony IMX291" {
+		t.Errorf("the report's own sensor is %q: %v", sent, err)
 	}
 	if err := st.SetSensor(ctx, id, "xiongmai-50h20l", ""); err != nil {
 		t.Fatal(err)
 	}
+	if got := sensorOf(); got != "IMX291" {
+		t.Errorf("a review's taken back: %q", got)
+	}
+	if err := st.SetCertainty(ctx, id, "xiongmai-50h20l", Basis{Certainty: Probable, Evidence: "same platform"}); err != nil {
+		t.Fatal(err)
+	}
 	if got := sensorOf(); got != "" {
-		t.Errorf("taken back, yet %q", got)
+		t.Errorf("ipctool's on a probable link: %q", got)
+	}
+	if err := st.SetSensor(ctx, id, "xiongmai-50h20l", "AR0237"); err != nil {
+		t.Fatal(err)
+	}
+	if got := sensorOf(); got != "AR0237" {
+		t.Errorf("a review's on a probable link: %q", got)
+	}
+	// What a camera sent is not trusted to read as a part number.
+	if err := Unguarded(ctx, e.pool, func(tx pgx.Tx) error {
+		_, err := tx.Exec(ctx, `UPDATE reports SET sensor = 'Sony <script>' WHERE id = $1`, id)
+		return err
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if err := st.SetSensor(ctx, id, "xiongmai-50h20l", ""); err != nil {
+		t.Fatal(err)
+	}
+	if err := st.SetCertainty(ctx, id, "xiongmai-50h20l", Basis{Certainty: Confirmed}); err != nil {
+		t.Fatal(err)
+	}
+	if got := sensorOf(); got != "" {
+		t.Errorf("not a part number: %q", got)
 	}
 }

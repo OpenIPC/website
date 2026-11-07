@@ -36,8 +36,8 @@ const reportsUsage = `usage: openipc reports
   certainty <id> <board model id> <confirmed|probable|guess> [--evidence why]
                                                 say how sure an existing link is now
   sensor <id> <board model id> <part number> [--by who]
-                                                name the sensor of the report's unit on that board, read
-                                                from what it shows when its YAML has none ("" takes it back)
+                                                name the sensor of the report's unit on that board, over
+                                                the one ipctool found ("" goes back to that)
   photo <id> <position> blur|private|as_sent [--region x,y,w,h]...
                                                 what a photo publishes: a copy with the regions blurred
                                                 (fractions of the photo, upright), nothing (not the

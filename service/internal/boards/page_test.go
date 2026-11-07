@@ -1,8 +1,10 @@
 package boards
 
 import (
+	"bytes"
 	"context"
 	"io"
+	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -288,5 +290,69 @@ func TestAnOwnersPhotosLeadTheBoardsPage(t *testing.T) {
 	}}}, "en")
 	if len(v.Photos) != 2 || v.Photos[0].URL != "/f/own.jpg" || v.Photos[1].URL != "/f/maker.jpg" {
 		t.Errorf("photos %+v: the owner's first, then the maker's", v.Photos)
+	}
+}
+
+// A list reads no specifications, yet a source that only has them is still a
+// source of the board, and one board's detail still shows them.
+func TestAListKeepsASourceWithOnlySpecifications(t *testing.T) {
+	pool, _ := imported(t)
+	ctx := context.Background()
+	if _, err := pool.Exec(ctx, `INSERT INTO board_sources (id, name, url, note, ref) VALUES ('only-specs', 'Only specs', '', '', 'x')`); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := pool.Exec(ctx, `INSERT INTO board_model_specs (model_id, source, locale, position, label, value) VALUES ('xiongmai-53h20-s', 'only-specs', 'en', 0, 'Lens', '3.6 mm')`); err != nil {
+		t.Fatal(err)
+	}
+	doc, err := Tree(ctx, pool, "en", "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var found bool
+	for _, mk := range doc["manufacturers"].([]*makerJSON) {
+		for _, m := range mk.Models {
+			if m.ID == "xiongmai-53h20-s" {
+				found = true
+				if !contains(m.Sources, "only-specs") || m.About != nil {
+					t.Errorf("sources %v, about %v", m.Sources, m.About)
+				}
+			}
+		}
+	}
+	if !found {
+		t.Fatal("the board is not in the list")
+	}
+	detail, err := ModelDetail(ctx, pool, "xiongmai-53h20-s", "en")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var specs [][2]string
+	for _, a := range detail["about"].([]*aboutJSON) {
+		if a.Source == "only-specs" {
+			specs = a.Specs
+		}
+	}
+	if len(specs) != 1 || specs[0] != [2]string{"Lens", "3.6 mm"} {
+		t.Errorf("the detail's specifications: %v", specs)
+	}
+}
+
+// A visitor who left stopped the read: that is not an error, and is not logged as one.
+func TestAVisitorLeavingIsNotAnError(t *testing.T) {
+	pool, _ := imported(t)
+	var logged bytes.Buffer
+	api := &API{DB: pool, Log: slog.New(slog.NewTextHandler(&logged, nil))}
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	api.tree(httptest.NewRecorder(), httptest.NewRequest("GET", "/api/v1/boards", nil).WithContext(ctx))
+	if strings.Contains(logged.String(), "level=ERROR") {
+		t.Errorf("logged: %s", logged.String())
+	}
+	logged.Reset()
+	pool.Close()
+	rec := httptest.NewRecorder()
+	api.tree(rec, httptest.NewRequest("GET", "/api/v1/boards", nil))
+	if rec.Code != 500 || !strings.Contains(logged.String(), "level=ERROR") {
+		t.Errorf("a database gone: %d, logged: %s", rec.Code, logged.String())
 	}
 }
