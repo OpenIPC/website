@@ -1134,6 +1134,48 @@ func TestARuisionBoardIsFiledUnderItsMaker(t *testing.T) {
 	}
 }
 
+// SMTSEC's modules: a new maker with the name its Chinese one reads as, a
+// module's chip linked to its SoC, its code answering without the SIP- prefix
+//, and a chip the catalogue does not list
+// (SSD3403) kept as the page gives it.
+func TestASMTSECModuleIsFiledUnderItsMaker(t *testing.T) {
+	pool, root := imported(t)
+	im := &Importer{Pool: pool, Log: quiet(), Root: root, Resolve: supported}
+	ctx := context.Background()
+	if _, err := im.FromSnapshot(ctx, donor(t, "smtsec",
+		model("smtsec", "SIP-K662C6S", map[string]any{
+			"aliases": []string{"K662C6S"}, "category": "Economy Module",
+			"soc_label": "Hi3516CV610", "sensor": "IMX662",
+			"original": []string{"zh"}, "translated_from": "zh"}),
+		model("smtsec", "SIP-K585U", map[string]any{
+			"aliases": []string{"K585U"}, "category": "Functional Module",
+			"soc_label": "SSD3403", "sensor": "IMX585",
+			"original": []string{"zh"}, "translated_from": "zh"}))); err != nil {
+		t.Fatal(err)
+	}
+	var name, soc string
+	var aliases []string
+	if err := pool.QueryRow(ctx, `SELECT f.name, f.aliases, coalesce(m.soc, '') FROM board_models m JOIN board_manufacturers f ON f.id = m.manufacturer_id WHERE m.id = 'smtsec-sip-k662c6s'`).Scan(&name, &aliases, &soc); err != nil {
+		t.Fatal(err)
+	}
+	if name != "SMTSEC" || len(aliases) != 2 || aliases[0] != "视迈特" || aliases[1] != "Shimaite" {
+		t.Errorf("SIP-K662C6S's maker: %q, also %v", name, aliases)
+	}
+	if soc != "hi3516cv610" {
+		t.Errorf("SIP-K662C6S's SoC: %q", soc)
+	}
+	if n := count(t, pool, `SELECT count(*) FROM board_model_aliases WHERE model_id = 'smtsec-sip-k662c6s' AND code_norm = '`+NormCode("K662C6S")+`'`); n != 1 {
+		t.Errorf("K662C6S answers to %d boards, want SIP-K662C6S", n)
+	}
+	var label string
+	if err := pool.QueryRow(ctx, `SELECT coalesce(soc_label, '') FROM board_models WHERE id = 'smtsec-sip-k585u'`).Scan(&label); err != nil {
+		t.Fatal(err)
+	}
+	if label != "SSD3403" {
+		t.Errorf("SIP-K585U's chip: %q", label)
+	}
+}
+
 // A Hikvision page covers several sub-models, and the catalogue has to answer
 // to each: an owner of a DS-2CD2423G0-IW sends that marking and lands on the
 // page's camera, not on a twin. The pages name no chip, so a
