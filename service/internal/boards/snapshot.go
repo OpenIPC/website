@@ -88,6 +88,11 @@ var Snapshots = map[string]string{
 	// 1,008 photos, 1,080 with datasheets, and the firmware platform 585 of them name.
 	// No chip: its pages name none (a unit does, as the DS-2CD2423G0-I's did).
 	"hikvision": "4449e3fa0d9ad6e85b64b1e643abb86868c1e3ae68e8531fe387206719a913c9",
+	// boards-donors/smtsec/snapshot-9d2449cd2035.tar: SMTSEC's IP camera modules,
+	// 58 from its current site, each with the chip and sensor its page names,
+	// 156 photos, and English for the 30 pages with no English table and for
+	// the listing's features, translated from the site's Chinese.
+	"smtsec": "9d2449cd20352b1f5bb151c36526236928924955f422b5e76200c1c650d0816d",
 }
 
 type Snapshot struct {

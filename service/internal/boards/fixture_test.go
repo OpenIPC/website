@@ -74,7 +74,7 @@ func archive() fstest.MapFS {
 // supported is the catalogue for the fixture: what OpenIPC supports.
 func supported(label string) string {
 	switch label {
-	case "hi3516cv100", "hi3518ev200", "hi3516cv300", "hi3516ev100":
+	case "hi3516cv100", "hi3518ev200", "hi3516cv300", "hi3516ev100", "hi3516cv610":
 		return label
 	}
 	return ""
