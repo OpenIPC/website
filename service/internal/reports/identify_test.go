@@ -79,6 +79,35 @@ func TestIdentifyMatchesABoardByItsPlatformCode(t *testing.T) {
 
 // r-hgiwqzgd: the only evidence was iCSee's software version. Its device ID
 // names the board, certainly when it runs on that board alone.
+// ipctool says AK39EV330 of a chip the catalogue files as AK3918EV330: a board
+// with its sensor is found all the same (firmware#2749).
+func TestIdentifyFindsAnAnykaEV330BoardByIpctoolsNameForTheChip(t *testing.T) {
+	e := newEnv(t)
+	for _, sql := range []string{
+		`INSERT INTO board_manufacturers (id, name) VALUES ('closeli', 'Closeli')`,
+		`INSERT INTO board_models (id, manufacturer_id, model, soc, soc_label) VALUES
+		   ('closeli-u60-mb-v3-0', 'closeli', 'U60_MB_V3.0', 'ak3918ev330', 'ak3918ev330')`,
+		`INSERT INTO board_units (id, model_id, sensor, flash_chip, source, source_ref) VALUES
+		   ('u-ev330', 'closeli-u60-mb-v3-0', 'GC2053', '', 'contributor', 'test:ev330')`,
+	} {
+		if _, err := e.pool.Exec(context.Background(), sql); err != nil {
+			t.Fatal(err)
+		}
+	}
+	_, f, err := Parse("chip:\n  vendor: Anyka\n  model: AK39EV330\nsensors:\n- vendor: GalaxyCore\n  model: GC2053\n")
+	if err != nil {
+		t.Fatal(err)
+	}
+	id, err := Identify(context.Background(), e.pool, f)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if id.SoC != "ak3918ev330" || len(id.Matches) != 1 || id.Matches[0].ModelID != "closeli-u60-mb-v3-0" ||
+		!slices.Contains(id.Matches[0].Why, "sensor GC2053") {
+		t.Errorf("%+v", id)
+	}
+}
+
 func TestIdentifyMatchesABoardByItsXMDeviceID(t *testing.T) {
 	e := newEnv(t)
 	boardsByEvidence(t, e)

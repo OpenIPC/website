@@ -149,6 +149,7 @@ func TestTheCatalogueNamesTheChipAsIpctoolDoesNot(t *testing.T) {
 	for in, want := range map[[2]string]string{
 		{"HiSilicon", "3516CV300"}: "hi3516cv300", {"Goke", "7205V200"}: "gk7205v200",
 		{"Ingenic", "T31L"}: "t31l", {"SigmaStar", "SSC335"}: "ssc335",
+		{"Anyka", "AK39EV330"}: "ak3918ev330", {"Anyka", "AK3918EV300"}: "ak3918ev300",
 	} {
 		if got := SoCID(in[0], in[1]); got != want {
 			t.Errorf("%v: %q, want %q", in, got, want)
