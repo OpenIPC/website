@@ -374,6 +374,13 @@ func tree(ctx context.Context, db *pgxpool.Pool, locale, soc, model string, sens
 		return nil, nil, err
 	}
 	defer tx.Rollback(ctx)
+	// Plan each read for what it is asked. pgx prepares these statements, and
+	// from a connection's sixth run PostgreSQL may keep a generic plan, which
+	// cannot see through treeModels' optional filters: it expected one model
+	// of 3,621, and the whole catalogue went from about 1 s to 9 s.
+	if _, err := tx.Exec(ctx, `SET LOCAL plan_cache_mode = force_custom_plan`); err != nil {
+		return nil, nil, err
+	}
 	makers := []*makerJSON{}
 	byMaker := map[string]*makerJSON{}
 	rows, err := tx.Query(ctx, `SELECT id, name, aliases, website FROM board_manufacturers ORDER BY position, name`)
