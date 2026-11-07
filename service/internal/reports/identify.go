@@ -76,17 +76,19 @@ type Identification struct {
 // SoCID is the catalogue's name for the chip ipctool reports: HiSilicon's
 // "3516CV300" is hi3516cv300, Goke's "7205V200" gk7205v200, the rest are
 // their model in lower case, but for Anyka's AK39EV330, which ipctool names
-// without the 18 the catalogue and the chip's own device tree have.
+// without the 18 the catalogue and the chip's own device tree have. No vendor
+// counts as Anyka's here, as in Facts.anyka: ipctool may print none.
 func SoCID(vendor, model string) string {
 	m := strings.ToLower(strings.TrimSpace(model))
 	if m == "" {
 		return ""
 	}
-	if m == "ak39ev330" {
+	v := strings.ToLower(strings.TrimSpace(vendor))
+	if m == "ak39ev330" && (v == "anyka" || v == "") {
 		return "ak3918ev330"
 	}
 	if m[0] >= '0' && m[0] <= '9' {
-		switch strings.ToLower(strings.TrimSpace(vendor)) {
+		switch v {
 		case "hisilicon":
 			return "hi" + m
 		case "goke":
