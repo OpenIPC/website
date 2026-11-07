@@ -1,6 +1,7 @@
 package boards
 
 import (
+	"cmp"
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
@@ -12,6 +13,7 @@ import (
 	"log/slog"
 	"net/http"
 	"regexp"
+	"slices"
 	"strings"
 	"time"
 	"unicode/utf8"
@@ -516,7 +518,7 @@ func tree(ctx context.Context, db *pgxpool.Pool, locale, soc, model string, sens
 		return nil, nil, err
 	}
 
-	if err := about(ctx, tx, byModel, locale); err != nil {
+	if err := about(ctx, tx, byModel, locale, model != ""); err != nil {
 		return nil, nil, err
 	}
 	if err := devices(ctx, tx, byModel); err != nil {
@@ -560,7 +562,10 @@ func tree(ctx context.Context, db *pgxpool.Pool, locale, soc, model string, sens
 
 // about fills each model's tags, links and per-source texts and specs, from
 // the same snapshot as the rest of the tree.
-func about(ctx context.Context, tx pgx.Tx, byModel map[string]*modelJSON, locale string) error {
+// about reads what each source says about the models. detail is for one
+// board's page: a list shows no specifications or links, which are most of
+// the catalogue's rows (over 400,000 specifications), so it does not read them.
+func about(ctx context.Context, tx pgx.Tx, byModel map[string]*modelJSON, locale string, detail bool) error {
 	ids := make([]string, 0, len(byModel))
 	for id, m := range byModel {
 		m.Tags, m.About, m.Links = []string{}, []*aboutJSON{}, []linkJSON{}
@@ -666,6 +671,21 @@ func about(ctx context.Context, tx pgx.Tx, byModel map[string]*modelJSON, locale
 	if err := rows.Err(); err != nil {
 		return err
 	}
+	if !detail {
+		// A source with specifications and no text is still a source of the
+		// board, after those with text, as the rows below would add it.
+		var rest []key
+		for k := range chosen {
+			if abouts[k] == nil {
+				rest = append(rest, k)
+			}
+		}
+		slices.SortFunc(rest, func(a, b key) int { return cmp.Compare(a.source, b.source) })
+		for _, k := range rest {
+			get(k)
+		}
+		return nil
+	}
 	rows, err = tx.Query(ctx, `SELECT model_id, source, locale, label, value FROM board_model_specs WHERE model_id = ANY($1) ORDER BY model_id, source, position`, ids)
 	if err != nil {
 		return err
@@ -741,7 +761,7 @@ func ModelDetail(ctx context.Context, db *pgxpool.Pool, id, locale string) (map[
 		return nil, err
 	}
 	one := map[string]*modelJSON{id: m}
-	if err := about(ctx, tx, one, locale); err != nil {
+	if err := about(ctx, tx, one, locale, true); err != nil {
 		return nil, err
 	}
 	if err := devices(ctx, tx, one); err != nil {
@@ -915,8 +935,7 @@ func (a *API) serve(w http.ResponseWriter, r *http.Request, maxAge int, load fun
 		       (SELECT coalesce(md5(string_agg(id || ':' || coalesce(listed_year::text, '') || ':' || kind, ',' ORDER BY id)), '') FROM board_models) || '|' ||
 		       (SELECT coalesce(md5(string_agg(source || key || version || asset_url || coalesce(sha256, '') || coalesce(origin, '') || coalesce(origin_url, '') || coalesce(published_at::text, '-') || coalesce(device_type, '') || coalesce(app, '') || coalesce(category, '') || coalesce(module, '') || coalesce(variant::text, '') || coalesce(collection, ''), ',' ORDER BY source, key, version)), '') FROM vendor_firmware) || '|' || (SELECT count(*) FROM board_device_ids) || '|' ||
 		       (SELECT coalesce(md5(string_agg(model_id || ':' || board_code || ':' || status || ':' || basis || ':' || source || ':' || evidence || ':' || coalesce(evidence_label, ''), ',' ORDER BY model_id, board_code, source)), '') FROM board_contents)`).Scan(&units, &files, &last, &about); err != nil {
-		a.Log.Error("boards: no revision", "err", err)
-		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "try again"})
+		a.failed(w, r, "boards: no revision", err)
 		return
 	}
 	sum := sha256.Sum256([]byte(fmt.Sprintf("%d|%d|%d|%s|%s", units, files, last.UnixNano(), about, r.URL.RequestURI())))
@@ -929,8 +948,7 @@ func (a *API) serve(w http.ResponseWriter, r *http.Request, maxAge int, load fun
 	}
 	v, status, err := load(r.Context())
 	if err != nil {
-		a.Log.Error("boards: query failed", "path", r.URL.Path, "err", err)
-		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "try again"})
+		a.failed(w, r, "boards: query failed", err)
 		return
 	}
 	h := w.Header()
@@ -939,6 +957,18 @@ func (a *API) serve(w http.ResponseWriter, r *http.Request, maxAge int, load fun
 	h.Set("ETag", etag)
 	w.WriteHeader(status)
 	_ = json.NewEncoder(w).Encode(v)
+}
+
+// failed answers a read that did not finish. A visitor who left stopped it
+// (their request's context is cancelled): nothing is wrong and nobody is there
+// to answer, so it is not an error.
+func (a *API) failed(w http.ResponseWriter, r *http.Request, msg string, err error) {
+	if r.Context().Err() != nil {
+		a.Log.Debug(msg, "path", r.URL.Path, "err", err)
+		return
+	}
+	a.Log.Error(msg, "path", r.URL.Path, "err", err)
+	writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "try again"})
 }
 
 func writeJSON(w http.ResponseWriter, status int, v any) {

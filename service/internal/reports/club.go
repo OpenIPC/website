@@ -857,7 +857,9 @@ type BoardText struct {
 	// How sure the report's link to Model is (migration 036): the unit
 	// says so beside the board's files.
 	Basis
-	// Sensor is what a review read from the report (SetSensor), if anything.
+	// Sensor is the unit's: what a review read from the report (SetSensor),
+	// else the part number ipctool found, if the link is confirmed. A doubtful
+	// link would otherwise list the board on a sensor's page as if it were known.
 	Sensor string
 	Files  []BoardTextFile
 	// PrivateDumps: the report's flash dumps that are not served (kept
@@ -904,12 +906,12 @@ func (f BoardTextFile) BoardName() string {
 func (s *Store) PublishedTexts(ctx context.Context) ([]BoardText, error) {
 	rows, err := s.DB.Query(ctx, `
 		WITH published AS (
-			SELECT r.id, r.received_at, r.note_public,
+			SELECT r.id, r.received_at, r.note_public, r.sensor AS sent_sensor,
 			  (SELECT count(*) FROM report_files pf WHERE pf.report_id = r.id AND pf.kind = 'backup' AND pf.public_sha256 IS NULL)::int AS private
 			FROM reports r
 			WHERE (SELECT decision FROM report_reviews rv WHERE rv.report_id = r.id ORDER BY rv.id DESC LIMIT 1) = 'publish'
 		)
-		SELECT r.id, rm.model_id, coalesce(cm.name, ''), r.note_public, rm.certainty, rm.evidence, rm.sensor, r.private,
+		SELECT r.id, rm.model_id, coalesce(cm.name, ''), r.note_public, rm.certainty, rm.evidence, rm.sensor, r.sent_sensor, r.private,
 		  f.position, f.kind, f.name, f.public_sha256, coalesce(f.public_bytes, 0), coalesce(f.public_mime, ''),
 		  (f.kind = 'photo' AND f.public_sha256 <> f.sha256)
 		    OR (f.kind NOT IN ('photo', 'backup') AND EXISTS (SELECT 1 FROM report_photo_reviews pr WHERE pr.report_id = f.report_id AND pr.position = f.position))
@@ -927,17 +929,20 @@ func (s *Store) PublishedTexts(ctx context.Context) ([]BoardText, error) {
 	defer rows.Close()
 	var out []BoardText
 	for rows.Next() {
-		var id, model, by, note, certainty, evidence, sensor string
+		var id, model, by, note, certainty, evidence, sensor, sent string
 		var private int
 		var pos *int
 		var kind, name, sum *string
 		var bytes int64
 		var pubMime string
 		var redacted *bool
-		if err := rows.Scan(&id, &model, &by, &note, &certainty, &evidence, &sensor, &private, &pos, &kind, &name, &sum, &bytes, &pubMime, &redacted); err != nil {
+		if err := rows.Scan(&id, &model, &by, &note, &certainty, &evidence, &sensor, &sent, &private, &pos, &kind, &name, &sum, &bytes, &pubMime, &redacted); err != nil {
 			return nil, err
 		}
 		if n := len(out); n == 0 || out[n-1].Report != id || out[n-1].Model != model {
+			if part := sensorModel(sent); sensor == "" && certainty == Confirmed && sensorName.MatchString(part) {
+				sensor = part
+			}
 			out = append(out, BoardText{Report: id, Model: model, By: by, Note: note,
 				Basis: Basis{Certainty: certainty, Evidence: evidence}, Sensor: sensor, PrivateDumps: private})
 		}

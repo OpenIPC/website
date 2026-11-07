@@ -192,7 +192,10 @@ restores the image but never the schema, so keep migrations additive.
   send form posts to `/api/v1/club/reports` instead of opening a GitHub
   issue, and a published report's text and photos become a contributed unit
   on its board (`boards.ApplyReportUnits`), as `boards/contributions.yml`
-  does for what arrived as issues (#365, #366). A camera the catalogue
+  does for what arrived as issues (#365, #366). The unit's sensor is the part
+  ipctool found if the link is confirmed; a review names another with
+  `openipc reports sensor` (on the link, migration 047; the report stays as
+  sent). A camera the catalogue
   lacks is sent from `/cameras/report#new` as its maker, its marking and
   photos (`report_proposals`, migration 028), and publishing it from the
   review queue adds the board (`boards.CreateModel`, alias source `club`,
