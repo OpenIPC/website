@@ -80,7 +80,7 @@ ZH_EN = {
     "小于": "less than", "UVC输出": "UVC Output", "复位输入(或报警输出)": "Reset (or alarm output)",
     "不支持": "Not supported", "超级星光网络摄像机模组": "Super Starlight IP Camera Module",
     "宽动态网络摄像机模组": "WDR IP Camera Module", "全局快门网络摄像机模组": " Global Shutter IP Camera Module",
-    "星光网络摄像机模组": "Starlight IP Camera Module", "网络摄像机模组": "IP Camera Module",
+    "星光网络摄像机模组": "Starlight IP Camera Module", "智能人脸网络摄像机模组": "AI Face IP Camera Module", "网络摄像机模组": "IP Camera Module",
     "全局快门图像传感器": "Global shutter sensor", "全局快门传感器技术": "Global shutter sensor technology",
     "图像传感器": "image sensor", "双核": "Dual-core", "内置": " built-in ", "主码流": "Main stream",
     "子码流/三码流": "Sub Stream/Three Streams", "子码流": "Sub Stream", "帧/秒": "fps", "彩色:": "Color: ",
@@ -239,7 +239,7 @@ def main():
             continue
         lines = features(p["short"])
         texts = {"zh": {"name": row(zh, "摄像机类型"), "features": "\n".join(lines)},
-                 "en": {"name": row(en, "camera type") or to_en(row(zh, "摄像机类型")),
+                 "en": {"name": to_en(row(zh, "摄像机类型")),
                         "features": "\n".join(to_en(l) for l in lines)}}
         texts = {l: {k: v for k, v in t.items() if v} for l, t in texts.items()}
         specs = {"zh": zh, "en": en or [[to_en(a).replace("image sensor", "Image Sensor"), to_en(b)] for a, b in zh]}
@@ -248,8 +248,9 @@ def main():
         short = code.removeprefix("SIP-")
         entry = {"maker": "smtsec", "code": code, "aliases": [short] if short != code else [],
                  "category": " / ".join(p["categories"]) or "IP Camera Module", "texts": texts,
-                 # The English features are always a translation, so the whole
-                 # of the English text is marked as one, an English name included.
+                 # The import marks a locale's texts as one, and the features have
+                 # no English original, so the English name is translated too; a
+                 # page's own English name stays in its table, as Camera Type.
                  "original": ["zh"], "translated_from": "zh", "specs": specs,
                  "tags": [], "links": [{"kind": "source_page", "label": "smtsec.com",
                                         "url": f"https://www.smtsec.com/productinfo/{pid}.html"}], "files": files}
