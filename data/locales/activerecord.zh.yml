@@ -5,7 +5,6 @@ zh:
       snapshot:
         mac_address: MAC地址
       soc:
-        build_status_url: 构建状态 URL
         kernel: 内核
         linux_filename: 文件
         load_address: 加载地址

@@ -20,7 +20,6 @@ socs:
   linux_filename: ''
   notes: ''
   urlname: gm8135
-  build_status_url: https://img.shields.io/static/v1?label=GM8135&message=%20&logo=github
   featured: false
   segment: null
 - family: GM8136
@@ -34,6 +33,5 @@ socs:
   linux_filename: openipc.gm8136-nor-lite.tgz
   notes: ''
   urlname: gm8136
-  build_status_url: https://github.com/OpenIPC/firmware/actions/workflows/gm8136_images.yml/badge.svg
   featured: false
   segment: null

@@ -21,7 +21,6 @@ socs:
   notes: ar0230 ar0237 ar0330 imx122 imx123 imx178 imx185 imx224 imx225 imx290 imx291 imx385 os05a10 ov2718
     ov4689 ov5658 sc2310 sc5235
   urlname: hi3516av100
-  build_status_url: https://github.com/OpenIPC/firmware/actions/workflows/hi3516av100_images.yml/badge.svg
   featured: false
   segment: cctv
 - family: HI3519V101
@@ -35,7 +34,6 @@ socs:
   linux_filename: openipc.hi3516av200-nor-lite.tgz
   notes: ''
   urlname: hi3516av200
-  build_status_url: https://github.com/OpenIPC/firmware/actions/workflows/hi3516av200_images.yml/badge.svg
   featured: false
   segment: cctv
 - family: HI3516CV500
@@ -49,7 +47,6 @@ socs:
   linux_filename: openipc.hi3516av300-nor-lite.tgz
   notes: ''
   urlname: hi3516av300
-  build_status_url: https://github.com/OpenIPC/firmware/actions/workflows/hi3516av300_images.yml/badge.svg
   featured: false
   segment: cctv
 - family: HI3516CV100
@@ -64,7 +61,6 @@ socs:
   notes: '9m034 ar0130 ar0140 ar0330 himax1375 icx692 imx104 imx122 imx138 imx222 imx225 imx236 mn34041
     mt9p006 ov2710 ov9712 ov9732 po3100k sc1035 soih22 soih42 '
   urlname: hi3516cv100
-  build_status_url: https://github.com/OpenIPC/firmware/actions/workflows/hi3516cv100_images.yml/badge.svg
   featured: false
   segment: cctv
 - family: HI3516CV200
@@ -80,7 +76,6 @@ socs:
     jxh62 jxh65 mn34222 ov2718 ov2735 ov9712 ov9732 ov9750 ov9752 sc1135 sc1145 sc1235 sc2035 sc2135 sc2232
     sc2235 '
   urlname: hi3516cv200
-  build_status_url: https://github.com/OpenIPC/firmware/actions/workflows/hi3516cv200_images.yml/badge.svg
   featured: false
   segment: cctv
 - family: HI3516CV300
@@ -96,7 +91,6 @@ socs:
   notes: ar0237 imx291 imx307 imx323 imx385 jxf22 ov2718 ov2735 sc2235p sc2310
   nor_split: true
   urlname: hi3516cv300
-  build_status_url: https://github.com/OpenIPC/firmware/actions/workflows/hi3516cv300_images.yml/badge.svg
   featured: false
   segment: cctv
 - family: HI3516CV500
@@ -111,7 +105,6 @@ socs:
   notes: 'gc2053 imx290 imx307 imx327 imx334 imx335 imx377 imx390 imx415 imx458 mn34220 os04b10 os05a
     os08a10 ov12870 ov2775 ov9284 ps5260 sc4210 '
   urlname: hi3516cv500
-  build_status_url: https://github.com/OpenIPC/firmware/actions/workflows/hi3516cv500_images.yml/badge.svg
   featured: false
   segment: cctv
 - family: HI3516CV610
@@ -127,7 +120,6 @@ socs:
   linux_filename: openipc.hi3516cv6xx-nor-lite.tgz
   notes: ''
   urlname: hi3516cv608
-  build_status_url: ''
   featured: false
   segment: cctv
 - family: HI3516CV610
@@ -143,7 +135,6 @@ socs:
   linux_filename: openipc.hi3516cv6xx-nor-lite.tgz
   notes: ''
   urlname: hi3516cv610-ddr2-64m
-  build_status_url: ''
   featured: false
   segment: cctv
 - family: HI3516CV610
@@ -159,7 +150,6 @@ socs:
   linux_filename: openipc.hi3516cv6xx-nor-lite.tgz
   notes: ''
   urlname: hi3516cv610-ddr3-128m
-  build_status_url: ''
   featured: false
   segment: cctv
 - family: HI3516CV610
@@ -175,7 +165,6 @@ socs:
   linux_filename: openipc.hi3516cv6xx-nor-lite.tgz
   notes: ''
   urlname: hi3516cv610-ddr3-512m
-  build_status_url: ''
   featured: false
   segment: cctv
 - family: HI3516AV100
@@ -189,7 +178,6 @@ socs:
   linux_filename: openipc.hi3516dv100-nor-lite.tgz
   notes: ''
   urlname: hi3516dv100
-  build_status_url: https://github.com/OpenIPC/firmware/actions/workflows/hi3516dv100_images.yml/badge.svg
   featured: false
   segment: cctv
 - family: HI3516EV200
@@ -205,7 +193,6 @@ socs:
   notes: ''
   nor_split: true
   urlname: hi3516dv200
-  build_status_url: https://github.com/OpenIPC/firmware/actions/workflows/hi3516dv200_images.yml/badge.svg
   featured: false
   segment: cctv
 - family: HI3516CV500
@@ -219,7 +206,6 @@ socs:
   linux_filename: openipc.hi3516dv300-nor-lite.tgz
   notes: ''
   urlname: hi3516dv300
-  build_status_url: https://github.com/OpenIPC/firmware/actions/workflows/hi3516dv300_images.yml/badge.svg
   featured: false
   segment: cctv
 - family: HI3516CV300
@@ -234,7 +220,6 @@ socs:
   notes: ''
   nor_split: true
   urlname: hi3516ev100
-  build_status_url: https://github.com/OpenIPC/firmware/actions/workflows/hi3516ev100_images.yml/badge.svg
   featured: false
   segment: cctv
 - family: HI3516EV200
@@ -250,7 +235,6 @@ socs:
   notes: f23 f37 gc2053 imx307 imx335 sc2231 sc2232h sc2239 sc2315e sc3235 sc4236 sp2305
   nor_split: true
   urlname: hi3516ev200
-  build_status_url: https://github.com/OpenIPC/firmware/actions/workflows/hi3516ev200_images.yml/badge.svg
   featured: true
   segment: cctv
 - family: HI3516EV200
@@ -266,7 +250,6 @@ socs:
   linux_filename: openipc.hi3516ev300-nor-lite.tgz
   notes: ''
   urlname: hi3516ev300
-  build_status_url: https://github.com/OpenIPC/firmware/actions/workflows/hi3516ev300_images.yml/badge.svg
   featured: true
   segment: cctv
 - family: HI3516CV100
@@ -280,7 +263,6 @@ socs:
   linux_filename: openipc.hi3518cv100-nor-lite.tgz
   notes: ''
   urlname: hi3518cv100
-  build_status_url: https://github.com/OpenIPC/firmware/actions/workflows/hi3518cv100_images.yml/badge.svg
   featured: false
   segment: cctv
 - family: HI3516CV100
@@ -294,7 +276,6 @@ socs:
   linux_filename: openipc.hi3518ev100-nor-lite.tgz
   notes: ''
   urlname: hi3518ev100
-  build_status_url: https://github.com/OpenIPC/firmware/actions/workflows/hi3518ev100_images.yml/badge.svg
   featured: false
   segment: cctv
 - family: HI3516CV200
@@ -308,7 +289,6 @@ socs:
   linux_filename: openipc.hi3518ev200-nor-lite.tgz
   notes: ''
   urlname: hi3518ev200
-  build_status_url: https://github.com/OpenIPC/firmware/actions/workflows/hi3518ev200_images.yml/badge.svg
   featured: false
   segment: cctv
 - family: HI3516CV200
@@ -322,7 +302,6 @@ socs:
   linux_filename: ''
   notes: ''
   urlname: hi3518ev201
-  build_status_url: https://img.shields.io/static/v1?label=HI3518EV201&message=%20&logo=github
   featured: false
   segment: cctv
 - family: HI3516EV200
@@ -338,7 +317,6 @@ socs:
   notes: ''
   nor_split: true
   urlname: hi3518ev300
-  build_status_url: https://github.com/OpenIPC/firmware/actions/workflows/hi3518ev300_images.yml/badge.svg
   featured: false
   segment: cctv
 - family: HI3519DV500
@@ -356,7 +334,6 @@ socs:
   linux_filename: openipc.hi3519dv500-nor-ultimate.tgz
   notes: ''
   urlname: hi3519dv500-dmeb
-  build_status_url: ''
   featured: false
   segment: cctv
 - family: HI3519DV500
@@ -374,7 +351,6 @@ socs:
   linux_filename: openipc.hi3519dv500-nor-ultimate.tgz
   notes: ''
   urlname: hi3519dv500-dmebpro
-  build_status_url: ''
   featured: false
   segment: cctv
 - family: HI3519V101
@@ -388,7 +364,6 @@ socs:
   linux_filename: openipc.hi3519v101-nor-lite.tgz
   notes: 'imx178 imx185 imx226 imx274 imx290 imx326 imx327 imx385 os05a os08a10 ov4689 sc4210 '
   urlname: hi3519v101
-  build_status_url: https://github.com/OpenIPC/firmware/actions/workflows/hi3519v101_images.yml/badge.svg
   featured: false
   segment: cctv
 - family: ''
@@ -402,7 +377,6 @@ socs:
   linux_filename: ''
   notes: ''
   urlname: hi3520dv100
-  build_status_url: https://img.shields.io/static/v1?label=HI3520DV100&message=%20&logo=github
   featured: false
   segment: cctv
 - family: ''
@@ -416,7 +390,6 @@ socs:
   linux_filename: ''
   notes: ''
   urlname: hi3520dv200
-  build_status_url: https://img.shields.io/static/v1?label=HI3520DV200&message=%20&logo=github
   featured: false
   segment: cctv
 - family: HI3536CV100
@@ -430,7 +403,6 @@ socs:
   linux_filename: openipc.hi3536cv100-nor-lite.tgz
   notes: ''
   urlname: hi3536cv100
-  build_status_url: https://github.com/OpenIPC/firmware/actions/workflows/hi3536cv100_images.yml/badge.svg
   featured: false
   segment: cctv
 - family: HI3536DV100
@@ -444,6 +416,5 @@ socs:
   linux_filename: openipc.hi3536dv100-nor-lite.tgz
   notes: ''
   urlname: hi3536dv100
-  build_status_url: https://github.com/OpenIPC/firmware/actions/workflows/hi3536dv100_images.yml/badge.svg
   featured: false
   segment: cctv

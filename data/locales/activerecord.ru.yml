@@ -5,7 +5,6 @@ ru:
       snapshot:
         mac_address: MAC-адрес
       soc:
-        build_status_url: URL-адрес статуса сборки
         kernel: Ядро
         linux_filename: Linuх
         load_address: Адрес загрузки

@@ -20,7 +20,6 @@ socs:
   linux_filename: openipc.msc313e-nor-lite.tgz
   notes: ''
   urlname: msc313e
-  build_status_url: https://github.com/OpenIPC/firmware/actions/workflows/msc313e_images.yml/badge.svg
   featured: false
   segment: null
 - family: INFINITY3
@@ -34,7 +33,6 @@ socs:
   linux_filename: openipc.msc316dc-nor-lite.tgz
   notes: ''
   urlname: msc316dc
-  build_status_url: https://github.com/OpenIPC/firmware/actions/workflows/msc316dc_images.yml/badge.svg
   featured: false
   segment: null
 - family: INFINITY3
@@ -48,6 +46,5 @@ socs:
   linux_filename: openipc.msc316dm-nor-lite.tgz
   notes: ''
   urlname: msc316dm
-  build_status_url: https://github.com/OpenIPC/firmware/actions/workflows/msc316dm_images.yml/badge.svg
   featured: false
   segment: null

@@ -20,7 +20,6 @@ socs:
   linux_filename: openipc.xm510-nor-lite.tgz
   notes: ''
   urlname: xm510
-  build_status_url: https://github.com/OpenIPC/firmware/actions/workflows/xm510_images.yml/badge.svg
   featured: false
   segment: null
 - family: XM530
@@ -34,7 +33,6 @@ socs:
   linux_filename: openipc.xm530-nor-lite.tgz
   notes: ''
   urlname: xm530
-  build_status_url: https://github.com/OpenIPC/firmware/actions/workflows/xm530_images.yml/badge.svg
   featured: false
   segment: null
 - family: XM550
@@ -48,6 +46,5 @@ socs:
   linux_filename: openipc.xm550-nor-lite.tgz
   notes: ''
   urlname: xm550
-  build_status_url: https://github.com/OpenIPC/firmware/actions/workflows/xm550_images.yml/badge.svg
   featured: false
   segment: null

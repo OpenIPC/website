@@ -326,7 +326,6 @@ socs:
   linux_filename: openipc.ssc30kd-nor-lite.tgz
   notes: Infinity6e (SSC33X), SDK name - Pudding
   urlname: ssc30kd
-  build_status_url: https://github.com/OpenIPC/firmware/actions/workflows/ssc338q_images.yml/badge.svg
   featured: true
   segment: null
   community_notes:
@@ -368,7 +367,6 @@ socs:
   linux_filename: openipc.ssc30kq-nor-lite.tgz
   notes: ''
   urlname: ssc30kq
-  build_status_url: ''
   featured: true
   segment: fpv
   community_notes:
@@ -447,7 +445,6 @@ socs:
   linux_filename: ''
   notes: Infinity6 (SSC32X), SDK name - Macaron
   urlname: ssc323
-  build_status_url: https://github.com/OpenIPC/firmware/actions/workflows/ssc325_images.yml/badge.svg
   featured: false
   segment: null
   community_notes:
@@ -470,7 +467,6 @@ socs:
   linux_filename: openipc.ssc325-nor-lite.tgz
   notes: ''
   urlname: ssc325
-  build_status_url: https://github.com/OpenIPC/firmware/actions/workflows/ssc325_images.yml/badge.svg
   featured: false
   segment: null
   community_notes:
@@ -493,7 +489,6 @@ socs:
   linux_filename: ''
   notes: Infinity6 (SSC32X), SDK name - Macaron
   urlname: ssc325d
-  build_status_url: https://github.com/OpenIPC/firmware/actions/workflows/ssc325_images.yml/badge.svg
   featured: false
   segment: null
 - family: INFINITY5
@@ -507,7 +502,6 @@ socs:
   linux_filename: ''
   notes: Infinity5 (SSC32X), SDK name - Pretzel
   urlname: ssc326d
-  build_status_url: https://github.com/OpenIPC/firmware/actions/workflows/ssc325_images.yml/badge.svg
   featured: false
   segment: null
 - family: INFINITY6
@@ -521,7 +515,6 @@ socs:
   linux_filename: ''
   notes: Infinity6 (SSC32X), SDK name - Macaron
   urlname: ssc327
-  build_status_url: https://github.com/OpenIPC/firmware/actions/workflows/ssc325_images.yml/badge.svg
   featured: false
   segment: null
 - family: INFINITY6
@@ -535,7 +528,6 @@ socs:
   linux_filename: ''
   notes: Infinity6 (SSC32X), SDK name - Macaron
   urlname: ssc327d
-  build_status_url: https://github.com/OpenIPC/firmware/actions/workflows/ssc325_images.yml/badge.svg
   featured: false
   segment: null
 - family: INFINITY6
@@ -549,7 +541,6 @@ socs:
   linux_filename: ''
   notes: Infinity6 (SSC32X), SDK name - Macaron
   urlname: ssc327de
-  build_status_url: https://github.com/OpenIPC/firmware/actions/workflows/ssc325_images.yml/badge.svg
   featured: false
   segment: null
 - family: INFINITY6
@@ -563,7 +554,6 @@ socs:
   linux_filename: ''
   notes: Infinity6 (SSC32X), SDK name - Macaron
   urlname: ssc327q
-  build_status_url: https://github.com/OpenIPC/firmware/actions/workflows/ssc325_images.yml/badge.svg
   featured: false
   segment: null
 - family: INFINITY5
@@ -577,7 +567,6 @@ socs:
   linux_filename: ''
   notes: Infinity5 (SSC32X), SDK name - Pretzel
   urlname: ssc328q
-  build_status_url: https://github.com/OpenIPC/firmware/actions/workflows/ssc325_images.yml/badge.svg
   featured: false
   segment: null
 - family: INFINITY5
@@ -591,7 +580,6 @@ socs:
   linux_filename: ''
   notes: Infinity5 (SSC32X), SDK name - Pretzel
   urlname: ssc329q
-  build_status_url: https://github.com/OpenIPC/firmware/actions/workflows/ssc325_images.yml/badge.svg
   featured: false
   segment: null
 - family: INFINITY6B0
@@ -605,7 +593,6 @@ socs:
   linux_filename: openipc.ssc333-nor-lite.tgz
   notes: ''
   urlname: ssc333
-  build_status_url: https://github.com/OpenIPC/firmware/actions/workflows/ssc335_images.yml/badge.svg
   featured: true
   segment: null
   community_notes:
@@ -629,7 +616,6 @@ socs:
   linux_filename: ''
   notes: ''
   urlname: ssc333de
-  build_status_url: https://github.com/OpenIPC/firmware/actions/workflows/ssc335_images.yml/badge.svg
   featured: false
   segment: null
 - family: INFINITY6B0
@@ -643,7 +629,6 @@ socs:
   linux_filename: openipc.ssc335-nor-lite.tgz
   notes: ''
   urlname: ssc335
-  build_status_url: https://github.com/OpenIPC/firmware/actions/workflows/ssc335_images.yml/badge.svg
   featured: true
   segment: null
   community_notes:
@@ -679,7 +664,6 @@ socs:
   linux_filename: openipc.ssc335de-nor-lite.tgz
   notes: ''
   urlname: ssc335de
-  build_status_url: https://img.shields.io/static/v1?label=SSC335DE&message=%20&logo=github
   featured: true
   segment: null
   community_notes:
@@ -699,7 +683,6 @@ socs:
   linux_filename: ''
   notes: Infinity6e (SSC33X), SDK name - Pudding
   urlname: ssc336d
-  build_status_url: https://github.com/OpenIPC/firmware/actions/workflows/ssc338q_images.yml/badge.svg
   featured: false
   segment: null
 - family: INFINITY6E
@@ -713,7 +696,6 @@ socs:
   linux_filename: ''
   notes: Infinity6e (SSC33X), SDK name - Pudding
   urlname: ssc336q
-  build_status_url: https://github.com/OpenIPC/firmware/actions/workflows/ssc338q_images.yml/badge.svg
   featured: false
   segment: null
   community_notes:
@@ -733,7 +715,6 @@ socs:
   linux_filename: openipc.ssc337-nor-lite.tgz
   notes: ''
   urlname: ssc337
-  build_status_url: https://github.com/OpenIPC/firmware/actions/workflows/ssc337_images.yml/badge.svg
   featured: true
   segment: null
   community_notes:
@@ -759,7 +740,6 @@ socs:
   linux_filename: openipc.ssc337de-nor-lite.tgz
   notes: ''
   urlname: ssc337de
-  build_status_url: https://github.com/OpenIPC/firmware/actions/workflows/ssc337de_images.yml/badge.svg
   featured: true
   segment: null
   community_notes:
@@ -785,7 +765,6 @@ socs:
   linux_filename: ''
   notes: Infinity6e (SSC33X), SDK name - Pudding
   urlname: ssc338d
-  build_status_url: https://github.com/OpenIPC/firmware/actions/workflows/ssc338q_images.yml/badge.svg
   featured: false
   segment: null
   community_notes:
@@ -808,7 +787,6 @@ socs:
   linux_filename: ''
   notes: Infinity6e (SSC33X), SDK name - Pudding
   urlname: ssc338g
-  build_status_url: https://github.com/OpenIPC/firmware/actions/workflows/ssc338q_images.yml/badge.svg
   featured: false
   segment: null
   community_notes:
@@ -847,7 +825,6 @@ socs:
   linux_filename: openipc.ssc338q-nor-lite.tgz
   notes: ''
   urlname: ssc338q
-  build_status_url: https://github.com/OpenIPC/firmware/actions/workflows/ssc338q_images.yml/badge.svg
   featured: true
   segment: fpv
   community_notes:
@@ -1004,7 +981,6 @@ socs:
   linux_filename: ''
   notes: Infinity6e (SSC33X), SDK name - Pudding; also marked MSC339G
   urlname: ssc339g
-  build_status_url: https://github.com/OpenIPC/firmware/actions/workflows/ssc338q_images.yml/badge.svg
   featured: false
   segment: null
   community_notes:
@@ -1061,7 +1037,6 @@ socs:
   linux_filename: ''
   notes: Mercury6, as an Anjoy Vision MC-H12S boot log shows (512 MB DDR, SPI NAND); also marked MSC359G; no OpenIPC build yet
   urlname: ssc359g
-  build_status_url: https://img.shields.io/static/v1?label=SSC359G&message=%20&logo=github
   featured: false
   segment: null
   community_notes:
@@ -1123,7 +1098,6 @@ socs:
   linux_filename: openipc.ssc377-nor-lite.tgz
   notes: Infinity6c (SSC37X), SDK name - Maruko
   urlname: ssc377
-  build_status_url: https://github.com/OpenIPC/firmware/actions/workflows/build.yml/badge.svg
   featured: true
   segment: null
   community_notes:
@@ -1168,7 +1142,6 @@ socs:
   linux_filename: openipc.ssc377d-nor-lite.tgz
   notes: Infinity6c (SSC37X), SDK name - Maruko
   urlname: ssc377d
-  build_status_url: https://github.com/OpenIPC/firmware/actions/workflows/ssc338q_images.yml/badge.svg
   featured: true
   segment: null
   community_notes:
@@ -1196,7 +1169,6 @@ socs:
   linux_filename: openipc.ssc377de-nor-lite.tgz
   notes: Infinity6c (SSC37X), SDK name - Maruko
   urlname: ssc377de
-  build_status_url: https://github.com/OpenIPC/firmware/actions/workflows/build.yml/badge.svg
   featured: true
   segment: null
   community_notes:
@@ -1216,7 +1188,6 @@ socs:
   linux_filename: openipc.ssc377qe-nor-lite.tgz
   notes: Infinity6c (SSC37X), SDK name - Maruko
   urlname: ssc377qe
-  build_status_url: https://github.com/OpenIPC/firmware/actions/workflows/ssc338q_images.yml/badge.svg
   featured: true
   segment: fpv
   community_notes:
@@ -1236,7 +1207,6 @@ socs:
   linux_filename: openipc.ssc378de-nor-lite.tgz
   notes: Infinity6c (SSC37X), SDK name - Maruko
   urlname: ssc378de
-  build_status_url: https://github.com/OpenIPC/firmware/actions/workflows/build.yml/badge.svg
   featured: true
   segment: null
   community_notes:
@@ -1275,7 +1245,6 @@ socs:
   linux_filename: openipc.ssc378qe-nor-lite.tgz
   notes: Infinity6c (SSC37X), SDK name - Maruko
   urlname: ssc378qe
-  build_status_url: https://github.com/OpenIPC/firmware/actions/workflows/build.yml/badge.svg
   featured: true
   segment: fpv
   community_notes:
@@ -1319,7 +1288,6 @@ socs:
   linux_filename: ''
   notes: SSC38X, the AI ISP line as Anjoy Vision names it (MC-J31H, MC-L12A); no OpenIPC build yet
   urlname: ssc385
-  build_status_url: https://img.shields.io/static/v1?label=SSC385&message=%20&logo=github
   featured: false
   segment: null
   community_notes:
@@ -1342,7 +1310,6 @@ socs:
   linux_filename: ''
   notes: SSC38X, the AI ISP line as Anjoy Vision names it (MC-J40H); no OpenIPC build yet
   urlname: ssc385d
-  build_status_url: https://img.shields.io/static/v1?label=SSC385D&message=%20&logo=github
   featured: false
   segment: null
 - family: SSC38X
@@ -1356,6 +1323,5 @@ socs:
   linux_filename: ''
   notes: SSC38X, the AI ISP line as Anjoy Vision names it (MC-A87); no OpenIPC build yet
   urlname: ssc387
-  build_status_url: https://img.shields.io/static/v1?label=SSC387&message=%20&logo=github
   featured: false
   segment: null

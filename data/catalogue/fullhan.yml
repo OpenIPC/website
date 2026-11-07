@@ -20,7 +20,6 @@ socs:
   linux_filename: ''
   notes: ''
   urlname: fh8626v100
-  build_status_url: https://img.shields.io/static/v1?label=FH8626V100&message=%20&logo=github
   featured: false
   segment: null
 - family: null
@@ -34,7 +33,6 @@ socs:
   linux_filename: ''
   notes: ''
   urlname: fh8632v100
-  build_status_url: https://img.shields.io/static/v1?label=FH8632V100&message=%20&logo=github
   featured: false
   segment: null
 - family: null
@@ -48,7 +46,6 @@ socs:
   linux_filename: ''
   notes: ''
   urlname: fh8652v100
-  build_status_url: https://img.shields.io/static/v1?label=FH8652V100&message=%20&logo=github
   featured: false
   segment: null
 - family: FH8833V100
@@ -62,7 +59,6 @@ socs:
   linux_filename: ''
   notes: ''
   urlname: fh8833v100
-  build_status_url: https://github.com/OpenIPC/firmware/actions/workflows/fh8833v100_images.yml/badge.svg
   featured: false
   segment: null
 - family: FH8852V100
@@ -76,7 +72,6 @@ socs:
   linux_filename: openipc.fh8852v100-nor-lite.tgz
   notes: ''
   urlname: fh8852v100
-  build_status_url: https://github.com/OpenIPC/firmware/actions/workflows/fh8852v100_images.yml/badge.svg
   featured: false
   segment: null
 - family: FH8852V200
@@ -90,7 +85,6 @@ socs:
   linux_filename: openipc.fh8852v200-nor-lite.tgz
   notes: ''
   urlname: fh8852v200
-  build_status_url: https://github.com/OpenIPC/firmware/actions/workflows/fh8852v200_images.yml/badge.svg
   featured: false
   segment: null
 - family: FH8852V200
@@ -104,7 +98,6 @@ socs:
   linux_filename: ''
   notes: ''
   urlname: fh8852v210
-  build_status_url: https://img.shields.io/static/v1?label=FH8852V210&message=%20&logo=github
   featured: false
   segment: null
 - family: FH8852V100
@@ -118,7 +111,6 @@ socs:
   linux_filename: ''
   notes: ''
   urlname: fh8856v100
-  build_status_url: https://img.shields.io/static/v1?label=FH8856V100&message=%20&logo=github
   featured: false
   segment: null
 - family: FH8852V200
@@ -132,7 +124,6 @@ socs:
   linux_filename: openipc.fh8856v200-nor-lite.tgz
   notes: ''
   urlname: fh8856v200
-  build_status_url: https://github.com/OpenIPC/firmware/actions/workflows/fh8856v200_images.yml/badge.svg
   featured: false
   segment: null
 - family: FH8852V200
@@ -146,7 +137,6 @@ socs:
   linux_filename: ''
   notes: ''
   urlname: fh8856v210
-  build_status_url: https://img.shields.io/static/v1?label=FH8856V210&message=%20&logo=github
   featured: false
   segment: null
 - family: FH8852V200
@@ -160,7 +150,6 @@ socs:
   linux_filename: ''
   notes: ''
   urlname: fh8858v200
-  build_status_url: https://img.shields.io/static/v1?label=FH8858V200&logo=github&message=%20
   featured: false
   segment: null
 - family: FH8852V200
@@ -174,6 +163,5 @@ socs:
   linux_filename: ''
   notes: ''
   urlname: fh8858v210
-  build_status_url: https://img.shields.io/static/v1?label=FH8858V210&message=%20&logo=github
   featured: false
   segment: null
