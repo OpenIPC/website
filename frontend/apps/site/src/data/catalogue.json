@@ -115,8 +115,8 @@
           "family": null,
           "version": "",
           "urlname": "fh8626v100",
-          "status": "rnd",
-          "load_address": "",
+          "status": "wip",
+          "load_address": "0xA1000000",
           "featured": false,
           "segment": null
         },

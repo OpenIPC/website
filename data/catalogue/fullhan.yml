@@ -12,8 +12,8 @@ socs:
 - family: null
   model: FH8626V100
   version: ''
-  status: rnd
-  load_address: ''
+  status: wip
+  load_address: '0xA1000000'
   sdk: ''
   kernel: ''
   uboot_filename: ''
