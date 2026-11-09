@@ -15,6 +15,7 @@ import {
   countByScope, socKey, socOptions, stats, subtitle, unitFiles, unitPhotos,
 } from './model';
 import { EMPTY, readQueryString, writeQueryString } from './url';
+import { canonicalSensor } from '../sensor-names';
 import { boardOfPath, boardPath } from './shell';
 
 const file = (kind: BoardFile['kind'], name: string, extra: Partial<BoardFile> = {}): BoardFile => ({
@@ -72,6 +73,15 @@ describe('filters', () => {
     expect(sensorKey('Silicon Optronics H22')).toBe('H22');
     expect(sensorKey(null)).toBeNull();
     expect(sensorOptions(ALL)).toEqual([['IMX323', 'IMX323'], ['OV4689', 'OV4689']]);
+  });
+
+  test('the names the sensor catalogue knows as one part are one option, under its model (#564)', () => {
+    const units = [model('f', {}, 'F37'), model('j', {}, 'Silicon Optronics JXF37'), model('s', {}, 'SC4239P'), model('n', {}, 'ACME X1')];
+    const all = entries({ ...FILE, manufacturers: [{ id: 'z', name: 'Z', aliases: [], website: null, models: units }] });
+    expect(sensorOptions(all)).toEqual([['ACME X1', 'ACME X1'], ['JX-F37', 'JX-F37 (F37, JXF37)'], ['SC2315E', 'SC2315E (SC4239P)']]);
+    expect(filterBoards(all, { ...EMPTY, sensor: 'JX-F37' }).map((m) => m.id)).toEqual(['f', 'j']);
+    expect([canonicalSensor('f37'), canonicalSensor('JXF37'), canonicalSensor('Silicon Optronics JX-F37')]).toEqual(['JX-F37', 'JX-F37', 'JX-F37']);
+    expect(canonicalSensor('acme x1')).toBe('ACME X1');
   });
 
   test('a SoC is the catalogue urlname, else the source label, else nothing', () => {

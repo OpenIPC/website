@@ -21,6 +21,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'preact/hooks'
 import type { BoardsFile, DeviceAnswer, Hit, SearchResult, Source } from '../../lib/boards/types';
 import { fetchBoards, fetchDevice, searchBoards } from '../../lib/boards/api';
 import Firmware from './Firmware';
+import { canonicalSensor } from '../../lib/sensor-names';
 import { EMPTY, KINDS, MISSING, SCOPES, readQueryString, writeQueryString, type BoardsState, type Scope } from '../../lib/boards/url';
 import {
   COVERAGE, HEADING_CLASS, cardPhotos, codeIndex, countByScope, deviceIdOf, entries, firstMissing, insideOf, kindOf, tally, filterBoards, filterHits, heading, matchBoards, flashOf, has, highlight, layout, lead,
@@ -64,7 +65,9 @@ export default function Boards({ locale, socs, board = false }: { locale: Locale
   const catalogue = pathFor(locale, '/cameras/boards');
   const initial = useMemo(() => {
     if (typeof window === 'undefined') return readQueryString('');
-    return { ...readQueryString(window.location.search), model: boardOf(window.location) };
+    const s = readQueryString(window.location.search);
+    // ?sensor= by any of a part's names selects the part's one option (#564).
+    return { ...s, sensor: s.sensor && canonicalSensor(s.sensor), model: boardOf(window.location) };
   }, []);
   const [view, setView] = useState<BoardsState>({ ...initial, model: null, file: null, ln: null });
   const [open, setOpen] = useState<string | null>(initial.model);

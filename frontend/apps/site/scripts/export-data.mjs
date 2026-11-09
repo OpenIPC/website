@@ -394,6 +394,18 @@ export function sensorNames(root = REPO) {
   return sorted(out);
 }
 
+/**
+ * Each part's model name by its urlname: what the board catalogue's sensor
+ * filter calls the one option it makes of a part's names (#564).
+ */
+export function sensorModels(root = REPO) {
+  const out = {};
+  for (const maker of sensors(root).makers) {
+    for (const s of maker.sensors) out[s.urlname] = s.model;
+  }
+  return sorted(out);
+}
+
 // --- WebUI gallery -------------------------------------------------------------
 
 export function webuiGallery(root = REPO) {
@@ -533,6 +545,7 @@ export function generated(root = REPO) {
   out.push(['src/data/catalogue.json', toJSON(catalogue(root))]);
   out.push(['src/data/sensors.json', toJSON(sensors(root))]);
   out.push(['src/data/sensor-names.json', toJSON(sensorNames(root))]);
+  out.push(['src/data/sensor-models.json', toJSON(sensorModels(root))]);
   out.push(['src/data/webui-gallery.json', toJSON(webuiGallery(root))]);
   out.push(['src/data/news.json', toJSON(news(root))]);
   return out;

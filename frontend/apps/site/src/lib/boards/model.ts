@@ -6,7 +6,7 @@
  * tested without a browser.
  */
 import type { BoardFile, BoardsFile, Content, Hit, Manufacturer, Model, ModelBuild, Unit, VendorFirmware } from './types';
-import { sensorSlug } from '../sensor-names';
+import { canonicalSensor, sensorModel, sensorSlug } from '../sensor-names';
 import type { BoardsState, Scope } from './url';
 
 /** A board model with the manufacturer it is filed under. */
@@ -402,8 +402,25 @@ export function lineOptions(all: Entry[], label: (line: string) => string = (l) 
   return [...lines].map(([key, c]): Option => [key, label(c)]).sort(byLabel);
 }
 
+/**
+ * One option per sensor: the names the sensor catalogue knows as one part
+ * ("F37", "JXF37") are one option, under the part's model and followed by
+ * the other names boards report it by, so a visitor looking for either finds
+ * it (#564). hasSensor matches every name of the part either way.
+ */
 export function sensorOptions(all: Entry[]): Option[] {
-  return [...new Set(all.flatMap(sensorsOf))].map((s): Option => [s, s]).sort(byLabel);
+  const parts = new Map<string, Set<string>>();
+  for (const key of new Set(all.flatMap(sensorsOf))) {
+    const value = canonicalSensor(key);
+    if (!parts.has(value)) parts.set(value, new Set());
+    if (key !== value) parts.get(value)!.add(key);
+  }
+  return [...parts].map(([value, others]): Option => {
+    const slug = sensorSlug(value);
+    const model = (slug && sensorModel(slug)) || value;
+    const aka = [...others].sort();
+    return [value, aka.length ? `${model} (${aka.join(', ')})` : model];
+  }).sort(byLabel);
 }
 
 /** The name under a card's model code; left out when it only repeats the code. */
