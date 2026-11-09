@@ -19,7 +19,7 @@ describe('generated data', () => {
 
   test('covers the catalogue, the sensors, the gallery, the news and all eighteen translation files', () => {
     expect(files.map(([rel]) => rel).sort()).toEqual([
-      'src/data/catalogue.json', 'src/data/news.json', 'src/data/sensor-names.json', 'src/data/sensors.json', 'src/data/webui-gallery.json',
+      'src/data/catalogue.json', 'src/data/news.json', 'src/data/sensor-models.json', 'src/data/sensor-names.json', 'src/data/sensors.json', 'src/data/webui-gallery.json',
       'src/i18n/boards.en.json', 'src/i18n/boards.ru.json', 'src/i18n/boards.zh.json',
       'src/i18n/en.json',
       'src/i18n/explorer.en.json', 'src/i18n/explorer.ru.json', 'src/i18n/explorer.zh.json',
