@@ -28,6 +28,8 @@ const reportsUsage = `usage: openipc reports
                                                   --soc <SoC> and --kind board|camera|recorder|doorbell|base_station
                                                 --alias: a further marking as printed (repeatable): the new board's,
                                                   or else the one --model board's
+                                                a flash dump shared publicly is read first, and kept private
+                                                when it holds secrets (see scan-backups)
   reject <id> [--by who] [--note text]
   ask <id> --note question [--by who]           ask the sender instead of deciding: a member is told (bot or mail),
                                                 a report sent signed out shows it on its receipt; their edit answers
@@ -42,9 +44,12 @@ const reportsUsage = `usage: openipc reports
                                                 what a photo publishes: a copy with the regions blurred
                                                 (fractions of the photo, upright), nothing (not the
                                                 sender's unit), or the photo as sent
-  file <id> <position> private|as_sent          the same for a flash dump its sender shared publicly:
+  file <id> <position> private|as_sent [--override-check]
+                                                the same for a flash dump its sender shared publicly:
                                                 keep it private (it holds what identifies the camera),
-                                                or publish it again as they chose
+                                                or publish it again as they chose -- after the backup
+                                                check, which refuses one it finds secrets in unless
+                                                --override-check (logged with what it found)
   unlink <id> <board model id>                  undo a link made in error
   takedown <id> --by who --note why              withdraw for good: YAML blanked, files deleted
   photo/file on a boot log, U-Boot environment or note: private keeps it off the board,
@@ -53,6 +58,11 @@ const reportsUsage = `usage: openipc reports
                                                 today's rules, and strip the metadata (EXIF: GPS) from
                                                 photos published as sent (every report when no id is
                                                 named), and say what changed (JSON)
+  scan-backups [<id>...] [--dry-run]            read each flash dump shared publicly (of every report when no id
+                                                is named) for the owner's secrets -- a Wi-Fi password, a cloud's
+                                                keys or credentials, the camera's cloud ID, a private key -- and
+                                                keep each that holds any private, as publishing does; say which
+                                                kinds were found where (JSON), never the values
   verify                                        re-hash every stored file; non-zero on any missing or changed
 
 A link is confirmed (the default: a sticker, the device ID in its firmware),
@@ -98,7 +108,8 @@ func reportsCommand(ctx context.Context, cfg *config.Config, log *slog.Logger, a
 	fs.StringVar(&fix.kind, "kind", "", "with --new-board: "+strings.Join(boards.Kinds, ", ")+" (default board)")
 	var aliases multi
 	fs.Var(&aliases, "alias", "a further marking as printed the board answers to (repeatable)")
-	dry := fs.Bool("dry-run", false, "with redact: say what would change, change nothing")
+	dry := fs.Bool("dry-run", false, "with redact or scan-backups: say what would change, change nothing")
+	override := fs.Bool("override-check", false, "with file <id> <position> as_sent: publish a flash dump the backup check finds secrets in, over what it finds (logged)")
 	cmd := args[0]
 	pos, err := parseInterleaved(fs, args[1:])
 	if err != nil {
@@ -195,6 +206,7 @@ func reportsCommand(ctx context.Context, cfg *config.Config, log *slog.Logger, a
 		refreshReportUnits(ctx, cfg, log, pool)
 		log.Info("reports: reviewed", "report", pos[0], "decision", cmd, "by", *by, "models", []string(models),
 			"certainty", *certainty, "new_board", d.Board, "member", d.Member, "stars", d.Points)
+		logBackupChecks(log, d.Backups)
 		return nil
 	case "ask":
 		if err := need(1); err != nil {
@@ -278,7 +290,7 @@ func reportsCommand(ctx context.Context, cfg *config.Config, log *slog.Logger, a
 			rs = append(rs, reports.Region{X: v[0], Y: v[1], W: v[2], H: v[3]})
 		}
 		api := &reports.API{DB: pool, Files: files, Log: log}
-		if err := api.DecidePhoto(ctx, pos[0], position, pos[2], rs, *by); err != nil {
+		if err := api.DecidePhotoOver(ctx, pos[0], position, pos[2], rs, *by, *override); err != nil {
 			return err
 		}
 		// A published report's boards show the photo as decided.
@@ -352,6 +364,35 @@ func reportsCommand(ctx context.Context, cfg *config.Config, log *slog.Logger, a
 			refreshReportUnits(ctx, cfg, log, pool)
 		}
 		return failed
+	case "scan-backups":
+		// What publishing does to a flash dump shared publicly, for the
+		// reports published before it did.
+		ids := []string(pos)
+		if len(ids) == 0 {
+			if ids, err = st.PublicBackups(ctx); err != nil {
+				return err
+			}
+		}
+		found := []reports.BackupCheck{}
+		var failed error
+		for _, id := range ids {
+			cs, err := st.CheckBackups(ctx, id, reports.BackupCheckBy+", for "+*by, *dry)
+			found = append(found, cs...)
+			if err != nil {
+				failed = fmt.Errorf("%s: %w", id, err)
+				break
+			}
+		}
+		if err := out.Encode(found); err != nil {
+			return err
+		}
+		logBackupChecks(log, found)
+		log.Info("reports: backups scanned", "reports", len(ids), "with_secrets", len(found), "dry_run", *dry)
+		if !*dry && len(found) > 0 {
+			// The boards list a public dump with its report's unit.
+			refreshReportUnits(ctx, cfg, log, pool)
+		}
+		return failed
 	case "verify":
 		checked, bad, err := reports.Verify(ctx, st, files)
 		if err != nil {
@@ -364,6 +405,15 @@ func reportsCommand(ctx context.Context, cfg *config.Config, log *slog.Logger, a
 		return nil
 	}
 	return errors.New(reportsUsage)
+}
+
+// logBackupChecks says which kinds of secret each flash dump held, never
+// the values.
+func logBackupChecks(log *slog.Logger, cs []reports.BackupCheck) {
+	for _, c := range cs {
+		log.Warn("reports: a flash dump shared publicly holds secrets", "report", c.Report, "position", c.Position,
+			"kinds", c.Kinds, "made_private", c.MadePrivate, "kept", c.Kept)
+	}
 }
 
 // boardFix is what a reviewer corrects in a proposal from the command

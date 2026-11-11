@@ -185,3 +185,66 @@ func TestTheFileCommandKeepsASharedDumpPrivate(t *testing.T) {
 		t.Errorf("keeping a private dump private: %v", err)
 	}
 }
+
+// `reports scan-backups` does to what was published before the backup
+// check what publishing now does: a public dump with the owner's Wi-Fi
+// password in it is kept private, logged as the check's decision; a clean
+// one stays public; --dry-run changes nothing.
+func TestScanBackupsKeepsPublishedDumpsWithSecretsPrivate(t *testing.T) {
+	ctx := context.Background()
+	pool := dbtest.New(t)
+	cfg := &config.Config{DatabaseURL: pool.Config().ConnString(), BoardsRoot: t.TempDir(), ReportsRoot: t.TempDir()}
+	files := &reports.Files{Root: cfg.ReportsRoot}
+	// Made up, as every secret in a test.
+	env := append(bytes.Repeat([]byte{0xff}, 4096), "bootdelay=1\x00wlanssid=TestNet\x00wlanpass=not-a-real-passphrase\x00"...)
+	secret, err := files.Put(env)
+	if err != nil {
+		t.Fatal(err)
+	}
+	clean, err := files.Put(bytes.Repeat([]byte{0xff}, 4096))
+	if err != nil {
+		t.Fatal(err)
+	}
+	n := strconv.Itoa(len(env))
+	for _, sql := range []string{
+		`INSERT INTO reports (id, channel, yaml, yaml_public, yaml_sha256, backup_consent, client_hash) VALUES
+		 ('r-wlanpass', 'web', '', '', repeat('0', 64), 'public', 'x'),
+		 ('r-cleandmp', 'web', '', '', repeat('0', 64), 'public', 'y')`,
+		`INSERT INTO report_files (report_id, position, kind, name, mime, sha256, bytes, public_sha256, public_bytes) VALUES
+		 ('r-wlanpass', 1, 'backup', 'flash.bin', 'application/octet-stream', '` + secret + `', ` + n + `, '` + secret + `', ` + n + `),
+		 ('r-cleandmp', 1, 'backup', 'flash.bin', 'application/octet-stream', '` + clean + `', 4096, '` + clean + `', 4096)`,
+		`INSERT INTO report_reviews (report_id, decision, by) VALUES ('r-wlanpass', 'publish', 'test'), ('r-cleandmp', 'publish', 'test')`,
+	} {
+		if _, err := pool.Exec(ctx, sql); err != nil {
+			t.Fatal(err)
+		}
+	}
+	log := slog.New(slog.NewTextHandler(io.Discard, nil))
+	run := func(args ...string) error { return reportsCommand(ctx, cfg, log, args) }
+	public := func(id string) *string {
+		var p *string
+		if err := pool.QueryRow(ctx, `SELECT public_sha256 FROM report_files WHERE report_id = $1 AND position = 1`, id).Scan(&p); err != nil {
+			t.Fatal(err)
+		}
+		return p
+	}
+	if err := run("scan-backups", "--dry-run"); err != nil {
+		t.Fatal(err)
+	}
+	if public("r-wlanpass") == nil {
+		t.Error("a dry run kept a dump private")
+	}
+	if err := run("scan-backups", "--by", "maint"); err != nil {
+		t.Fatal(err)
+	}
+	if p := public("r-wlanpass"); p != nil {
+		t.Errorf("a dump with a Wi-Fi password is still published as %s", *p)
+	}
+	if p := public("r-cleandmp"); p == nil || *p != clean {
+		t.Errorf("a clean dump is published as %v", p)
+	}
+	var by string
+	if err := pool.QueryRow(ctx, `SELECT by FROM report_photo_reviews WHERE report_id = 'r-wlanpass'`).Scan(&by); err != nil || by != reports.BackupCheckBy+", for maint" {
+		t.Errorf("logged as %q: %v", by, err)
+	}
+}
