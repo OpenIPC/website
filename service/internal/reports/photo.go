@@ -107,10 +107,7 @@ func BlurPhoto(src []byte, regions []Region) (out []byte, mime string, err error
 	if err != nil {
 		return nil, "", fmt.Errorf("the photo does not decode: %w", err)
 	}
-	o := 1
-	if format == "jpeg" {
-		o = boards.ExifOrientation(src)
-	}
+	o := boards.ExifOrientation(src)
 	// A picture already RGBA and upright (a PNG without alpha) is painted
 	// where it is: a copy would be the same pixels.
 	rgba, ok := img.(*image.RGBA)

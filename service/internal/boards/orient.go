@@ -49,9 +49,17 @@ func Upright(img image.Image, o int) *image.RGBA {
 	return out
 }
 
-// ExifOrientation reads a JPEG's EXIF orientation tag (0x0112), 1 when it
-// has none or it cannot be read.
+// ExifOrientation reads a photo's EXIF orientation tag (0x0112): a JPEG's
+// APP1, a PNG's eXIf chunk or a WebP's EXIF chunk, the three a published
+// photo keeps it in (reports.StripPhoto); 1 when it has none or it cannot
+// be read.
 func ExifOrientation(b []byte) int {
+	switch {
+	case len(b) >= 8 && string(b[:8]) == "\x89PNG\r\n\x1a\n":
+		return pngOrientation(b)
+	case len(b) >= 12 && string(b[:4]) == "RIFF" && string(b[8:12]) == "WEBP":
+		return webpOrientation(b)
+	}
 	if len(b) < 4 || b[0] != 0xFF || b[1] != 0xD8 {
 		return 1
 	}
@@ -87,6 +95,9 @@ func ExifOrientation(b []byte) int {
 // TIFFOrientation is the orientation tag of a TIFF header, 1 when it has
 // none or it cannot be read.
 func TIFFOrientation(t []byte) int {
+	if len(t) < 8 {
+		return 1
+	}
 	var bo binary.ByteOrder
 	switch string(t[:2]) {
 	case "II":
@@ -112,6 +123,45 @@ func TIFFOrientation(t []byte) int {
 			}
 			return 1
 		}
+	}
+	return 1
+}
+
+// pngOrientation is the orientation of a PNG's eXIf chunk, which comes
+// before the image data.
+func pngOrientation(b []byte) int {
+	for p := 8; p+12 <= len(b); {
+		n := int(binary.BigEndian.Uint32(b[p:]))
+		if n < 0 || p+12+n > len(b) {
+			return 1
+		}
+		switch string(b[p+4 : p+8]) {
+		case "eXIf":
+			return TIFFOrientation(b[p+8 : p+8+n])
+		case "IDAT", "IEND":
+			return 1
+		}
+		p += 12 + n
+	}
+	return 1
+}
+
+// webpOrientation is the orientation of a WebP's EXIF chunk.
+func webpOrientation(b []byte) int {
+	for p := 12; p+8 <= len(b); {
+		n := int(binary.LittleEndian.Uint32(b[p+4:]))
+		if n < 0 || p+8+n > len(b) {
+			return 1
+		}
+		if string(b[p:p+4]) == "EXIF" {
+			t := b[p+8 : p+8+n]
+			// Some writers keep JPEG's "Exif\0\0" before the TIFF header.
+			if len(t) >= 6 && string(t[:6]) == "Exif\x00\x00" {
+				t = t[6:]
+			}
+			return TIFFOrientation(t)
+		}
+		p += 8 + n + n&1
 	}
 	return 1
 }

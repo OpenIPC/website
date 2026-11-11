@@ -2,8 +2,12 @@ package boards
 
 import (
 	"bytes"
+	"encoding/binary"
 	"errors"
+	"hash/crc32"
+	"image"
 	"image/jpeg"
+	"image/png"
 	"strings"
 	"testing"
 	"testing/fstest"
@@ -258,5 +262,57 @@ func TestThumbnailsAreAsTheBrowserShowsThePhoto(t *testing.T) {
 	big := tagged(withScan(frameHeader(0xc2, 8000, 6000, 0x11, 0x11, 0x11)), 8)
 	if _, w, h, err := Thumbnail(big, 480); !errors.Is(err, ErrTooBigToDecode) || w != 6000 || h != 8000 {
 		t.Errorf("too big: %dx%d %v", w, h, err)
+	}
+}
+
+// A published PNG or WebP keeps its orientation too (reports.StripPhoto
+// puts it back as an eXIf or EXIF of that one tag), and browsers turn
+// those as they do a JPEG.
+func TestAPNGsAndAWebPsOrientationIsRead(t *testing.T) {
+	tiff := []byte{'M', 'M', 0, 42, 0, 0, 0, 8, 0, 1, 0x01, 0x12, 0, 3, 0, 0, 0, 1, 0, 6, 0, 0, 0, 0, 0, 0}
+	var img bytes.Buffer
+	if err := png.Encode(&img, image.NewRGBA(image.Rect(0, 0, 1000, 500))); err != nil {
+		t.Fatal(err)
+	}
+	b := img.Bytes()
+	ihdrEnd := 8 + 12 + 13
+	c := binary.BigEndian.AppendUint32(nil, uint32(len(tiff)))
+	c = append(append(c, "eXIf"...), tiff...)
+	c = binary.BigEndian.AppendUint32(c, crc32.ChecksumIEEE(c[4:]))
+	tagged := append(append(append([]byte{}, b[:ihdrEnd]...), c...), b[ihdrEnd:]...)
+	th, w, h, err := Thumbnail(tagged, 480)
+	if err != nil {
+		t.Fatal(err)
+	}
+	cfg, err := jpeg.DecodeConfig(bytes.NewReader(th))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if w != 500 || h != 1000 || cfg.Width != 240 || cfg.Height != 480 {
+		t.Errorf("PNG: shown %dx%d, thumbnail %dx%d", w, h, cfg.Width, cfg.Height)
+	}
+
+	for _, exif := range [][]byte{tiff, append([]byte("Exif\x00\x00"), tiff...)} {
+		wp := append([]byte{}, webp1x1...)
+		wp = append(wp, "EXIF"...)
+		wp = binary.LittleEndian.AppendUint32(wp, uint32(len(exif)))
+		wp = append(wp, exif...)
+		binary.LittleEndian.PutUint32(wp[4:], uint32(len(wp)-8))
+		if o := ExifOrientation(wp); o != 6 {
+			t.Errorf("WebP: orientation %d", o)
+		}
+		if _, _, _, err := Thumbnail(wp, 480); err != nil {
+			t.Errorf("WebP: %v", err)
+		}
+	}
+
+	// Short and broken headers are upright, never a panic.
+	for _, b := range [][]byte{nil, {'I', 'I'}, {'M', 'M', 0, 42}, tiff[:9]} {
+		if o := TIFFOrientation(b); o != 1 {
+			t.Errorf("% x: %d", b, o)
+		}
+	}
+	if o := ExifOrientation([]byte("RIFF\x00\x00\x00\x00WEBPEXIF\xff\xff\xff\x7f")); o != 1 {
+		t.Errorf("a WebP chunk past its end: %d", o)
 	}
 }
