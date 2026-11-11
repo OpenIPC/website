@@ -206,13 +206,24 @@ func (im *Importer) filesIn(fsys fs.FS, u *Unit, dir string) ([]artifact, error)
 		switch f.Kind {
 		case "photo_front", "photo_back", "photo_other", "pinout":
 			thumb, w, h, err := Thumbnail(b, 480)
-			if err != nil {
+			switch {
+			case errors.Is(err, ErrTooBigToDecode):
+				// Its own thumbnail: listed and shown like any photo, at
+				// the cost of the reader's download, not the service's
+				// memory.
+				if im.Log != nil {
+					im.Log.Warn("boards: a photo too big to decode is its own thumbnail", "unit", u.ID, "file", f.Name, "width", w, "height", h)
+				}
+				a.Width, a.Height = w, h
+				a.Thumb = a.Path
+			case err != nil:
 				return nil, fmt.Errorf("%s: %w", f.Source, err)
-			}
-			a.Width, a.Height = w, h
-			a.Thumb = u.ID + "/thumb-" + strings.TrimSuffix(f.Name, path.Ext(f.Name)) + ".jpg"
-			if err := os.WriteFile(filepath.Join(dir, path.Base(a.Thumb)), thumb, 0o644); err != nil {
-				return nil, err
+			default:
+				a.Width, a.Height = w, h
+				a.Thumb = u.ID + "/thumb-" + strings.TrimSuffix(f.Name, path.Ext(f.Name)) + ".jpg"
+				if err := os.WriteFile(filepath.Join(dir, path.Base(a.Thumb)), thumb, 0o644); err != nil {
+					return nil, err
+				}
 			}
 		case "uboot_env", "boot_log", "note":
 			s := strings.ToValidUTF8(strings.ReplaceAll(string(b), "\x00", ""), "�")

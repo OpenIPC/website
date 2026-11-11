@@ -342,6 +342,31 @@ func TestAWebPPhotoIsThumbnailedAndABrokenOneCostsOnlyItsReport(t *testing.T) {
 	}
 }
 
+// a photo too big to decode within the service's memory is listed
+// all the same, as its own thumbnail.
+func TestAPhotoTooBigToDecodeIsItsOwnThumbnail(t *testing.T) {
+	pool, root := imported(t)
+	ctx := context.Background()
+	im := &Importer{Pool: pool, Log: quiet(), Root: root}
+	store := fstest.MapFS{"aa/huge": {Data: frameHeader(0xc2, 8000, 6000, 0x11, 0x11, 0x11)}}
+	list := []Contribution{reportUnit("xiongmai-53h20-s-r-aaaaaaaa", "xiongmai-53h20-s", "r-aaaaaaaa", "aa/huge", "photo_other", "1-huge.jpg")}
+	if _, err := im.ApplyReportUnits(ctx, store, list); err != nil {
+		t.Fatal(err)
+	}
+	var path, thumb string
+	var w, h int
+	if err := pool.QueryRow(ctx, `SELECT path, coalesce(thumb_path, ''), width, height FROM board_artifacts WHERE unit_id = 'xiongmai-53h20-s-r-aaaaaaaa'`).
+		Scan(&path, &thumb, &w, &h); err != nil {
+		t.Fatal(err)
+	}
+	if thumb != path || w != 8000 || h != 6000 {
+		t.Errorf("thumb %q of %q, %dx%d", thumb, path, w, h)
+	}
+	if _, err := os.Stat(filepath.Join(root, path)); err != nil {
+		t.Error(err)
+	}
+}
+
 func TestAReportPhotoNamedPinoutIsThePinout(t *testing.T) {
 	for name, want := range map[string]string{
 		"pinout.PNG": "pinout", "Pinout-uart.jpg": "pinout", "PINOUT.webp": "pinout",

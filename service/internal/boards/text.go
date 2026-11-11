@@ -2,6 +2,7 @@ package boards
 
 import (
 	"bytes"
+	"errors"
 	"image"
 	"image/color"
 	"image/jpeg"
@@ -32,7 +33,17 @@ func UBootVars(console string) map[string]string {
 // Thumbnail scales a photo down to fit max×max, averaging every source
 // pixel into the one it lands on, and returns the JPEG with the original's
 // size. The archive's own thumbnails are 150 pixels, too small for a card.
+//
+// A photo whose decode would cost more than MaxDecodeBytes is not decoded:
+// Thumbnail returns ErrTooBigToDecode with its size from the header.
 func Thumbnail(src []byte, max int) (thumb []byte, width, height int, err error) {
+	cost, w, h, err := DecodeCost(src)
+	if err != nil {
+		return nil, 0, 0, err
+	}
+	if cost > MaxDecodeBytes {
+		return nil, w, h, ErrTooBigToDecode
+	}
 	img, _, err := image.Decode(bytes.NewReader(src))
 	if err != nil {
 		return nil, 0, 0, err
@@ -75,4 +86,88 @@ func maxInt(a, b int) int {
 		return a
 	}
 	return b
+}
+
+// MaxDecodeBytes is the most decoding one photo may hold. The web role runs
+// in 384 MB (deploy/docker-compose.yml), and Go's JPEG decoder keeps every
+// DCT coefficient of a progressive picture as an int32: a 4390x3447
+// progressive photo at 4:4:4 (r-wcq7epd2) held 227 MB, and the refresh
+// after its review took the container down, again at each start.
+const MaxDecodeBytes = 160 << 20
+
+// ErrTooBigToDecode is a photo DecodeCost puts over MaxDecodeBytes.
+var ErrTooBigToDecode = errors.New("the photo is too big to decode")
+
+// DecodeCost is about what image.Decode holds for src, read from its
+// header alone, with the picture's size. A JPEG costs a byte per sample of
+// each component (its subsampling counted) and, progressive, four more for
+// the coefficients kept until the last scan; anything else is counted as
+// 16-bit RGBA, the most the decoders make.
+func DecodeCost(src []byte) (cost int64, width, height int, err error) {
+	if c, w, h, ok := jpegCost(src); ok {
+		return c, w, h, nil
+	}
+	cfg, _, err := image.DecodeConfig(bytes.NewReader(src))
+	if err != nil {
+		return 0, 0, 0, err
+	}
+	return int64(cfg.Width) * int64(cfg.Height) * 8, cfg.Width, cfg.Height, nil
+}
+
+// jpegCost reads a JPEG's frame header (SOF0-SOF2, what image/jpeg
+// decodes); ok is false for anything else, left to image.DecodeConfig.
+func jpegCost(b []byte) (cost int64, width, height int, ok bool) {
+	if len(b) < 4 || b[0] != 0xff || b[1] != 0xd8 {
+		return 0, 0, 0, false
+	}
+	for i := 2; i+4 <= len(b); {
+		if b[i] != 0xff {
+			return 0, 0, 0, false
+		}
+		m := b[i+1]
+		switch {
+		case m == 0xff: // fill byte
+			i++
+			continue
+		case m == 0x01 || (m >= 0xd0 && m <= 0xd7): // no length
+			i += 2
+			continue
+		case m == 0xd9 || m == 0xda: // end of image, or scan data before any frame
+			return 0, 0, 0, false
+		}
+		n := int(b[i+2])<<8 | int(b[i+3])
+		if n < 2 || i+2+n > len(b) {
+			return 0, 0, 0, false
+		}
+		if m >= 0xc0 && m <= 0xc2 {
+			seg := b[i+4 : i+2+n]
+			if len(seg) < 6 {
+				return 0, 0, 0, false
+			}
+			h, w, nc := int(seg[1])<<8|int(seg[2]), int(seg[3])<<8|int(seg[4]), int(seg[5])
+			if w == 0 || h == 0 || nc == 0 || len(seg) < 6+3*nc {
+				return 0, 0, 0, false
+			}
+			hmax, vmax := 1, 1
+			for c := 0; c < nc; c++ {
+				hv := seg[6+3*c+1]
+				hmax, vmax = maxInt(hmax, int(hv>>4)), maxInt(vmax, int(hv&15))
+			}
+			var samples int64
+			for c := 0; c < nc; c++ {
+				hv := seg[6+3*c+1]
+				samples += int64(w) * int64(h) * int64(hv>>4) * int64(hv&15) / int64(hmax*vmax)
+			}
+			cost = samples
+			if m == 0xc2 {
+				cost += samples * 4
+			}
+			if nc == 4 { // CMYK: converted into an image of its own
+				cost += int64(w) * int64(h) * 4
+			}
+			return cost, w, h, true
+		}
+		i += 2 + n
+	}
+	return 0, 0, 0, false
 }
