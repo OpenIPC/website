@@ -203,8 +203,8 @@ func (im *Importer) filesIn(fsys fs.FS, u *Unit, dir string) ([]artifact, error)
 		if err := os.WriteFile(filepath.Join(dir, f.Name), b, 0o644); err != nil {
 			return nil, err
 		}
-		switch f.Kind {
-		case "photo_front", "photo_back", "photo_other", "pinout":
+		switch {
+		case isPhoto(f.Kind):
 			thumb, w, h, err := Thumbnail(b, 480)
 			switch {
 			case errors.Is(err, ErrTooBigToDecode):
@@ -225,7 +225,7 @@ func (im *Importer) filesIn(fsys fs.FS, u *Unit, dir string) ([]artifact, error)
 					return nil, err
 				}
 			}
-		case "uboot_env", "boot_log", "note":
+		case f.Kind == "uboot_env" || f.Kind == "boot_log" || f.Kind == "note":
 			s := strings.ToValidUTF8(strings.ReplaceAll(string(b), "\x00", ""), "�")
 			a.Content = &s
 			a.Mime = "text/plain; charset=utf-8"
@@ -233,6 +233,16 @@ func (im *Importer) filesIn(fsys fs.FS, u *Unit, dir string) ([]artifact, error)
 		out = append(out, a)
 	}
 	return out, nil
+}
+
+// isPhoto says a file of this kind is a picture, thumbnailed and shown in
+// the board page's viewer.
+func isPhoto(kind string) bool {
+	switch kind {
+	case "photo_front", "photo_back", "photo_other", "pinout":
+		return true
+	}
+	return false
 }
 
 // save stores one unit and its files in one transaction, and reports false

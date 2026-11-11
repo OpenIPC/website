@@ -687,3 +687,49 @@ func TestARewriteSwapsTheUnitInWhole(t *testing.T) {
 		t.Errorf("after a failed rewrite: %q", b)
 	}
 }
+
+// A unit stored before thumbnails were turned by the photo's EXIF
+// orientation has its photo's stored size, not its shown one: the refresh
+// rebuilds it, as it would a changed unit, so the 16 sideways phone photos
+// published before mend themselves at the next start.
+func TestAUnitWithASidewaysPhotoIsRebuilt(t *testing.T) {
+	pool, root := imported(t)
+	ctx := context.Background()
+	im := &Importer{Pool: pool, Log: quiet(), Root: root}
+	store := fstest.MapFS{"aa/portrait": {Data: tagged(jpg(1000, 500), 6)}}
+	list := []Contribution{reportUnit("xiongmai-53h20-s-r-aaaaaaaa", "xiongmai-53h20-s", "r-aaaaaaaa", "aa/portrait", "photo_other", "1-portrait.jpg")}
+	size := func() (w, h int) {
+		t.Helper()
+		if err := pool.QueryRow(ctx, `SELECT width, height FROM board_artifacts WHERE unit_id = 'xiongmai-53h20-s-r-aaaaaaaa'`).Scan(&w, &h); err != nil {
+			t.Fatal(err)
+		}
+		return w, h
+	}
+	if _, err := im.ApplyReportUnits(ctx, store, list); err != nil {
+		t.Fatal(err)
+	}
+	if w, h := size(); w != 500 || h != 1000 {
+		t.Fatalf("stored %dx%d, want 500x1000 as shown", w, h)
+	}
+	// As the code before stored it.
+	if _, err := pool.Exec(ctx, `UPDATE board_artifacts SET width = 1000, height = 500 WHERE unit_id = 'xiongmai-53h20-s-r-aaaaaaaa'`); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := im.ApplyReportUnits(ctx, store, list); err != nil {
+		t.Fatal(err)
+	}
+	if w, h := size(); w != 500 || h != 1000 {
+		t.Errorf("after the refresh %dx%d, want 500x1000", w, h)
+	}
+	// And a unit as it should be is left alone.
+	var before, after string
+	q := `SELECT xmin::text FROM board_units WHERE id = 'xiongmai-53h20-s-r-aaaaaaaa'`
+	_ = pool.QueryRow(ctx, q).Scan(&before)
+	if _, err := im.ApplyReportUnits(ctx, store, list); err != nil {
+		t.Fatal(err)
+	}
+	_ = pool.QueryRow(ctx, q).Scan(&after)
+	if before != after {
+		t.Error("an unchanged unit was written again")
+	}
+}

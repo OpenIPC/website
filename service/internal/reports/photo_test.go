@@ -19,6 +19,8 @@ import (
 	"strconv"
 	"strings"
 	"testing"
+
+	"github.com/OpenIPC/website/service/internal/boards"
 )
 
 // label is a picture with a fine black-and-white pattern -- a QR code, as
@@ -119,13 +121,13 @@ func TestABlurLeavesNoPatternInItsRegionAndTouchesNothingElse(t *testing.T) {
 // and has no EXIF left.
 func TestABlurredJPEGIsUprightAsTheReviewerSawIt(t *testing.T) {
 	src := withOrientation(encodeJPEG(t, label(200, 120)), 6)
-	if o := exifOrientation(src); o != 6 {
+	if o := boards.ExifOrientation(src); o != 6 {
 		t.Fatalf("orientation read as %d", o)
 	}
 	// Fill bytes before a marker are allowed (FF FF E1 ...); the EXIF
 	// segment behind them still says the photo is sideways.
 	padded := append([]byte{0xFF, 0xD8, 0xFF}, src[2:]...)
-	if o := exifOrientation(padded); o != 6 {
+	if o := boards.ExifOrientation(padded); o != 6 {
 		t.Errorf("behind a fill byte, orientation read as %d", o)
 	}
 	if out, _, err := BlurPhoto(padded, []Region{{X: 0, Y: 0, W: 0.1, H: 0.1}}); err != nil {
@@ -141,7 +143,7 @@ func TestABlurredJPEGIsUprightAsTheReviewerSawIt(t *testing.T) {
 	if err != nil || cfg.Width != 120 || cfg.Height != 200 {
 		t.Errorf("the copy is %dx%d, not upright 120x200 (%v)", cfg.Width, cfg.Height, err)
 	}
-	if exifOrientation(out) != 1 || bytes.Contains(out, []byte("Exif")) {
+	if boards.ExifOrientation(out) != 1 || bytes.Contains(out, []byte("Exif")) {
 		t.Error("the copy keeps EXIF")
 	}
 	// Turned clockwise, the pattern that was top-left is top-right.
@@ -484,7 +486,7 @@ func TestABlurInPlaceIsTheSameAsOnACopy(t *testing.T) {
 	if _, ok := dec.(*image.RGBA); !ok {
 		t.Fatalf("decoded to %T, not painted in place", dec)
 	}
-	want := upright(dec, 1)
+	want := boards.Upright(dec, 1)
 	fill(want, image.Rect(0, 0, 100, 60))
 	out, _, err := BlurPhoto(src, []Region{{X: 0, Y: 0, W: 0.5, H: 0.5}})
 	if err != nil {

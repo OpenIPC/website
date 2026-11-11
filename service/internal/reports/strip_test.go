@@ -14,6 +14,8 @@ import (
 	"testing"
 
 	"github.com/jackc/pgx/v5"
+
+	"github.com/OpenIPC/website/service/internal/boards"
 )
 
 // where is a place a phone writes into a photo, in each of its forms.
@@ -110,7 +112,7 @@ func TestAPhonesJPEGIsPublishedWithoutWhereItWasTaken(t *testing.T) {
 	if !bytes.Contains(out, []byte("ICC_PROFILE")) || !bytes.HasPrefix(out[2:], []byte{0xFF, 0xE0}) {
 		t.Error("the colour profile or JFIF's place first was lost")
 	}
-	if o := exifOrientation(out); o != 6 {
+	if o := boards.ExifOrientation(out); o != 6 {
 		t.Errorf("orientation %d, want 6", o)
 	}
 	if !bytes.HasSuffix(out, []byte{0xFF, 0xD9}) || bytes.Count(out, []byte{0xFF, 0xD8, 0xFF}) != 1 {
@@ -284,7 +286,7 @@ func TestThePublicCopyOfAPhotoHasNoGPS(t *testing.T) {
 		}
 		return e.onDisk(t, rec)
 	}
-	if b := served(); bytes.Contains(b, []byte(where)) || bytes.Contains(b, []byte("Xiaomi")) || exifOrientation(b) != 6 {
+	if b := served(); bytes.Contains(b, []byte(where)) || bytes.Contains(b, []byte("Xiaomi")) || boards.ExifOrientation(b) != 6 {
 		t.Fatal("the served photo carries its metadata, or lost its orientation")
 	}
 	if _, err := jpg.Decode(bytes.NewReader(served())); err != nil {
@@ -340,7 +342,7 @@ func TestThePublicCopyOfAPhotoHasNoGPS(t *testing.T) {
 	if err := e.api.DecidePhoto(ctx, id, 1, PhotoAsSent, nil, "test"); err != nil {
 		t.Fatal(err)
 	}
-	if b := served(); bytes.Contains(b, []byte(where)) || exifOrientation(b) != 6 {
+	if b := served(); bytes.Contains(b, []byte(where)) || boards.ExifOrientation(b) != 6 {
 		t.Error("as_sent published the metadata")
 	}
 }

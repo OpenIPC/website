@@ -5,6 +5,8 @@ import (
 	"encoding/binary"
 	"errors"
 	"hash/crc32"
+
+	"github.com/OpenIPC/website/service/internal/boards"
 )
 
 // A photo published as sent is still not published with what the phone
@@ -65,7 +67,7 @@ func exifTIFFOrientation(b []byte) int {
 	if len(b) < 8 {
 		return 1
 	}
-	return tiffOrientation(b)
+	return boards.TIFFOrientation(b)
 }
 
 // stripJPEG walks a JPEG's segments to its end of image. It keeps the
