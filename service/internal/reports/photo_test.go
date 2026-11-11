@@ -7,6 +7,7 @@ import (
 	"encoding/binary"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"image"
 	"image/color"
 	jpg "image/jpeg"
@@ -431,6 +432,66 @@ func TestABlursWorkIsBounded(t *testing.T) {
 	overlapping := []Region{{X: 0, Y: 0, W: 1, H: 0.9}, {X: 0, Y: 0.1, W: 1, H: 0.9}, {X: 0.05, Y: 0, W: 0.95, H: 1}}
 	if _, _, err := BlurPhoto(src, overlapping); err == nil || !strings.Contains(err.Error(), "more than 2 times") {
 		t.Errorf("regions covering the picture almost three times over: %v", err)
+	}
+}
+
+// frameHeader is a JPEG's start and frame header alone (the pattern of
+// boards' tests), with a scan after it: what DecodeConfig and
+// boards.DecodeCost read, for a picture too big to make whole in a test.
+func frameHeader(sof byte, w, h int, hv ...byte) []byte {
+	seg := []byte{8, byte(h >> 8), byte(h), byte(w >> 8), byte(w), byte(len(hv))}
+	for i, s := range hv {
+		seg = append(seg, byte(i+1), s, 0)
+	}
+	n := len(seg) + 2
+	out := append([]byte{0xff, 0xd8, 0xff, 0xe0, 0, 4, 'J', 'F', 0xff, sof, byte(n >> 8), byte(n)}, seg...)
+	return append(out, 0xff, 0xda, 0, 8, 1, 1, 0, 0, 0x3f, 0, 0x12, 0x34, 0x56, 0xff, 0xd9)
+}
+
+// A blur that would hold more than boards.MaxDecodeBytes is refused before
+// the photo is decoded, saying what to do instead; a phone's 12 MP photo
+// is not.
+func TestABlurOverTheMemoryBudgetIsRefused(t *testing.T) {
+	r := []Region{{X: 0, Y: 0, W: 0.1, H: 0.1}}
+	// r-wcq7epd2's photo: 227 MB to decode, 60 MB more to paint.
+	_, _, err := BlurPhoto(frameHeader(0xc2, 4390, 3447, 0x11, 0x11, 0x11), r)
+	if !errors.Is(err, ErrTooBigToBlur) || !strings.Contains(err.Error(), "keep it private") {
+		t.Errorf("r-wcq7epd2's photo: %v", err)
+	}
+	// Within the decoder's own budget (119 MB), over it with the copy (63 MB).
+	_, _, err = BlurPhoto(frameHeader(0xc2, 4600, 3450, 0x22, 0x11, 0x11), r)
+	if !errors.Is(err, ErrTooBigToBlur) {
+		t.Errorf("progressive 4:2:0, 16 MP: %v", err)
+	}
+	for _, ok := range [][]byte{
+		frameHeader(0xc0, 4000, 3000, 0x22, 0x11, 0x11), // baseline 12 MP, 66 MB
+		frameHeader(0xc2, 4000, 3000, 0x22, 0x11, 0x11), // progressive 12 MP, 138 MB
+	} {
+		if err := blurBudget(ok); err != nil {
+			t.Errorf("%v", err)
+		}
+	}
+}
+
+// A PNG that decodes to RGBA is painted in place; the copy is what painting
+// a copy of it would make, byte for byte.
+func TestABlurInPlaceIsTheSameAsOnACopy(t *testing.T) {
+	src := encodePNG(t, label(200, 120))
+	dec, err := png.Decode(bytes.NewReader(src))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, ok := dec.(*image.RGBA); !ok {
+		t.Fatalf("decoded to %T, not painted in place", dec)
+	}
+	want := upright(dec, 1)
+	fill(want, image.Rect(0, 0, 100, 60))
+	out, _, err := BlurPhoto(src, []Region{{X: 0, Y: 0, W: 0.5, H: 0.5}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !bytes.Equal(out, encodePNG(t, want)) {
+		t.Error("painted in place, the copy differs")
 	}
 }
 

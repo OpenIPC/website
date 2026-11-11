@@ -13,6 +13,8 @@ import (
 	"math"
 	"strings"
 
+	"github.com/OpenIPC/website/service/internal/boards"
+
 	// The send form takes WebP photos too.
 	_ "golang.org/x/image/webp"
 )
@@ -41,10 +43,16 @@ type Region struct {
 const (
 	maxRegions = 16
 	maxCover   = 2
-	// maxPixels: a photo larger than this is not decoded (a 20 MB PNG can
-	// claim any size).
-	maxPixels = 60_000_000
 )
+
+// ErrTooBigToBlur is a photo whose blur would hold more than
+// boards.MaxDecodeBytes: its decode (boards.DecodeCost, read from the
+// header -- a 20 MB PNG can claim any size) and the upright RGBA copy that
+// is painted and encoded, four bytes a pixel. A blur runs in the web role's
+// 384 MB, from the review queue or `openipc reports photo` by docker exec,
+// beside the server: r-wcq7epd2's 4390x3447 progressive photo would hold
+// 287 MB, and the container killed takes the site down with it.
+var ErrTooBigToBlur = errors.New("the photo is too big to blur here")
 
 // ErrNoRegions is a blur that names nothing to blur.
 var ErrNoRegions = errors.New("blur: draw at least one region")
@@ -81,12 +89,12 @@ func BlurPhoto(src []byte, regions []Region) (out []byte, mime string, err error
 	if err := validRegions(regions); err != nil {
 		return nil, "", err
 	}
-	cfg, format, err := image.DecodeConfig(bytes.NewReader(src))
+	_, format, err := image.DecodeConfig(bytes.NewReader(src))
 	if err != nil {
 		return nil, "", fmt.Errorf("the photo does not decode: %w", err)
 	}
-	if cfg.Width*cfg.Height > maxPixels {
-		return nil, "", errors.New("the photo is too large to blur here")
+	if err := blurBudget(src); err != nil {
+		return nil, "", err
 	}
 	// The same fractions cover the same share of the picture either way up.
 	regions = distinctRegions(regions)
@@ -105,7 +113,12 @@ func BlurPhoto(src []byte, regions []Region) (out []byte, mime string, err error
 	if format == "jpeg" {
 		o = exifOrientation(src)
 	}
-	rgba := upright(img, o)
+	// A picture already RGBA and upright (a PNG without alpha) is painted
+	// where it is: a copy would be the same pixels.
+	rgba, ok := img.(*image.RGBA)
+	if !ok || o >= 2 && o <= 8 {
+		rgba = upright(img, o)
+	}
 	b := rgba.Bounds()
 	for _, r := range regions {
 		x0 := int(math.Floor(r.X * float64(b.Dx())))
@@ -124,6 +137,22 @@ func BlurPhoto(src []byte, regions []Region) (out []byte, mime string, err error
 		return nil, "", err
 	}
 	return buf.Bytes(), mime, nil
+}
+
+// blurBudget refuses a photo whose blur would hold more than
+// boards.MaxDecodeBytes, its decode and one RGBA copy counted, saying what
+// the reviewer can do instead.
+func blurBudget(src []byte) error {
+	cost, w, h, err := boards.DecodeCost(src)
+	if err != nil {
+		return fmt.Errorf("the photo does not decode: %w", err)
+	}
+	if total := cost + int64(w)*int64(h)*4; total > boards.MaxDecodeBytes {
+		return fmt.Errorf("%w: blurring this %dx%d picture would hold about %d MB, over the %d MB allowed; "+
+			"keep it private, or ask the sender to replace it from /club with a smaller photo, "+
+			"or with one blurred in the send form", ErrTooBigToBlur, w, h, total>>20, boards.MaxDecodeBytes>>20)
+	}
+	return nil
 }
 
 // distinctRegions drops each region that lies inside another (the same one

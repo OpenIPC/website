@@ -328,5 +328,8 @@ restores the image but never the schema, so keep migrations additive.
   interpolated away.
 - **External runtime dependencies that won't exist in a fresh checkout**: pushed
   builds in PostgreSQL (`openipc builds import-history` seeds an empty
-  database) and libvips (variants; in the service image, and installed in CI).
+  database) and ffmpeg (the keyframe check; in the service image, and
+  installed in CI). There is no libvips: a JPEG, a board's thumbnail and a
+  blur are Go's own decoders, each refused past `boards.MaxDecodeBytes` read
+  from the header, under the containers' `GOMEMLIMIT`.
 - The retired stack's history is in `deploy/GO-CUTOVER.md`.
