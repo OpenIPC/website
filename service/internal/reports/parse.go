@@ -404,9 +404,11 @@ var anyMAC = []struct {
 var hexByteMAC = regexp.MustCompile(`(?i)\b0x[0-9a-f]{1,2}(?::0x[0-9a-f]{1,2}){5}\b`)
 
 // replaceMACs replaces what re finds with its MAC's mark, the MAC spelled
-// as norm spells it. Six groups the same separator joins to another group,
-// before them or after, are part of something longer -- a Dahua hardware
-// ID, IPC-X-Lexus:01:02:02:23:21:00:01:00:... -- and no MAC.
+// as norm spells it. Six groups the same separator joins to two more
+// groups, before them, after them or one each side, are part of something
+// longer -- a Dahua hardware ID, IPC-X-Lexus:01:02:02:23:21:00:01:00:... --
+// and no MAC. One more group alone is not enough: a MAC is written with a
+// port after it (00:12:41:ab:cd:ef:8080).
 func replaceMACs(text string, re *regexp.Regexp, sep byte, norm func(string) string, key string) string {
 	idx := re.FindAllStringIndex(text, -1)
 	if idx == nil {
@@ -416,7 +418,7 @@ func replaceMACs(text string, re *regexp.Regexp, sep byte, norm func(string) str
 	last := 0
 	for _, m := range idx {
 		s := text[m[0]:m[1]]
-		if zeroish(s) || groupBefore(text[:m[0]], sep) || groupAfter(text[m[1]:], sep) {
+		if zeroish(s) || groupsBefore(text[:m[0]], sep)+groupsAfter(text[m[1]:], sep) >= 2 {
 			continue
 		}
 		b.WriteString(text[last:m[0]])
@@ -431,28 +433,38 @@ func replaceMACs(text string, re *regexp.Regexp, sep byte, norm func(string) str
 // ID has 2D0 and 200 among its pairs), with a 0x or without.
 var macGroup = regexp.MustCompile(`(?i)^(?:0x)?[0-9a-f]{1,4}$`)
 
-func groupBefore(head string, sep byte) bool {
-	if head == "" || head[len(head)-1] != sep {
-		return false
+// groupsBefore is how many groups, up to two, the separator joins to the
+// end of head; groupsAfter, to the start of tail.
+func groupsBefore(head string, sep byte) int {
+	n := 0
+	for ; n < 2 && head != "" && head[len(head)-1] == sep; n++ {
+		head = head[:len(head)-1]
+		i := len(head)
+		for i > 0 && isAlnum(head[i-1]) {
+			i--
+		}
+		if !macGroup.MatchString(head[i:]) {
+			break
+		}
+		head = head[:i]
 	}
-	head = head[:len(head)-1]
-	i := len(head)
-	for i > 0 && isAlnum(head[i-1]) {
-		i--
-	}
-	return macGroup.MatchString(head[i:])
+	return n
 }
 
-func groupAfter(tail string, sep byte) bool {
-	if tail == "" || tail[0] != sep {
-		return false
+func groupsAfter(tail string, sep byte) int {
+	n := 0
+	for ; n < 2 && tail != "" && tail[0] == sep; n++ {
+		tail = tail[1:]
+		i := 0
+		for i < len(tail) && isAlnum(tail[i]) {
+			i++
+		}
+		if !macGroup.MatchString(tail[:i]) {
+			break
+		}
+		tail = tail[i:]
 	}
-	tail = tail[1:]
-	i := 0
-	for i < len(tail) && isAlnum(tail[i]) {
-		i++
-	}
-	return macGroup.MatchString(tail[:i])
+	return n
 }
 
 func isAlnum(c byte) bool {
@@ -478,10 +490,11 @@ var secretForms = []secretForm{
 	// wpa_supplicant's and hostapd's ssid="<net>", psk="<passphrase>" or
 	// psk=<64 hex digits>, wpa_passphrase=, sae_password=; and a network as
 	// a Wi-Fi driver or iwconfig names it (ssid:<net>, SSID:"<net>",
-	// ESSID:"<net>"). A bssid is a MAC, and redacted as one.
-	{regexp.MustCompile(`(?i)\be?ssid["']?\s*[:=]\s*"([^"\r\n]+)"`), []string{"wifi_ssid"}},
+	// ESSID:"<net>"). A bssid is a MAC, and redacted as one. A quoted value
+	// runs past an escaped quote (\").
+	{regexp.MustCompile(`(?i)\be?ssid["']?\s*[:=]\s*"((?:[^"\\\r\n]|\\.)+)"`), []string{"wifi_ssid"}},
 	{regexp.MustCompile(`(?i)\be?ssid["']?\s*[:=][ \t]*([^\s"',<][^\s"',]*)`), []string{"wifi_ssid"}},
-	{regexp.MustCompile(`(?i)\b(?:wpa_)?(?:psk|passphrase)["']?\s*[:=]\s*"([^"\r\n]+)"`), []string{"wifi_password"}},
+	{regexp.MustCompile(`(?i)\b(?:wpa_)?(?:psk|passphrase)["']?\s*[:=]\s*"((?:[^"\\\r\n]|\\.)+)"`), []string{"wifi_password"}},
 	{regexp.MustCompile(`(?i)\b(?:wpa_)?psk\s*[:=]\s*([0-9a-f]{64})\b`), []string{"wifi_password"}},
 	{regexp.MustCompile(`(?im)\b(?:wpa_passphrase|sae_password)[ \t]*=[ \t]*([^"\s<][^\r\n]*?)[ \t]*$`), []string{"wifi_password"}},
 	// A Gwell camera's P2P keys, in decimal and in hex: "P2P: ID=<id>,
@@ -525,7 +538,7 @@ func redactSecrets(text string) string {
 				b.WriteString(text[last:s])
 				b.WriteString("<" + name + ">")
 				last = e
-				if len(v) >= 8 && name != "wifi_ssid" {
+				if len(v) >= 8 {
 					again[v] = name
 				}
 			}

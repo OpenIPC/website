@@ -518,9 +518,11 @@ func TestAWiFiConfigurationLosesItsNetworkAndPassword(t *testing.T) {
 		"wpa_passphrase=hostapd pass phrase",
 		"sae_password=saeSecret99",
 		"wpa_key_mgmt=WPA-PSK",
+		`{"ssid":"Esc\"aped Net","psk":"esc\"aped\\pass"}`,
+		"wlan0: Associated with My Home Net, OfficeNet up",
 	}, "\n")
 	got := Redact(conf, Facts{}, "k")
-	for _, gone := range []string{"My Home Net", "correct horse", "OfficeNet", "0123456789abcdef", "pass phrase", "saeSecret99"} {
+	for _, gone := range []string{"My Home Net", "correct horse", "OfficeNet", "0123456789abcdef", "pass phrase", "saeSecret99", "aped"} {
 		if strings.Contains(got, gone) {
 			t.Errorf("%s survived:\n%s", gone, got)
 		}
@@ -567,8 +569,9 @@ func TestAMACAsHexBytesIsRedacted(t *testing.T) {
 func TestALongerColonRunIsNoMAC(t *testing.T) {
 	for _, line := range []string{
 		"HWID IPC-HFW1000S-Model:01:02:02:23:21:00:01:00:00:00:00:2D0:00:00:00:00:00:01:00:00:200",
-		"a:01:02:03:04:05:06",
-		"01-02-03-04-05-06-07",
+		"a:b:01:02:03:04:05:06",
+		"a:01:02:03:04:05:06:07",
+		"01-02-03-04-05-06-07-08",
 	} {
 		if got := Redact(line, Facts{}, "k"); got != line {
 			t.Errorf("%q became %q", line, got)
@@ -582,6 +585,7 @@ func TestALongerColonRunIsNoMAC(t *testing.T) {
 		`mac: "` + mac + `"`,
 		"eth0:" + mac,
 		"MAC " + mac + ": up",
+		"MAC " + mac + ":8080",
 	} {
 		if got := Redact(line, Facts{}, "k"); !strings.Contains(got, mark) || strings.Contains(strings.ToLower(got), "ab:cd") {
 			t.Errorf("%q became %q", line, got)
