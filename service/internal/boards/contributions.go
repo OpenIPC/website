@@ -413,7 +413,8 @@ func (im *Importer) unchanged(ctx context.Context, fsys fs.FS, c Contribution, u
 		return false, false, nil
 	}
 	link = sureAs(deref(certainty)) == sureAs(c.LinkCertainty) && evidence == c.LinkEvidence
-	rows, err := im.Pool.Query(ctx, `SELECT kind::text || ' ' || name || ' ' || sha256 FROM board_artifacts WHERE unit_id = $1 ORDER BY position`, c.Unit)
+	rows, err := im.Pool.Query(ctx, `SELECT kind::text || ' ' || name || ' ' || sha256 || coalesce(' ' || width || 'x' || height, '')
+		FROM board_artifacts WHERE unit_id = $1 ORDER BY position`, c.Unit)
 	if err != nil {
 		return false, false, err
 	}
@@ -431,7 +432,15 @@ func (im *Importer) unchanged(ctx context.Context, fsys fs.FS, c Contribution, u
 		if err != nil {
 			return false, false, err
 		}
-		want = append(want, f.Kind+" "+f.Name+" "+sha256Hex(b))
+		w := f.Kind + " " + f.Name + " " + sha256Hex(b)
+		// A photo's size is the one it is shown at: one stored before
+		// Thumbnail turned photos by their EXIF orientation is rebuilt.
+		if isPhoto(f.Kind) {
+			if sw, sh, err := ShownSize(b); err == nil {
+				w += fmt.Sprintf(" %dx%d", sw, sh)
+			}
+		}
+		want = append(want, w)
 	}
 	if !slices.Equal(stored, want) {
 		return false, false, nil

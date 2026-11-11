@@ -1,7 +1,9 @@
 package boards
 
 import (
+	"bytes"
 	"errors"
+	"image/jpeg"
 	"strings"
 	"testing"
 	"testing/fstest"
@@ -215,5 +217,46 @@ func TestThumbnailsFitTheBoxAndKeepTheOriginalsSize(t *testing.T) {
 	_, w2, _, err := Thumbnail(jpg(200, 100), 480)
 	if err != nil || w2 != 200 {
 		t.Errorf("a small photo: %v %d", err, w2)
+	}
+}
+
+// tagged is a JPEG with an EXIF orientation o, as a phone writes one: an
+// APP1 right after the start of image.
+func tagged(src []byte, o int) []byte {
+	tiff := []byte{'M', 'M', 0, 42, 0, 0, 0, 8, 0, 1, 0x01, 0x12, 0, 3, 0, 0, 0, 1, 0, byte(o), 0, 0, 0, 0, 0, 0}
+	body := append([]byte("Exif\x00\x00"), tiff...)
+	n := len(body) + 2
+	out := append([]byte{0xff, 0xd8, 0xff, 0xe1, byte(n >> 8), byte(n)}, body...)
+	return append(out, src[2:]...)
+}
+
+// A phone's portrait is stored on its side with orientation 6 (IMG_2267 of
+// r-undyvyem: 4032x3024 stored, shown 3024x4032). The board page's viewer
+// lays the original out at the size the API gives, and browsers turn the
+// original: a stored size stretched the portrait into a landscape box.
+func TestThumbnailsAreAsTheBrowserShowsThePhoto(t *testing.T) {
+	src := tagged(jpg(1000, 500), 6)
+	th, w, h, err := Thumbnail(src, 480)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if w != 500 || h != 1000 {
+		t.Errorf("size %dx%d, want 500x1000 as shown", w, h)
+	}
+	cfg, err := jpeg.DecodeConfig(bytes.NewReader(th))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if cfg.Width != 240 || cfg.Height != 480 {
+		t.Errorf("thumbnail %dx%d, want 240x480: upright", cfg.Width, cfg.Height)
+	}
+	// Mirrored, not turned: the size stays.
+	if _, w, h, _ := Thumbnail(tagged(jpg(1000, 500), 3), 480); w != 1000 || h != 500 {
+		t.Errorf("orientation 3: %dx%d", w, h)
+	}
+	// Too big to decode, its own thumbnail: still the size it is shown at.
+	big := tagged(withScan(frameHeader(0xc2, 8000, 6000, 0x11, 0x11, 0x11)), 8)
+	if _, w, h, err := Thumbnail(big, 480); !errors.Is(err, ErrTooBigToDecode) || w != 6000 || h != 8000 {
+		t.Errorf("too big: %dx%d %v", w, h, err)
 	}
 }

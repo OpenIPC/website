@@ -33,6 +33,9 @@ func UBootVars(console string) map[string]string {
 // Thumbnail scales a photo down to fit max×max, averaging every source
 // pixel into the one it lands on, and returns the JPEG with the original's
 // size. The archive's own thumbnails are 150 pixels, too small for a card.
+// Both are as a browser shows the photo: a JPEG's EXIF orientation turns
+// the thumbnail (after scaling, so the turn costs a thumbnail's memory)
+// and the size, which the board page's viewer lays the original out by.
 //
 // A photo whose decode would cost more than MaxDecodeBytes is not decoded:
 // Thumbnail returns ErrTooBigToDecode with its size from the header.
@@ -46,6 +49,9 @@ func Thumbnail(src []byte, max int) (thumb []byte, width, height int, err error)
 		// none, and would be listed as a photo no reader can see.
 		if !hasScan(src) {
 			return nil, 0, 0, errors.New("a frame header with no picture after it")
+		}
+		if ExifOrientation(src) >= 5 {
+			w, h = h, w
 		}
 		return nil, w, h, ErrTooBigToDecode
 	}
@@ -79,11 +85,31 @@ func Thumbnail(src []byte, max int) (thumb []byte, width, height int, err error)
 			out.Set(x, y, color.RGBA64{uint16(r / n), uint16(g / n), uint16(bl / n), 0xffff})
 		}
 	}
+	if o := ExifOrientation(src); o >= 2 && o <= 8 {
+		out = Upright(out, o)
+		if o >= 5 {
+			width, height = height, width
+		}
+	}
 	var buf bytes.Buffer
 	if err := jpeg.Encode(&buf, out, &jpeg.Options{Quality: 80}); err != nil {
 		return nil, 0, 0, err
 	}
 	return buf.Bytes(), width, height, nil
+}
+
+// ShownSize is a photo's size as a browser shows it, read from its headers
+// alone: a JPEG turned a quarter (EXIF orientation 5 to 8) is shown with
+// its width and height swapped. It is the size Thumbnail returns.
+func ShownSize(src []byte) (width, height int, err error) {
+	_, w, h, err := DecodeCost(src)
+	if err != nil {
+		return 0, 0, err
+	}
+	if ExifOrientation(src) >= 5 {
+		w, h = h, w
+	}
+	return w, h, nil
 }
 
 func maxInt(a, b int) int {
