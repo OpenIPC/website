@@ -167,7 +167,8 @@ restores the image but never the schema, so keep migrations additive.
   `consent=public`, and read first when its report is published (raw and
   inside JFFS2's compressed nodes, `reports.ScanBackup`): one holding a
   Wi-Fi password, a cloud's keys, the camera's cloud ID or a private key is
-  kept private (`openipc reports scan-backups` for those published before).
+  kept private (`openipc reports scan-backups` for those published before),
+  and a reviewer publishes it as sent only with `--override-check`, logged.
   **Nothing but this package may write them**: triggers
   refuse changes, board links are `ON DELETE RESTRICT`, files are
   content-addressed and written once under `REPORTS_ROOT`
