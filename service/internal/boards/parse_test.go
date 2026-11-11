@@ -178,10 +178,29 @@ func TestDecodeCostIsWhatTheDecoderHolds(t *testing.T) {
 	}
 }
 
+// withScan is a frame header with a scan after it: start of scan, a few
+// bytes of entropy-coded data, end of image.
+func withScan(header []byte) []byte {
+	return append(append([]byte{}, header...), 0xff, 0xda, 0, 8, 1, 1, 0, 0, 0x3f, 0, 0x12, 0x34, 0x56, 0xff, 0xd9)
+}
+
 func TestAPhotoOverTheBudgetIsNotDecoded(t *testing.T) {
-	_, w, h, err := Thumbnail(frameHeader(0xc2, 8000, 6000, 0x11, 0x11, 0x11), 480)
+	_, w, h, err := Thumbnail(withScan(frameHeader(0xc2, 8000, 6000, 0x11, 0x11, 0x11)), 480)
 	if !errors.Is(err, ErrTooBigToDecode) || w != 8000 || h != 6000 {
 		t.Errorf("%dx%d: %v", w, h, err)
+	}
+	// A frame header and nothing after it is no picture at all.
+	for _, src := range [][]byte{
+		frameHeader(0xc2, 8000, 6000, 0x11, 0x11, 0x11),
+		append(frameHeader(0xc2, 8000, 6000, 0x11, 0x11, 0x11), 0xff, 0xd9),
+		append(frameHeader(0xc2, 8000, 6000, 0x11, 0x11, 0x11), 0xff, 0xda, 0, 8, 1, 1, 0, 0, 0x3f, 0, 0xff, 0xd9),
+	} {
+		if _, _, _, err := Thumbnail(src, 480); err == nil || errors.Is(err, ErrTooBigToDecode) {
+			t.Errorf("%x: %v", src[len(src)-4:], err)
+		}
+	}
+	if !hasScan(jpg(64, 32)) {
+		t.Error("a real JPEG has no scan")
 	}
 }
 

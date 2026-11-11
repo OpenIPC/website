@@ -348,7 +348,7 @@ func TestAPhotoTooBigToDecodeIsItsOwnThumbnail(t *testing.T) {
 	pool, root := imported(t)
 	ctx := context.Background()
 	im := &Importer{Pool: pool, Log: quiet(), Root: root}
-	store := fstest.MapFS{"aa/huge": {Data: frameHeader(0xc2, 8000, 6000, 0x11, 0x11, 0x11)}}
+	store := fstest.MapFS{"aa/huge": {Data: withScan(frameHeader(0xc2, 8000, 6000, 0x11, 0x11, 0x11))}}
 	list := []Contribution{reportUnit("xiongmai-53h20-s-r-aaaaaaaa", "xiongmai-53h20-s", "r-aaaaaaaa", "aa/huge", "photo_other", "1-huge.jpg")}
 	if _, err := im.ApplyReportUnits(ctx, store, list); err != nil {
 		t.Fatal(err)

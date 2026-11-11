@@ -42,6 +42,11 @@ func Thumbnail(src []byte, max int) (thumb []byte, width, height int, err error)
 		return nil, 0, 0, err
 	}
 	if cost > MaxDecodeBytes {
+		// Not decoded, so at least a picture: a frame header alone is
+		// none, and would be listed as a photo no reader can see.
+		if !hasScan(src) {
+			return nil, 0, 0, errors.New("a frame header with no picture after it")
+		}
 		return nil, w, h, ErrTooBigToDecode
 	}
 	img, _, err := image.Decode(bytes.NewReader(src))
@@ -170,4 +175,39 @@ func jpegCost(b []byte) (cost int64, width, height int, ok bool) {
 		i += 2 + n
 	}
 	return 0, 0, 0, false
+}
+
+// hasScan says a JPEG goes on past its headers into a scan of the picture:
+// a start-of-scan segment with entropy-coded data after it. Anything else
+// (PNG, WebP) is left to its decoder's header check.
+func hasScan(b []byte) bool {
+	if len(b) < 4 || b[0] != 0xff || b[1] != 0xd8 {
+		return true
+	}
+	for i := 2; i+4 <= len(b); {
+		if b[i] != 0xff {
+			return false
+		}
+		m := b[i+1]
+		switch {
+		case m == 0xff:
+			i++
+			continue
+		case m == 0x01 || (m >= 0xd0 && m <= 0xd7):
+			i += 2
+			continue
+		case m == 0xd9:
+			return false
+		}
+		n := int(b[i+2])<<8 | int(b[i+3])
+		if n < 2 || i+2+n > len(b) {
+			return false
+		}
+		if m == 0xda {
+			d := i + 2 + n
+			return d < len(b) && (b[d] != 0xff || d+1 < len(b) && b[d+1] == 0x00)
+		}
+		i += 2 + n
+	}
+	return false
 }
