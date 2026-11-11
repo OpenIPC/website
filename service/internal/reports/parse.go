@@ -332,7 +332,12 @@ func (f Facts) anyka() bool {
 // (r-7tb674nu, r-sfbcnir8). A Hikvision serial is replaced whole, its model
 // and date with it, under the hash of its last nine characters: they are what
 // is the camera's, and all some lines print.
+//
+// What a text names as a secret -- the owner's Wi-Fi network and password,
+// a Gwell camera's P2P keys and passwords, a cloud's temporary credentials
+// (secretForms) -- is taken out, a mark naming only its kind in its place.
 func Redact(text string, f Facts, key string) string {
+	text = redactSecrets(text)
 	ids := f.Identifiers()
 	hik := map[string]string{}
 	for _, id := range textIdentifiers(text) {
@@ -368,21 +373,181 @@ func Redact(text string, f Facts, key string) string {
 		}
 		text = spellings(id).ReplaceAllString(text, mark)
 	}
-	for _, re := range anyMAC {
-		text = re.ReplaceAllStringFunc(text, func(m string) string {
-			if zeroish(m) {
-				return m
-			}
-			v := strings.ToLower(strings.ReplaceAll(m, "-", ":"))
-			return "<mac:" + Keyed(key, "mac", v) + ">"
-		})
+	for _, m := range anyMAC {
+		text = replaceMACs(text, m.re, m.sep, func(s string) string {
+			return strings.ToLower(strings.ReplaceAll(s, "-", ":"))
+		}, key)
 	}
-	return text
+	return replaceMACs(text, hexByteMAC, ':', func(s string) string {
+		var b []string
+		for _, p := range strings.Split(strings.ToLower(s), ":") {
+			p = strings.TrimPrefix(p, "0x")
+			if len(p) == 1 {
+				p = "0" + p
+			}
+			b = append(b, p)
+		}
+		return strings.Join(b, ":")
+	}, key)
 }
 
-var anyMAC = []*regexp.Regexp{
-	regexp.MustCompile(`(?i)\b(?:[0-9a-f]{2}:){5}[0-9a-f]{2}\b`),
-	regexp.MustCompile(`(?i)\b(?:[0-9a-f]{2}-){5}[0-9a-f]{2}\b`),
+var anyMAC = []struct {
+	re  *regexp.Regexp
+	sep byte
+}{
+	{regexp.MustCompile(`(?i)\b(?:[0-9a-f]{2}:){5}[0-9a-f]{2}\b`), ':'},
+	{regexp.MustCompile(`(?i)\b(?:[0-9a-f]{2}-){5}[0-9a-f]{2}\b`), '-'},
+}
+
+// hexByteMAC is a MAC as a driver prints its bytes, each with its 0x and no
+// leading zero: AltoBeam's "efuse data is [...,0x0,0x12:0x41:0x7:...]".
+var hexByteMAC = regexp.MustCompile(`(?i)\b0x[0-9a-f]{1,2}(?::0x[0-9a-f]{1,2}){5}\b`)
+
+// replaceMACs replaces what re finds with its MAC's mark, the MAC spelled
+// as norm spells it. Six groups the same separator joins to another group,
+// before them or after, are part of something longer -- a Dahua hardware
+// ID, IPC-X-Lexus:01:02:02:23:21:00:01:00:... -- and no MAC.
+func replaceMACs(text string, re *regexp.Regexp, sep byte, norm func(string) string, key string) string {
+	idx := re.FindAllStringIndex(text, -1)
+	if idx == nil {
+		return text
+	}
+	var b strings.Builder
+	last := 0
+	for _, m := range idx {
+		s := text[m[0]:m[1]]
+		if zeroish(s) || groupBefore(text[:m[0]], sep) || groupAfter(text[m[1]:], sep) {
+			continue
+		}
+		b.WriteString(text[last:m[0]])
+		b.WriteString("<mac:" + Keyed(key, "mac", norm(s)) + ">")
+		last = m[1]
+	}
+	b.WriteString(text[last:])
+	return b.String()
+}
+
+// macGroup is one more group of such a run: up to four hex digits (a Dahua
+// ID has 2D0 and 200 among its pairs), with a 0x or without.
+var macGroup = regexp.MustCompile(`(?i)^(?:0x)?[0-9a-f]{1,4}$`)
+
+func groupBefore(head string, sep byte) bool {
+	if head == "" || head[len(head)-1] != sep {
+		return false
+	}
+	head = head[:len(head)-1]
+	i := len(head)
+	for i > 0 && isAlnum(head[i-1]) {
+		i--
+	}
+	return macGroup.MatchString(head[i:])
+}
+
+func groupAfter(tail string, sep byte) bool {
+	if tail == "" || tail[0] != sep {
+		return false
+	}
+	tail = tail[1:]
+	i := 0
+	for i < len(tail) && isAlnum(tail[i]) {
+		i++
+	}
+	return macGroup.MatchString(tail[:i])
+}
+
+func isAlnum(c byte) bool {
+	return c >= '0' && c <= '9' || c >= 'a' && c <= 'z' || c >= 'A' && c <= 'Z'
+}
+
+// A secretForm is a secret as firmware or a pasted configuration prints it:
+// group i of re is a value of the kind names[i].
+type secretForm struct {
+	re    *regexp.Regexp
+	names []string
+}
+
+// secretForms are the secrets a text names: the owner's, or the camera's
+// keys to its cloud. None is a board's identity, so none is keyed -- a hash
+// would say only that two reports share a password -- and each is taken out
+// with a mark naming its kind (<wifi_password>).
+var secretForms = []secretForm{
+	// A Gwell (Yoosee) camera's network as it reads its settings: "Init
+	// SSID=<net> , EncType=2, Password=<password> ", the password to the end
+	// of the line, spaces and all.
+	{regexp.MustCompile(`(?m)\bSSID=([^\r\n]*?)\s*,\s*EncType=\d+\s*,\s*Password=([^\r\n]*?)[ \t]*$`), []string{"wifi_ssid", "wifi_password"}},
+	// wpa_supplicant's and hostapd's ssid="<net>", psk="<passphrase>" or
+	// psk=<64 hex digits>, wpa_passphrase=, sae_password=; and a network as
+	// a Wi-Fi driver or iwconfig names it (ssid:<net>, SSID:"<net>",
+	// ESSID:"<net>"). A bssid is a MAC, and redacted as one.
+	{regexp.MustCompile(`(?i)\be?ssid["']?\s*[:=]\s*"([^"\r\n]+)"`), []string{"wifi_ssid"}},
+	{regexp.MustCompile(`(?i)\be?ssid["']?\s*[:=][ \t]*([^\s"',<][^\s"',]*)`), []string{"wifi_ssid"}},
+	{regexp.MustCompile(`(?i)\b(?:wpa_)?(?:psk|passphrase)["']?\s*[:=]\s*"([^"\r\n]+)"`), []string{"wifi_password"}},
+	{regexp.MustCompile(`(?i)\b(?:wpa_)?psk\s*[:=]\s*([0-9a-f]{64})\b`), []string{"wifi_password"}},
+	{regexp.MustCompile(`(?im)\b(?:wpa_passphrase|sae_password)[ \t]*=[ \t]*([^"\s<][^\r\n]*?)[ \t]*$`), []string{"wifi_password"}},
+	// A Gwell camera's P2P keys, in decimal and in hex: "P2P: ID=<id>,
+	// R1=0x..., R2=0x... id=0x...", "sChipInfo.dwR1=...", "pcfg->devR2=...".
+	// Upper case only: an oops names its registers r1 and r2.
+	{regexp.MustCompile(`\bR2\s*[:=]\s*\w+,?\s+id\s*[:=]\s*(0x[0-9a-fA-F]+|\d+)\b`), []string{"p2p_key"}},
+	{regexp.MustCompile(`\b(?:dw|dev)?R[12]\s*[:=]\s*(0x[0-9a-fA-F]{4,}|\d{5,})\b`), []string{"p2p_key"}},
+	// And the passwords its app is let in with: "passwdGuest = <n>",
+	// "pwdHost=<n>", "encodepwdGuest=<n>", "dwPW=<n>".
+	{regexp.MustCompile(`(?i)\b(?:encode)?(?:passwd|pwd)(?:super|guest|host)\s*[:=]\s*(\d+)`), []string{"p2p_password"}},
+	{regexp.MustCompile(`\bdwPW\s*[:=]\s*(\d+)`), []string{"p2p_password"}},
+	// A cloud's temporary credentials (a Gwell camera's object storage, as
+	// its server hands them over), in JSON or as key=value, and the
+	// signature the camera asks for them with.
+	{regexp.MustCompile(`(?i)\b(?:accessKeyId|accessKeySecret|secretAccessKey|sessionToken|securityToken|secretId|secretKey|callbackToken|tmpSecretId|tmpSecretKey)["']?\s*[:=]\s*["']?([^"'\s,&}<]{4,})`), []string{"cloud_credential"}},
+	{regexp.MustCompile(`(?i)\bgetCredential\?(?:[^\s&]*&)*?source=([^&\s<]+)`), []string{"cloud_credential"}},
+}
+
+// redactSecrets takes out what secretForms find, and a value long enough to
+// be no common word wherever else the text repeats it. An empty value, or
+// zeros ("passwdSuper = 0"), is left as it is: there is nothing in it.
+func redactSecrets(text string) string {
+	again := map[string]string{}
+	for _, f := range secretForms {
+		idx := f.re.FindAllStringSubmatchIndex(text, -1)
+		if idx == nil {
+			continue
+		}
+		var b strings.Builder
+		last := 0
+		for _, m := range idx {
+			for g, name := range f.names {
+				s, e := m[2+2*g], m[3+2*g]
+				if s < last {
+					continue
+				}
+				v := text[s:e]
+				if strings.TrimSpace(v) == "" || strings.Trim(v, "0") == "" {
+					continue
+				}
+				b.WriteString(text[last:s])
+				b.WriteString("<" + name + ">")
+				last = e
+				if len(v) >= 8 && name != "wifi_ssid" {
+					again[v] = name
+				}
+			}
+		}
+		b.WriteString(text[last:])
+		text = b.String()
+	}
+	vs := make([]string, 0, len(again))
+	for v := range again {
+		vs = append(vs, v)
+	}
+	// Longest first: a value that holds another is replaced whole.
+	slices.SortFunc(vs, func(a, b string) int {
+		if len(a) != len(b) {
+			return len(b) - len(a)
+		}
+		return strings.Compare(a, b)
+	})
+	for _, v := range vs {
+		text = strings.ReplaceAll(text, v, "<"+again[v]+">")
+	}
+	return text
 }
 
 func spellings(id Identifier) *regexp.Regexp {
