@@ -451,3 +451,144 @@ func TestAValueMaskedByHandIsLeftAlone(t *testing.T) {
 		t.Errorf("redacted:\n%s", got)
 	}
 }
+
+// A Gwell (Yoosee) camera's boot log names the owner's Wi-Fi network and
+// password, its P2P keys and passwords, and the object storage credentials
+// its server hands it, in the shapes r-undyvyem carried, with made-up
+// values. Each is taken out, a mark naming its kind in its place; the P2P
+// ID stays an identifier, keyed.
+func TestAGwellCamerasSecretsAreTakenOut(t *testing.T) {
+	const (
+		ssid, password = "HomeNet5", "pa55 w0rd@Home#"
+		r1, r2         = "12345678", "87654321"
+		r1x, r2x, pid  = "0xbc614e", "0x5397fb1", "0x1234abcd5678ef"
+		guest, host    = "246813579", "135792468"
+		keyID, secret  = "AKID1EXAMPLE2KEY3ID4", "s3cr3tEXAMPLEs3cr3tEXAMPLEs3cr3t"
+		token, source  = "dG9rZW4tZXhhbXBsZS10b2tlbi1leGFtcGxl", "0123456789abcdef0123456789abcdef"
+	)
+	log := strings.Join([]string{
+		"sChipInfo.dwR1=" + r1 + ", sChipInfo.dwR2=" + r2,
+		"P2P: ID=24681357, R1=" + r1x + ", R2=" + r2x + " id=" + pid,
+		"_convert_init_parm_cfg, devID=24681357, pcfg->devR1=" + r1 + ", pcfg->devR2=" + r2 + ", devType=7",
+		"p2pc_unit_v2_init R1=" + r1 + " R2=" + r2,
+		"sChipInfo.dwR1 = " + r1 + ", sChipInfo.dwR2: " + r2,
+		"passwdSuper = 0, passwdGuest = " + guest + ", passwdHost=" + host,
+		"vP2PSetMyPassword... dwPW=" + host + " pwdGuest=" + guest,
+		"vP2PSetMyPassword... encodepwdHost=4011223344 encodepwdGuest=3011223344",
+		"Init SSID=" + ssid + " , EncType=2, Password=" + password + " ",
+		"Init SSID=Free-AP1 , EncType=0, Password= ",
+		"[RDAWLAN_CFG80211]<wland_cfg80211_scan,949>  index:0: START scan bss:1,ssids->ssid_len:8,request->n_ssids:1, ssids->ssid=" + ssid,
+		`NewBSS(BSSID:02:11:22:33:44:55, RSSI:-87, SSID:"` + ssid + `", PROBE_RSP)`,
+		"<wland_cfg80211_connect,1440>  sme->ssid:" + ssid + ", sme->bssid:02:11:22:33:44:55, sme->channel:7",
+		`resp_ctx.content:{"code":0,"data":{"did":24681357,"Data":{"accessKeyId":"` + keyID + `","accessKeySecret":"` + secret + `","sessionToken":"` + token + `","expiration":1794326939,"region":"ap-southeast-3"}}}`,
+		`{"SecretId":"` + keyID + `","SecretKey":"` + secret + `","securityToken":"` + token + `","callbackToken":"` + token + `"}`,
+		"GET /vas/ipc/gdev_vmode/upload/getCredential?source=" + source + "&dwID=24681357&action=CreatePicUpload HTTP/1.1",
+		"echo " + password,
+	}, "\n")
+	got := Redact(log, Facts{}, "k")
+	for _, gone := range []string{ssid, password, r1, r2, r1x, r2x, pid, guest, host, "4011223344", "3011223344", keyID, secret, token, source, "24681357", "33:44:55"} {
+		if strings.Contains(got, gone) {
+			t.Errorf("%s survived:\n%s", gone, got)
+		}
+	}
+	for _, kept := range []string{
+		"passwdSuper = 0", "Password= ", "ssids->ssid_len:8", "devType=7", `"expiration":1794326939`, `"region":"ap-southeast-3"`,
+		"Init SSID=<wifi_ssid> , EncType=2, Password=<wifi_password> \n", "echo <wifi_password>",
+		"P2P: ID=<cloud_id:", "R1=<p2p_key>, R2=<p2p_key> id=<p2p_key>", "pwdGuest=<p2p_password>",
+		`"accessKeyId":"<cloud_credential>"`, "getCredential?source=<cloud_credential>&",
+	} {
+		if !strings.Contains(got, kept) {
+			t.Errorf("%q is not in:\n%s", kept, got)
+		}
+	}
+}
+
+// What wpa_supplicant's and hostapd's configurations, pasted into a note,
+// say of the network.
+func TestAWiFiConfigurationLosesItsNetworkAndPassword(t *testing.T) {
+	conf := strings.Join([]string{
+		"network={",
+		`	ssid="My Home Net"`,
+		`	psk="correct horse battery"`,
+		"}",
+		"network={",
+		"	ssid=OfficeNet",
+		"	psk=" + strings.Repeat("0123456789abcdef", 4),
+		"}",
+		"wpa_passphrase=hostapd pass phrase",
+		"sae_password=saeSecret99",
+		"wpa_key_mgmt=WPA-PSK",
+		`{"ssid":"Esc\"aped Net","psk":"esc\"aped\\pass"}`,
+		"wlan0: Associated with My Home Net, OfficeNet up",
+	}, "\n")
+	got := Redact(conf, Facts{}, "k")
+	for _, gone := range []string{"My Home Net", "correct horse", "OfficeNet", "0123456789abcdef", "pass phrase", "saeSecret99", "aped"} {
+		if strings.Contains(got, gone) {
+			t.Errorf("%s survived:\n%s", gone, got)
+		}
+	}
+	for _, kept := range []string{`ssid="<wifi_ssid>"`, `psk="<wifi_password>"`, "psk=<wifi_password>", "wpa_passphrase=<wifi_password>", "wpa_key_mgmt=WPA-PSK"} {
+		if !strings.Contains(got, kept) {
+			t.Errorf("%q is not in:\n%s", kept, got)
+		}
+	}
+	// None of these is a secret: an oops's registers, an empty network.
+	for _, line := range []string{
+		"r0 : 00000000  r1 : c0a81234  r2 : 00012345  r3 : 00000001",
+		"ssids->ssid=",
+		"<WifiSSID></WifiSSID>",
+		"bssidx:0",
+	} {
+		if got := Redact(line, Facts{}, "k"); got != line {
+			t.Errorf("%q became %q", line, got)
+		}
+	}
+}
+
+// An AltoBeam driver prints the MAC in its efuse as hex bytes (r-w2ztptxv);
+// it is the MAC ipctool reads, with the same mark.
+func TestAMACAsHexBytesIsRedacted(t *testing.T) {
+	const mac = "02:12:07:7c:d6:0b"
+	line := "[atbm_log]:efuse data is [0x1,0x2d,0x1b,0x0,0x2:0x12:0x7:0x7C:0xd6:0xb]\n"
+	mark := "<mac:" + Keyed("k", "mac", mac) + ">"
+	for name, got := range map[string]string{
+		"from ipctool":  Redact(line, Facts{MAC: mac}, "k"),
+		"from the text": Redact(line, Facts{}, "k"),
+	} {
+		if !strings.Contains(got, "[0x1,0x2d,0x1b,0x0,"+mark+"]") {
+			t.Errorf("%s: %s", name, got)
+		}
+	}
+	if line := "efuse data is [0x0:0x0:0x0:0x0:0x0:0x0]"; Redact(line, Facts{}, "k") != line {
+		t.Error("a zero MAC was redacted")
+	}
+}
+
+// Six pairs inside a longer colon run are no MAC: a Dahua hardware ID
+// (r-wzjhqxvu's note). A MAC in its usual places still is.
+func TestALongerColonRunIsNoMAC(t *testing.T) {
+	for _, line := range []string{
+		"HWID IPC-HFW1000S-Model:01:02:02:23:21:00:01:00:00:00:00:2D0:00:00:00:00:00:01:00:00:200",
+		"a:b:01:02:03:04:05:06",
+		"a:01:02:03:04:05:06:07",
+		"01-02-03-04-05-06-07-08",
+	} {
+		if got := Redact(line, Facts{}, "k"); got != line {
+			t.Errorf("%q became %q", line, got)
+		}
+	}
+	const mac = "00:12:41:ab:cd:ef"
+	mark := "<mac:" + Keyed("k", "mac", mac) + ">"
+	for _, line := range []string{
+		"ethaddr=" + mac,
+		"eth0      Link encap:Ethernet  HWaddr " + strings.ToUpper(mac) + "  ",
+		`mac: "` + mac + `"`,
+		"eth0:" + mac,
+		"MAC " + mac + ": up",
+		"MAC " + mac + ":8080",
+	} {
+		if got := Redact(line, Facts{}, "k"); !strings.Contains(got, mark) || strings.Contains(strings.ToLower(got), "ab:cd") {
+			t.Errorf("%q became %q", line, got)
+		}
+	}
+}
