@@ -141,6 +141,9 @@ const (
 	// scanChunk is how much of a dump is read at a time: a backup can be
 	// 128 MB and the web container has 384.
 	scanChunk = 1 << 20
+	// scanTail: each chunk is read this much further, so that a node's
+	// magic or a key's name across its end is seen whole.
+	scanTail = 32
 	// minRun: a run of text shorter than this is no setting.
 	minRun = 8
 	// maxRun, runOverlap: a longer run is read in pieces this long, each
@@ -286,19 +289,19 @@ func ScanBackup(r io.ReaderAt, size int64) ([]Finding, error) {
 		nodeBuf: make([]byte, maxNodeData), out: make([]byte, maxNodeData), sshBuf: make([]byte, sshKeyRead)}
 	s.inflated.emit = func(run []byte, _ int64) { s.text(run, s.nodeAt, s.nodeIn) }
 	raw := runner{emit: func(run []byte, at int64) { s.text(run, at, "raw") }}
-	buf := make([]byte, scanChunk)
+	buf := make([]byte, scanChunk+scanTail)
 	for at := int64(0); at < size && !s.full(); at += scanChunk {
-		n, err := r.ReadAt(buf[:min(int64(scanChunk), size-at)], at)
+		n, err := r.ReadAt(buf[:min(int64(scanChunk+scanTail), size-at)], at)
 		if err != nil && !(errors.Is(err, io.EOF) && n > 0) {
 			return nil, err
 		}
-		b := buf[:n]
-		raw.feed(b, at)
-		s.sshKeys(b, n, func(i int) []byte {
+		b, own := buf[:n], min(n, scanChunk)
+		raw.feed(b[:own], at)
+		s.sshKeys(b, own, func(i int) []byte {
 			m, _ := r.ReadAt(s.sshBuf, at+int64(i))
 			return s.sshBuf[:m]
 		}, at, "raw")
-		if err := s.nodes(b, at); err != nil {
+		if err := s.nodes(b, own, at); err != nil {
 			return nil, err
 		}
 	}
@@ -323,13 +326,13 @@ func jffs2CRC(b []byte) uint32 { return ^crc32.Update(^uint32(0), crc32.IEEETabl
 // certificateName is a Gwell camera's device certificate and key.
 var certificateName = regexp.MustCompile(`^Certificate(?:_[A-Za-z0-9_-]+)?\.bin$`)
 
-// nodes reads every JFFS2 node whose magic starts in b, at offset at, in
-// either byte order.
-func (s *backupScan) nodes(b []byte, at int64) error {
+// nodes reads every JFFS2 node whose magic starts in b[:own], at offset
+// at, in either byte order.
+func (s *backupScan) nodes(b []byte, own int, at int64) error {
 	for _, magic := range [][]byte{{0x85, 0x19}, {0x19, 0x85}} {
-		for i := 0; i < len(b) && !s.full(); {
+		for i := 0; i < own && !s.full(); {
 			j := bytes.Index(b[i:], magic)
-			if j < 0 {
+			if j < 0 || i+j >= own {
 				break
 			}
 			i += j

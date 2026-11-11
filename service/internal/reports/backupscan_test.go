@@ -136,6 +136,13 @@ func TestTheBackupCheckReadsRtimeNodesAndOnlyRealNodes(t *testing.T) {
 	if fs := scan(t, bad); len(fs) != 0 {
 		t.Errorf("a node with a wrong CRC was read: %+v", fs)
 	}
+	// A partition in ipctool's backup starts wherever the YAML ends, so a
+	// node's magic can straddle the chunk a scan reads at a time.
+	node = inodeNode(binary.BigEndian, 7, []byte(wpaConf), jffs2Zlib)
+	fs := scan(t, append(noise(scanChunk-1, 4), node...))
+	if len(fs) != 1 || fs[0] != (Finding{Kind: "wifi_psk", Offset: scanChunk - 1, In: "jffs2 zlib"}) {
+		t.Errorf("across a chunk's end: %+v", fs)
+	}
 }
 
 // A node's data is inflated to the size its header gives and no further,
@@ -177,8 +184,8 @@ func TestTheBackupCheckReadsTheRawDump(t *testing.T) {
 	for i, p := range pieces {
 		gap := noise(300_000, int64(10+i))
 		if i == 3 {
-			// Across the first chunk's end.
-			gap = noise(scanChunk-len(dump)-20, 9)
+			// Its name across the first chunk's end.
+			gap = noise(scanChunk-len(dump)-5, 9)
 		}
 		dump = append(append(dump, gap...), p.b...)
 		at := int64(len(dump) - len(p.b))
