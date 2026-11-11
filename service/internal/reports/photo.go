@@ -46,12 +46,11 @@ const (
 )
 
 // ErrTooBigToBlur is a photo whose blur would hold more than
-// boards.MaxDecodeBytes: its decode (boards.DecodeCost, read from the
-// header -- a 20 MB PNG can claim any size) and the upright RGBA copy that
-// is painted and encoded, four bytes a pixel. A blur runs in the web role's
+// boards.MaxDecodeBytes (blurBudget, read from the header before anything is
+// decoded -- a 20 MB PNG can claim any size). A blur runs in the web role's
 // 384 MB, from the review queue or `openipc reports photo` by docker exec,
 // beside the server: r-wcq7epd2's 4390x3447 progressive photo would hold
-// 287 MB, and the container killed takes the site down with it.
+// over 300 MB, and the container killed takes the site down with it.
 var ErrTooBigToBlur = errors.New("the photo is too big to blur here")
 
 // ErrNoRegions is a blur that names nothing to blur.
@@ -93,7 +92,7 @@ func BlurPhoto(src []byte, regions []Region) (out []byte, mime string, err error
 	if err != nil {
 		return nil, "", fmt.Errorf("the photo does not decode: %w", err)
 	}
-	if err := blurBudget(src); err != nil {
+	if err := blurBudget(src, format); err != nil {
 		return nil, "", err
 	}
 	// The same fractions cover the same share of the picture either way up.
@@ -140,14 +139,23 @@ func BlurPhoto(src []byte, regions []Region) (out []byte, mime string, err error
 }
 
 // blurBudget refuses a photo whose blur would hold more than
-// boards.MaxDecodeBytes, its decode and one RGBA copy counted, saying what
-// the reviewer can do instead.
-func blurBudget(src []byte) error {
+// boards.MaxDecodeBytes, saying what the reviewer can do instead. Counted:
+// the photo as sent, held by the caller throughout; its decode; one RGBA
+// copy; and the copy encoded into a growing buffer -- as much as the RGBA
+// itself for a PNG (an incompressible one is no smaller), a byte a pixel
+// for a JPEG at quality 90 (about twice what one holds, which covers the
+// buffer's last doubling).
+func blurBudget(src []byte, format string) error {
 	cost, w, h, err := boards.DecodeCost(src)
 	if err != nil {
 		return fmt.Errorf("the photo does not decode: %w", err)
 	}
-	if total := cost + int64(w)*int64(h)*4; total > boards.MaxDecodeBytes {
+	px := int64(w) * int64(h)
+	encoded := px
+	if format == "png" {
+		encoded = px * 4
+	}
+	if total := int64(len(src)) + cost + px*4 + encoded; total > boards.MaxDecodeBytes {
 		return fmt.Errorf("%w: blurring this %dx%d picture would hold about %d MB, over the %d MB allowed; "+
 			"keep it private, or ask the sender to replace it from /club with a smaller photo, "+
 			"or with one blurred in the send form", ErrTooBigToBlur, w, h, total>>20, boards.MaxDecodeBytes>>20)

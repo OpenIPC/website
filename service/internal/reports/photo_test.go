@@ -464,10 +464,10 @@ func TestABlurOverTheMemoryBudgetIsRefused(t *testing.T) {
 		t.Errorf("progressive 4:2:0, 16 MP: %v", err)
 	}
 	for _, ok := range [][]byte{
-		frameHeader(0xc0, 4000, 3000, 0x22, 0x11, 0x11), // baseline 12 MP, 66 MB
-		frameHeader(0xc2, 4000, 3000, 0x22, 0x11, 0x11), // progressive 12 MP, 138 MB
+		frameHeader(0xc0, 4000, 3000, 0x22, 0x11, 0x11), // baseline 12 MP, 78 MB
+		frameHeader(0xc2, 4000, 3000, 0x22, 0x11, 0x11), // progressive 12 MP, 150 MB
 	} {
-		if err := blurBudget(ok); err != nil {
+		if err := blurBudget(ok, "jpeg"); err != nil {
 			t.Errorf("%v", err)
 		}
 	}
