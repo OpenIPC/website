@@ -15,6 +15,13 @@ x-go-common: &go-common
       max-size: "20m"
       max-file: "5"
   mem_limit: 384m
+  # The heap is collected before it nears the limit, not at twice what was
+  # live after the last collection: photos decoded one after another for a
+  # board's units (boards.MaxDecodeBytes) otherwise left the garbage of
+  # each beside the next, and the kernel killed the web role. A
+  # command run with `docker exec` gets it too.
+  environment:
+    GOMEMLIMIT: 300MiB
 
 x-go-health: &go-health
   interval: 30s
@@ -92,6 +99,8 @@ services:
     image: ghcr.io/openipc/website-go:${GO_PROD_TAG:-none}
     command: ["serve", "--role", "nfs"]
     mem_limit: 64m
+    environment:
+      GOMEMLIMIT: 48MiB
     sysctls:
       net.ipv4.ip_unprivileged_port_start: "0"
     ports:

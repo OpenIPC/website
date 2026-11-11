@@ -1,6 +1,7 @@
 package boards
 
 import (
+	"errors"
 	"strings"
 	"testing"
 	"testing/fstest"
@@ -126,6 +127,80 @@ func TestUBootVarsAreThePrintenvLinesOnly(t *testing.T) {
 	v := UBootVars("U-Boot 2010.06\r\nloady   - load binary file\r\nbootdelay=1\r\nethaddr=00:12:12:16:b0:c2\r\nuid==1;8=6\r\nbootdelay=3\r\n")
 	if len(v) != 3 || v["bootdelay"] != "3" || v["ethaddr"] != "00:12:12:16:b0:c2" || v["uid"] != "=1;8=6" {
 		t.Errorf("%v", v)
+	}
+}
+
+// frameHeader is a JPEG's start and frame header alone: what DecodeCost
+// reads, for a picture too big to make whole in a test.
+func frameHeader(sof byte, w, h int, hv ...byte) []byte {
+	seg := []byte{8, byte(h >> 8), byte(h), byte(w >> 8), byte(w), byte(len(hv))}
+	for i, s := range hv {
+		seg = append(seg, byte(i+1), s, 0)
+	}
+	n := len(seg) + 2
+	return append([]byte{0xff, 0xd8, 0xff, 0xe0, 0, 4, 'J', 'F', 0xff, sof, byte(n >> 8), byte(n)}, seg...)
+}
+
+// what a photo's decode holds, as measured: the 4390x3447
+// progressive 4:4:4 photo of r-wcq7epd2 peaked at 227 MB.
+func TestDecodeCostIsWhatTheDecoderHolds(t *testing.T) {
+	for _, c := range []struct {
+		name string
+		src  []byte
+		want int64
+	}{
+		{"progressive 4:4:4", frameHeader(0xc2, 4390, 3447, 0x11, 0x11, 0x11), 4390 * 3447 * 3 * 5},
+		{"baseline 4:2:0", frameHeader(0xc0, 4000, 3000, 0x22, 0x11, 0x11), 4000 * 3000 * 3 / 2},
+		{"progressive 4:2:0", frameHeader(0xc2, 4000, 3000, 0x22, 0x11, 0x11), 4000 * 3000 * 3 / 2 * 5},
+		{"grey", frameHeader(0xc0, 100, 100, 0x11), 100 * 100},
+		{"a real one", jpg(64, 32), -1},
+	} {
+		cost, w, h, err := DecodeCost(c.src)
+		if err != nil {
+			t.Errorf("%s: %v", c.name, err)
+			continue
+		}
+		if c.want >= 0 && cost != c.want {
+			t.Errorf("%s: %d, want %d", c.name, cost, c.want)
+		}
+		if c.want < 0 && (w != 64 || h != 32 || cost <= 0) {
+			t.Errorf("%s: %dx%d costs %d", c.name, w, h, cost)
+		}
+	}
+	if cost, _, _, _ := DecodeCost(frameHeader(0xc2, 4390, 3447, 0x11, 0x11, 0x11)); cost <= MaxDecodeBytes {
+		t.Errorf("r-wcq7epd2's photo is within the budget: %d", cost)
+	}
+	if cost, _, _, _ := DecodeCost(frameHeader(0xc0, 4000, 3000, 0x22, 0x11, 0x11)); cost > MaxDecodeBytes {
+		t.Errorf("a 12 MP phone photo is over the budget: %d", cost)
+	}
+	if _, _, _, err := DecodeCost([]byte("not a picture")); err == nil {
+		t.Error("not a picture has a cost")
+	}
+}
+
+// withScan is a frame header with a scan after it: start of scan, a few
+// bytes of entropy-coded data, end of image.
+func withScan(header []byte) []byte {
+	return append(append([]byte{}, header...), 0xff, 0xda, 0, 8, 1, 1, 0, 0, 0x3f, 0, 0x12, 0x34, 0x56, 0xff, 0xd9)
+}
+
+func TestAPhotoOverTheBudgetIsNotDecoded(t *testing.T) {
+	_, w, h, err := Thumbnail(withScan(frameHeader(0xc2, 8000, 6000, 0x11, 0x11, 0x11)), 480)
+	if !errors.Is(err, ErrTooBigToDecode) || w != 8000 || h != 6000 {
+		t.Errorf("%dx%d: %v", w, h, err)
+	}
+	// A frame header and nothing after it is no picture at all.
+	for _, src := range [][]byte{
+		frameHeader(0xc2, 8000, 6000, 0x11, 0x11, 0x11),
+		append(frameHeader(0xc2, 8000, 6000, 0x11, 0x11, 0x11), 0xff, 0xd9),
+		append(frameHeader(0xc2, 8000, 6000, 0x11, 0x11, 0x11), 0xff, 0xda, 0, 8, 1, 1, 0, 0, 0x3f, 0, 0xff, 0xd9),
+	} {
+		if _, _, _, err := Thumbnail(src, 480); err == nil || errors.Is(err, ErrTooBigToDecode) {
+			t.Errorf("%x: %v", src[len(src)-4:], err)
+		}
+	}
+	if !hasScan(jpg(64, 32)) {
+		t.Error("a real JPEG has no scan")
 	}
 }
 

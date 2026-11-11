@@ -252,21 +252,17 @@ func (im *Importer) applyOne(ctx context.Context, fsys fs.FS, c Contribution, u 
 		}
 		return err
 	}
-	// Every file must read, and every picture decode, before anything of
-	// the unit's is touched: a unit that cannot be written stays as it was.
+	// Every file must read before anything of the unit's is touched: a
+	// unit that cannot be written stays as it was. Each picture is decoded
+	// once, by filesIn into the staging directory, which a failure removes
+	// before the served one is touched: a second decode here held the
+	// memory of the first twice over (MaxDecodeBytes).
 	for _, f := range u.Files {
 		if f.URL != "" {
 			continue
 		}
-		b, err := fs.ReadFile(fsys, f.Source)
-		if err != nil {
+		if _, err := fs.Stat(fsys, f.Source); err != nil {
 			return fmt.Errorf("%s: %w", c.Unit, err)
-		}
-		switch f.Kind {
-		case "photo_front", "photo_back", "photo_other", "pinout":
-			if _, _, _, err := Thumbnail(b, 8); err != nil {
-				return fmt.Errorf("%s: %s: %w", c.Unit, f.Name, err)
-			}
 		}
 	}
 	// Checked before the directory is touched: it may be another source's
