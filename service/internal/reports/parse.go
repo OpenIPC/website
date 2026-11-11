@@ -681,7 +681,7 @@ func textIdentifiers(text string) []Identifier {
 	var out []Identifier
 	seen := map[string]int{}
 	add := func(name, v string) {
-		if ((name == "cloud_id" || name == "hik_serial" || name == "device_id") && !strings.ContainsAny(v, "0123456789")) || !alnum.MatchString(v) || zeroish(v) {
+		if !plausibleIdentifier(name, v) {
 			return
 		}
 		k := strings.ToLower(v)
@@ -700,33 +700,54 @@ func textIdentifiers(text string) []Identifier {
 		seen[k] = len(out)
 		out = append(out, Identifier{name, v})
 	}
-	for _, m := range cloudKeys.FindAllStringSubmatch(text, -1) {
-		v := m[2]
-		// The serial alone, so it hashes as ipctool's cloudId does.
-		if xm := xmSerial.FindString(v); xm != "" {
-			v = xm
-		}
-		add("cloud_id", v)
-	}
-	for _, re := range deviceForms {
-		for _, m := range re.FindAllStringSubmatch(text, -1) {
-			add("device_id", m[1])
-		}
-	}
-	for _, re := range secretKeys {
-		for _, m := range re.FindAllStringSubmatch(text, -1) {
-			add("cloud_secret", m[1])
-		}
-	}
-	for _, m := range apName.FindAllStringSubmatch(text, -1) {
-		add("cloud_ap", m[1])
-	}
-	for _, re := range []*regexp.Regexp{hikSerial, hikShort} {
-		for _, m := range re.FindAllStringSubmatch(text, -1) {
-			add("hik_serial", strings.ReplaceAll(m[1], "\x00", ""))
+	for _, f := range identifierForms {
+		for _, m := range f.re.FindAllStringSubmatch(text, -1) {
+			v := m[f.group]
+			switch f.name {
+			case "cloud_id":
+				// The serial alone, so it hashes as ipctool's cloudId does.
+				if xm := xmSerial.FindString(v); xm != "" {
+					v = xm
+				}
+			case "hik_serial":
+				v = strings.ReplaceAll(v, "\x00", "")
+			}
+			add(f.name, v)
 		}
 	}
 	return out
+}
+
+// identifierForm is one way a text names the camera's identity: the
+// identifier's name, the expression, and the group of it that is the value.
+type identifierForm struct {
+	name  string
+	re    *regexp.Regexp
+	group int
+}
+
+// identifierForms are the forms textIdentifiers reads, in its order; the
+// backup check (ScanBackup) looks for the same in a flash dump.
+var identifierForms = func() []identifierForm {
+	fs := []identifierForm{{"cloud_id", cloudKeys, 2}}
+	for _, re := range deviceForms {
+		fs = append(fs, identifierForm{"device_id", re, 1})
+	}
+	for _, re := range secretKeys {
+		fs = append(fs, identifierForm{"cloud_secret", re, 1})
+	}
+	return append(fs, identifierForm{"cloud_ap", apName, 1},
+		identifierForm{"hik_serial", hikSerial, 1}, identifierForm{"hik_serial", hikShort, 1})
+}()
+
+// plausibleIdentifier: v, read as name, is a value and not a word -- a
+// cloud ID, a serial or a device ID has a digit in it -- nor a run of
+// zeros or Fs.
+func plausibleIdentifier(name, v string) bool {
+	if (name == "cloud_id" || name == "hik_serial" || name == "device_id") && !strings.ContainsAny(v, "0123456789") {
+		return false
+	}
+	return alnum.MatchString(v) && !zeroish(v)
 }
 
 // alnum: a value with a letter or a digit in it. One a sender masked by hand

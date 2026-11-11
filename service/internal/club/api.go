@@ -757,13 +757,18 @@ func (a *API) decide(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	a.Log.Info("club: reviewed", "report", id, "decision", in.Decision, "by", m.ID, "member", d.Member, "points", d.Points, "new_board", d.Board)
+	for _, c := range d.Backups {
+		a.Log.Warn("club: a flash dump shared publicly holds secrets", "report", id, "position", c.Position, "kinds", c.Kinds,
+			"made_private", c.MadePrivate, "kept", c.Kept)
+	}
 	if a.OnReviewed != nil {
 		a.OnReviewed(context.WithoutCancel(r.Context()))
 	}
 	if d.Member != "" {
 		a.notifyDecision(context.WithoutCancel(r.Context()), d.Member, id, in.Decision, d)
 	}
-	writeJSON(w, http.StatusOK, map[string]any{"id": id, "decision": in.Decision, "points": d.Points, "total": d.Total, "board": d.Board})
+	writeJSON(w, http.StatusOK, map[string]any{"id": id, "decision": in.Decision, "points": d.Points, "total": d.Total, "board": d.Board,
+		"backups_private": d.Backups})
 }
 
 func (a *API) refuse(w http.ResponseWriter, status int, reason string) {

@@ -507,6 +507,9 @@ type Decided struct {
 	// Reasons: why a published report's parts earned less than alone,
 	// each once, ReasonKnown before ReasonCamera -- what the sender is told.
 	Reasons []string
+	// Backups: the flash dumps shared publicly that the backup check found
+	// secrets in, kept private before the report was published.
+	Backups []BackupCheck
 }
 
 // Decide records a maintainer's decision and its stars: publishing links
@@ -553,6 +556,16 @@ func (s *Store) Decide(ctx context.Context, id, decision, by, note string, model
 	}
 	if basis, err = basis.public(ctx, s.DB, id); err != nil {
 		return d, err
+	}
+	// A flash dump its sender shared publicly is read before it is
+	// published with the report, and kept private when it holds the
+	// owner's Wi-Fi password, a cloud's keys or the camera's cloud ID
+	// (CheckBackups). Outside the decision's transaction: a dump can take
+	// a second to read, and kept private, it stays so whatever is decided.
+	if decision == "publish" {
+		if d.Backups, err = s.CheckBackups(ctx, id, BackupCheckBy+", for "+by, false); err != nil {
+			return d, fmt.Errorf("the backup check: %w", err)
+		}
 	}
 	// The board a review adds, the report's links, the review and the
 	// sender's stars are one transaction: a board that cannot be added, a

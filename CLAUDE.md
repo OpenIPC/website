@@ -164,7 +164,11 @@ restores the image but never the schema, so keep migrations additive.
   their kind left (a Wi-Fi SSID and password, a Gwell camera's P2P keys
   and passwords, a cloud's temporary credentials; `openipc reports
   redact` redoes what was published before a rule); a backup served only with
-  `consent=public`. **Nothing but this package may write them**: triggers
+  `consent=public`, and read first when its report is published (raw and
+  inside JFFS2's compressed nodes, `reports.ScanBackup`): one holding a
+  Wi-Fi password, a cloud's keys, the camera's cloud ID or a private key is
+  kept private (`openipc reports scan-backups` for those published before).
+  **Nothing but this package may write them**: triggers
   refuse changes, board links are `ON DELETE RESTRICT`, files are
   content-addressed and written once under `REPORTS_ROOT`
   (`/srv/www/shared/owner-reports` -- not `shared/reports`, which is the
