@@ -559,11 +559,14 @@ func (s *Store) Decide(ctx context.Context, id, decision, by, note string, model
 	}
 	// A flash dump its sender shared publicly is read before it is
 	// published with the report, and kept private when it holds the
-	// owner's Wi-Fi password, a cloud's keys or the camera's cloud ID
-	// (CheckBackups). Outside the decision's transaction: a dump can take
-	// a second to read, and kept private, it stays so whatever is decided.
+	// owner's Wi-Fi password, a cloud's keys or the camera's cloud ID.
+	// Read here, outside the decision's transaction -- a dump can take a
+	// second to read -- and decided on inside it, under the report's lock
+	// (keepDumpsPrivate): a decision refused leaves the dump as it was,
+	// and one reviewed meanwhile is read again by the next try.
+	var dumps []scannedDump
 	if decision == "publish" {
-		if d.Backups, err = s.CheckBackups(ctx, id, BackupCheckBy+", for "+by, false); err != nil {
+		if dumps, err = s.scanDumps(ctx, id); err != nil {
 			return d, fmt.Errorf("the backup check: %w", err)
 		}
 	}
@@ -629,6 +632,12 @@ func (s *Store) Decide(ctx context.Context, id, decision, by, note string, model
 			}
 			if now != *revision {
 				return ErrChanged
+			}
+		}
+		if decision == "publish" {
+			var err error
+			if d.Backups, err = keepDumpsPrivate(ctx, tx, id, dumps, BackupCheckBy+", for "+by, false); err != nil {
+				return fmt.Errorf("the backup check: %w", err)
 			}
 		}
 		// The camera is read under the locks an edit holds, so it is the

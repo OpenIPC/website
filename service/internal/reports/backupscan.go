@@ -10,6 +10,7 @@ import (
 	"io"
 	"regexp"
 	"slices"
+	"unicode/utf8"
 )
 
 // The backup check: a flash dump its sender shared publicly is published
@@ -168,44 +169,94 @@ var textByte = func() (t [256]bool) {
 	return
 }()
 
-// runner gathers runs of text, fed in pieces, for emit.
+// runner gathers runs of text, fed in pieces, for emit. Text is printable
+// ASCII, tabs and line ends, and whole UTF-8 characters: a passphrase may
+// be in any script, and a character cut by a piece's end is joined to the
+// rest of it in the next.
 type runner struct {
-	buf  []byte
-	at   int64
-	emit func(run []byte, at int64)
+	buf    []byte
+	at     int64
+	pend   []byte
+	pendAt int64
+	emit   func(run []byte, at int64)
+}
+
+// textLen is how many bytes of text start b: one for an ASCII one, a whole
+// UTF-8 character's, 0 for anything else, and -1 for the start of a
+// character b ends inside.
+func textLen(b []byte) int {
+	if textByte[b[0]] {
+		return 1
+	}
+	if b[0] < 0xc2 || b[0] > 0xf4 {
+		return 0
+	}
+	if !utf8.FullRune(b) {
+		return -1
+	}
+	if r, n := utf8.DecodeRune(b); r != utf8.RuneError && n > 1 {
+		return n
+	}
+	return 0
 }
 
 func (r *runner) feed(b []byte, at int64) {
+	if len(r.pend) > 0 {
+		p, pat := r.pend, r.pendAt
+		r.pend = nil
+		joined := append(append([]byte{}, p...), b[:min(len(b), utf8.UTFMax-len(p))]...)
+		if n := textLen(joined); n > len(p) {
+			r.add(joined[:n], pat)
+			b, at = b[n-len(p):], at+int64(n-len(p))
+		} else if n == -1 && len(joined) < utf8.UTFMax {
+			r.pend, r.pendAt = joined, pat // still cut: the next piece
+			return
+		} else {
+			r.end()
+		}
+	}
 	for i := 0; i < len(b); {
-		if !textByte[b[i]] {
-			r.end()
-			i++
-			continue
-		}
 		j := i
-		for j < len(b) && textByte[b[j]] {
-			j++
-		}
-		if len(r.buf) == 0 {
-			r.at = at + int64(i)
-		}
-		for p := b[i:j]; len(p) > 0; {
-			k := min(len(p), maxRun-len(r.buf))
-			r.buf, p = append(r.buf, p[:k]...), p[k:]
-			if len(r.buf) == maxRun {
-				r.emit(r.buf, r.at)
-				r.buf = append(r.buf[:0], r.buf[maxRun-runOverlap:]...)
-				r.at += maxRun - runOverlap
+		n := 0
+		for j < len(b) {
+			if n = textLen(b[j:]); n <= 0 {
+				break
 			}
+			j += n
 		}
-		if j < len(b) {
-			r.end()
+		if j > i {
+			r.add(b[i:j], at+int64(i))
 		}
-		i = j
+		if j == len(b) {
+			return
+		}
+		if n == -1 {
+			r.pend, r.pendAt = append([]byte{}, b[j:]...), at+int64(j)
+			return
+		}
+		r.end()
+		i = j + 1
+	}
+}
+
+// add puts text at offset at on the end of the run.
+func (r *runner) add(p []byte, at int64) {
+	if len(r.buf) == 0 {
+		r.at = at
+	}
+	for len(p) > 0 {
+		k := min(len(p), maxRun-len(r.buf))
+		r.buf, p = append(r.buf, p[:k]...), p[k:]
+		if len(r.buf) == maxRun {
+			r.emit(r.buf, r.at)
+			r.buf = append(r.buf[:0], r.buf[maxRun-runOverlap:]...)
+			r.at += maxRun - runOverlap
+		}
 	}
 }
 
 func (r *runner) end() {
+	r.pend = nil
 	if len(r.buf) >= minRun {
 		r.emit(r.buf, r.at)
 	}
@@ -229,6 +280,53 @@ type backupScan struct {
 	inflated runner
 	nodeAt   int64
 	nodeIn   string
+	// edges: the ends of the JFFS2 nodes read so far, for a secret that
+	// one fragment of a file starts and the next ends (joinEdges).
+	tails, heads edgeMap
+}
+
+// edgeLen is how much of a node's data either end of it keeps for the
+// next fragment of its file: more than a setting's line, and its context
+// (a psk's ssid).
+const edgeLen = 1 << 10
+
+// maxEdges bounds the ends kept, oldest dropped first: a file's fragments
+// are written one after another, and so lie near each other.
+const maxEdges = 2048
+
+// edgeKey is where in which file a node's data starts, or ends.
+type edgeKey struct {
+	ino uint32
+	at  uint32
+}
+
+type edge struct {
+	version uint32
+	b       []byte
+}
+
+// edgeMap is a bounded map of node ends, the newest version of each.
+type edgeMap struct {
+	m     map[edgeKey]edge
+	order []edgeKey
+}
+
+func (e *edgeMap) put(k edgeKey, v edge) {
+	if e.m == nil {
+		e.m = map[edgeKey]edge{}
+	}
+	if old, ok := e.m[k]; ok {
+		if old.version <= v.version {
+			e.m[k] = v
+		}
+		return
+	}
+	if len(e.order) >= maxEdges {
+		delete(e.m, e.order[0])
+		e.order = e.order[1:]
+	}
+	e.m[k] = v
+	e.order = append(e.order, k)
 }
 
 func (s *backupScan) add(kind string, off int64, in string) {
@@ -316,6 +414,7 @@ const (
 	jffs2Inode  = 0xc002
 	jffs2Accur  = 0x2000
 
+	jffs2None  = 0
 	jffs2Rtime = 2
 	jffs2Zlib  = 6
 )
@@ -378,11 +477,17 @@ func (s *backupScan) node(off int64) error {
 		if e.Uint32(h[64:]) != jffs2CRC(h[:60]) || csize == 0 || csize > maxNodeData || dsize > maxNodeData {
 			return nil
 		}
-		if compr != jffs2Zlib && compr != jffs2Rtime {
-			return nil // raw (read as such), zeroes, or LZO and LZMA
+		if compr != jffs2Zlib && compr != jffs2Rtime && compr != jffs2None {
+			return nil // zeroes, or LZO and LZMA
 		}
 		data := s.nodeBuf[:csize]
 		if n, _ := s.r.ReadAt(data, off+68); n < len(data) || e.Uint32(h[60:]) != jffs2CRC(data) {
+			return nil
+		}
+		if compr == jffs2None {
+			// Read as raw bytes already; only its joins with the
+			// fragments beside it, which a node header cuts, are not.
+			s.joinEdges(e.Uint32(h[12:]), e.Uint32(h[16:]), e.Uint32(h[44:]), data, off)
 			return nil
 		}
 		var out []byte
@@ -397,8 +502,38 @@ func (s *backupScan) node(off int64) error {
 		s.inflated.feed(out, 0)
 		s.inflated.end()
 		s.sshKeys(out, len(out), func(i int) []byte { return out[i:] }, off, in)
+		s.joinEdges(e.Uint32(h[12:]), e.Uint32(h[16:]), e.Uint32(h[44:]), out, off)
 	}
 	return nil
+}
+
+// joinEdges reads, with the fragments of the same file on either side of
+// this one -- its data starts where theirs ends, or ends where theirs
+// starts -- what lies across the joins, which neither node holds whole.
+// Then it keeps this node's ends for the fragments still to be read.
+func (s *backupScan) joinEdges(ino, version, at uint32, data []byte, off int64) {
+	if len(data) == 0 {
+		return
+	}
+	head, tail := data[:min(len(data), edgeLen)], data[max(0, len(data)-edgeLen):]
+	end := at + uint32(len(data))
+	if before, ok := s.tails.m[edgeKey{ino, at}]; ok {
+		s.across(before.b, head, off)
+	}
+	if after, ok := s.heads.m[edgeKey{ino, end}]; ok {
+		s.across(tail, after.b, off)
+	}
+	s.heads.put(edgeKey{ino, at}, edge{version, append([]byte{}, head...)})
+	s.tails.put(edgeKey{ino, end}, edge{version, append([]byte{}, tail...)})
+}
+
+// across reads the join of two fragments of a file, a then b.
+func (s *backupScan) across(a, b []byte, off int64) {
+	j := append(append(make([]byte, 0, len(a)+len(b)), a...), b...)
+	r := runner{emit: func(run []byte, _ int64) { s.text(run, off, "jffs2 across nodes") }}
+	r.feed(j, 0)
+	r.end()
+	s.sshKeys(j, len(a), func(i int) []byte { return j[i:] }, off, "jffs2 across nodes")
 }
 
 // inflate is a zlib node's data, up to dsize bytes; what inflates of a

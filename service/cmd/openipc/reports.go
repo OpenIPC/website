@@ -44,9 +44,12 @@ const reportsUsage = `usage: openipc reports
                                                 what a photo publishes: a copy with the regions blurred
                                                 (fractions of the photo, upright), nothing (not the
                                                 sender's unit), or the photo as sent
-  file <id> <position> private|as_sent          the same for a flash dump its sender shared publicly:
+  file <id> <position> private|as_sent [--override-check]
+                                                the same for a flash dump its sender shared publicly:
                                                 keep it private (it holds what identifies the camera),
-                                                or publish it again as they chose
+                                                or publish it again as they chose -- after the backup
+                                                check, which refuses one it finds secrets in unless
+                                                --override-check (logged with what it found)
   unlink <id> <board model id>                  undo a link made in error
   takedown <id> --by who --note why              withdraw for good: YAML blanked, files deleted
   photo/file on a boot log, U-Boot environment or note: private keeps it off the board,
@@ -106,6 +109,7 @@ func reportsCommand(ctx context.Context, cfg *config.Config, log *slog.Logger, a
 	var aliases multi
 	fs.Var(&aliases, "alias", "a further marking as printed the board answers to (repeatable)")
 	dry := fs.Bool("dry-run", false, "with redact or scan-backups: say what would change, change nothing")
+	override := fs.Bool("override-check", false, "with file <id> <position> as_sent: publish a flash dump the backup check finds secrets in, over what it finds (logged)")
 	cmd := args[0]
 	pos, err := parseInterleaved(fs, args[1:])
 	if err != nil {
@@ -286,7 +290,7 @@ func reportsCommand(ctx context.Context, cfg *config.Config, log *slog.Logger, a
 			rs = append(rs, reports.Region{X: v[0], Y: v[1], W: v[2], H: v[3]})
 		}
 		api := &reports.API{DB: pool, Files: files, Log: log}
-		if err := api.DecidePhoto(ctx, pos[0], position, pos[2], rs, *by); err != nil {
+		if err := api.DecidePhotoOver(ctx, pos[0], position, pos[2], rs, *by, *override); err != nil {
 			return err
 		}
 		// A published report's boards show the photo as decided.

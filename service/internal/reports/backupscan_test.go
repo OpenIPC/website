@@ -6,6 +6,7 @@ import (
 	"context"
 	"encoding/binary"
 	"encoding/json"
+	"errors"
 	"math/rand"
 	"slices"
 	"strings"
@@ -24,6 +25,12 @@ const (
 // data stored with compr (6 zlib, 2 rtime, 0 none) at offset 0 of inode
 // ino, its CRCs right, padded to four bytes.
 func inodeNode(e binary.ByteOrder, ino uint32, data []byte, compr byte) []byte {
+	return fragmentNode(e, ino, 1, 0, data, compr)
+}
+
+// fragmentNode is inodeNode for the data at offset at of the file, written
+// as version.
+func fragmentNode(e binary.ByteOrder, ino, version, at uint32, data []byte, compr byte) []byte {
 	var payload []byte
 	switch compr {
 	case jffs2Zlib:
@@ -46,9 +53,10 @@ func inodeNode(e binary.ByteOrder, ino uint32, data []byte, compr byte) []byte {
 	e.PutUint32(h[4:], uint32(68+len(payload)))
 	e.PutUint32(h[8:], jffs2CRC(h[:8]))
 	e.PutUint32(h[12:], ino)
-	e.PutUint32(h[16:], 1)        // version
+	e.PutUint32(h[16:], version)
 	e.PutUint32(h[20:], 0o100644) // mode
-	e.PutUint32(h[28:], uint32(len(data)))
+	e.PutUint32(h[28:], at+uint32(len(data)))
+	e.PutUint32(h[44:], at)
 	e.PutUint32(h[48:], uint32(len(payload)))
 	e.PutUint32(h[52:], uint32(len(data)))
 	h[56] = compr
@@ -119,6 +127,54 @@ func TestTheBackupCheckReadsInsideJFFS2(t *testing.T) {
 		}
 		if j, _ := json.Marshal(fs); bytes.Contains(j, []byte(fakePassphrase)) {
 			t.Errorf("the finding carries the value: %s", j)
+		}
+	}
+}
+
+// A passphrase in any script is one: its UTF-8 characters do not cut the
+// text it is read in, compressed or raw, nor where a chunk's end cuts one.
+func TestTheBackupCheckReadsAPassphraseInAnyScript(t *testing.T) {
+	conf := strings.Replace(wpaConf, fakePassphrase, "не-настоящий-пароль", 1)
+	if fs := scan(t, append(noise(4096, 1), inodeNode(binary.LittleEndian, 7, []byte(conf), jffs2Zlib)...)); !slices.Equal(Kinds(fs), []string{"wifi_psk"}) {
+		t.Errorf("compressed: %+v", fs)
+	}
+	raw := []byte("\x00wlanssid=TestNet\x00wlanpass=пароль-не-настоящий\x00")
+	cut := bytes.Index(raw, []byte("п")) + 1 // inside its two bytes
+	dump := append(noise(scanChunk-cut, 2), raw...)
+	if fs := scan(t, dump); !slices.Equal(Kinds(fs), []string{"wifi_psk"}) {
+		t.Errorf("across a chunk's end: %+v", fs)
+	}
+}
+
+// A file JFFS2 wrote in fragments is read across them: a secret that one
+// node's data starts and the next ends is found, in either order on the
+// flash, compressed or not -- and fragments of two files are not joined.
+func TestTheBackupCheckReadsAcrossAFilesFragments(t *testing.T) {
+	// No secret whole on either side of the cut.
+	creds := []byte(`{"Bucket":"b","accessKeySecret":"fake/secret/for/tests/only/0000"}`)
+	key := []byte("-----BEGIN EC PRIVATE KEY-----\n" + strings.Repeat("RkFLRUtFWUZPUlRFU1RT", 4) + "\n-----END EC PRIVATE KEY-----\n")
+	for _, c := range []struct {
+		name string
+		data []byte
+		cut  int
+		kind string
+	}{
+		{"a credential", creds, bytes.Index(creds, []byte("for/tests")), "cloud_credential"},
+		{"a private key", key, 40, "private_key"},
+	} {
+		for _, compr := range []byte{jffs2Zlib, jffs2None} {
+			first := fragmentNode(binary.LittleEndian, 5, 2, 0, c.data[:c.cut], compr)
+			second := fragmentNode(binary.LittleEndian, 5, 3, uint32(c.cut), c.data[c.cut:], compr)
+			for _, order := range [][][]byte{{first, second}, {second, first}} {
+				dump := append(append(append(noise(2048, 1), order[0]...), noise(512, 2)...), order[1]...)
+				if fs := scan(t, dump); !slices.Contains(Kinds(fs), c.kind) {
+					t.Errorf("%s, compr %d: %+v", c.name, compr, fs)
+				}
+			}
+			other := fragmentNode(binary.LittleEndian, 6, 3, uint32(c.cut), c.data[c.cut:], compr)
+			if fs := scan(t, append(append(noise(2048, 1), first...), other...)); slices.Contains(Kinds(fs), c.kind) {
+				t.Errorf("%s, compr %d: two files joined: %+v", c.name, compr, fs)
+			}
 		}
 	}
 }
@@ -277,16 +333,84 @@ func TestPublishingKeepsADumpWithSecretsPrivate(t *testing.T) {
 	if rec, _ := e.get(t, "/api/v1/reports/"+clean+"/files/1"); rec.Code != 200 {
 		t.Errorf("the clean dump answered %d", rec.Code)
 	}
-	// A reviewer read it and publishes it as sent: the scan says so, and
-	// leaves it.
-	if err := e.api.DecidePhoto(ctx, secret, 1, PhotoAsSent, nil, "maint"); err != nil {
+	// A reviewer's word alone does not publish it as sent; with the
+	// override it does, logged with what the check found, and the next
+	// check leaves it.
+	var refused ErrBackupSecrets
+	if err := e.api.DecidePhoto(ctx, secret, 1, PhotoAsSent, nil, "maint"); !errors.As(err, &refused) || !slices.Equal(refused.Kinds, []string{"wifi_psk"}) {
+		t.Fatalf("as_sent without the override: %v", err)
+	}
+	if rec, _ := e.get(t, "/api/v1/reports/"+secret+"/files/1"); rec.Code != 404 {
+		t.Errorf("a refused as_sent published the dump: %d", rec.Code)
+	}
+	if err := e.api.DecidePhotoOver(ctx, secret, 1, PhotoAsSent, nil, "maint", true); err != nil {
 		t.Fatal(err)
 	}
+	var over []string
+	if err := e.pool.QueryRow(ctx, `SELECT overrides FROM report_photo_reviews WHERE report_id = $1 ORDER BY id DESC LIMIT 1`, secret).Scan(&over); err != nil || !slices.Equal(over, []string{"wifi_psk"}) {
+		t.Errorf("logged overrides %v: %v", over, err)
+	}
 	cs, err := st.CheckBackups(ctx, secret, BackupCheckBy, false)
-	if err != nil || len(cs) != 1 || cs[0].MadePrivate || cs[0].Kept != "published as sent by maint" {
-		t.Errorf("after as_sent: %+v %v", cs, err)
+	if err != nil || len(cs) != 1 || cs[0].MadePrivate || cs[0].Kept != "published as sent over the check by maint" {
+		t.Errorf("after the override: %+v %v", cs, err)
 	}
 	if ids, err := st.PublicBackups(ctx); err != nil || !slices.Equal(ids, []string{secret, clean}) {
 		t.Errorf("public backups: %v %v", ids, err)
 	}
+}
+
+// A dump published as sent before the check existed, or over fewer kinds
+// than it finds now, is kept private by the next check; and a publish the
+// decision then refuses leaves a dump as it was.
+func TestTheBackupCheckIsDecidedWithThePublish(t *testing.T) {
+	e := newEnv(t)
+	ctx := context.Background()
+	yaml := fixture(t, "hi3516cv300-imx291.txt")
+	rec, out := e.post(t, upload{fields: map[string]string{"consent": "public"},
+		files: map[string][]byte{"backup": backupOf(yaml, append(noise(8192, 1), inodeNode(binary.LittleEndian, 7, []byte(wpaConf), jffs2Zlib)...))}}, "203.0.113.72")
+	if rec.Code != 201 {
+		t.Fatalf("%d %s", rec.Code, rec.Body)
+	}
+	id := out["id"].(string)
+	st := e.api.Store()
+	public := func() bool {
+		var pub *string
+		if err := e.pool.QueryRow(ctx, `SELECT public_sha256 FROM report_files WHERE report_id = $1 AND position = 1`, id).Scan(&pub); err != nil {
+			t.Fatal(err)
+		}
+		return pub != nil
+	}
+	stale := -1
+	if _, err := st.Decide(ctx, id, "publish", "maint", "", []string{"xiongmai-50h20l"}, Basis{}, nil, nil, &stale); !errors.Is(err, ErrChanged) {
+		t.Fatalf("a stale decision: %v", err)
+	}
+	if !public() {
+		t.Error("a refused decision kept the dump private")
+	}
+	var reviews int
+	if err := e.pool.QueryRow(ctx, `SELECT count(*) FROM report_photo_reviews WHERE report_id = $1`, id).Scan(&reviews); err != nil || reviews != 0 {
+		t.Errorf("a refused decision logged %d reviews: %v", reviews, err)
+	}
+	// As sent with nothing overridden: what an as_sent before the check
+	// was. The check keeps it private all the same.
+	if _, _, err := st.SetPhotoPublic(ctx, id, 1, PhotoAsSent, nil, "maint", nil, &DumpChecked{Sum: sumOf(t, e, id, 1)}); err != nil {
+		t.Fatal(err)
+	}
+	cs, err := st.CheckBackups(ctx, id, BackupCheckBy, false)
+	if err != nil || len(cs) != 1 || !cs[0].MadePrivate || public() {
+		t.Errorf("an as_sent without the override: %+v %v", cs, err)
+	}
+	// Published as sent only as checked: another file is refused.
+	if _, _, err := st.SetPhotoPublic(ctx, id, 1, PhotoAsSent, nil, "maint", nil, &DumpChecked{Sum: strings.Repeat("0", 64)}); !errors.Is(err, errDumpChanged) {
+		t.Errorf("as_sent of a file not checked: %v", err)
+	}
+}
+
+func sumOf(t *testing.T, e *env, id string, pos int) string {
+	t.Helper()
+	var sum string
+	if err := e.pool.QueryRow(context.Background(), `SELECT sha256 FROM report_files WHERE report_id = $1 AND position = $2`, id, pos).Scan(&sum); err != nil {
+		t.Fatal(err)
+	}
+	return sum
 }

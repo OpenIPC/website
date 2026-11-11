@@ -67,7 +67,11 @@ type errBlur struct{ error }
 // caller to remove if the decision then fails. It returns the public copy
 // the photo had before when nothing names it any more, for the caller to
 // delete once this is committed (RemoveUnreferenced).
-func (s *Store) SetPhotoPublic(ctx context.Context, id string, position int, action string, regions []Region, by string, blur Blurrer) (made *PublicCopy, orphan string, err error) {
+//
+// A flash dump is published as sent only as checked: the file the backup
+// check read (checked.Sum), with what it found that the reviewer publishes
+// it over (checked.Overrides, logged with the review).
+func (s *Store) SetPhotoPublic(ctx context.Context, id string, position int, action string, regions []Region, by string, blur Blurrer, checked *DumpChecked) (made *PublicCopy, orphan string, err error) {
 	if action != PhotoBlur && action != PhotoPrivate && action != PhotoAsSent {
 		return nil, "", errors.New("a photo is blurred, kept private, or published as sent")
 	}
@@ -110,6 +114,9 @@ func (s *Store) SetPhotoPublic(ctx context.Context, id string, position int, act
 				}
 				if consent != "public" {
 					return ErrNotConsented
+				}
+				if checked == nil || checked.Sum != sum {
+					return errDumpChanged
 				}
 			}
 		} else if kind != "photo" && !(textKinds[kind] && action != PhotoBlur) {
@@ -185,8 +192,12 @@ func (s *Store) SetPhotoPublic(ctx context.Context, id string, position int, act
 			WHERE report_id = $1 AND position = $2`, id, position, pub, pubBytes, pubMime); err != nil {
 			return err
 		}
-		if _, err := tx.Exec(ctx, `INSERT INTO report_photo_reviews (report_id, position, action, regions, public_sha256, by)
-			VALUES ($1, $2, $3, $4, $5, $6)`, id, position, action, rj, pub, by); err != nil {
+		over := []string{}
+		if kind == "backup" && action == PhotoAsSent {
+			over = append(over, checked.Overrides...)
+		}
+		if _, err := tx.Exec(ctx, `INSERT INTO report_photo_reviews (report_id, position, action, regions, public_sha256, by, overrides)
+			VALUES ($1, $2, $3, $4, $5, $6, $7)`, id, position, action, rj, pub, by, over); err != nil {
 			return err
 		}
 		if old != nil && *old != sum && (pub == nil || *old != *pub) {
@@ -282,8 +293,11 @@ func (a *API) ReviewPhoto(w http.ResponseWriter, r *http.Request, id string, pos
 	case errors.Is(err, ErrNotFound):
 		a.refuse(w, http.StatusNotFound, "the report has no such file")
 		return false
-	case errors.Is(err, ErrNotPhoto), errors.Is(err, ErrNotConsented):
+	case errors.Is(err, ErrNotPhoto), errors.Is(err, ErrNotConsented), errors.As(err, new(ErrBackupSecrets)):
 		a.refuse(w, http.StatusBadRequest, err.Error())
+		return false
+	case errors.Is(err, errDumpChanged):
+		a.refuse(w, http.StatusConflict, err.Error())
 		return false
 	case err != nil:
 		a.fail(w, "the photo's public copy", err)
@@ -299,6 +313,22 @@ func (a *API) ReviewPhoto(w http.ResponseWriter, r *http.Request, id string, pos
 // answer is an errBlur (400 on the page), a file the report does not have
 // ErrNotFound, one that is no photo ErrNotPhoto.
 func (a *API) DecidePhoto(ctx context.Context, id string, position int, action string, regions []Region, by string) error {
+	return a.DecidePhotoOver(ctx, id, position, action, regions, by, false)
+}
+
+// DumpChecked is what the backup check read of a flash dump a reviewer
+// publishes as sent: the file, and the kinds it found that the review
+// publishes it over.
+type DumpChecked struct {
+	Sum       string
+	Overrides []string
+}
+
+// DecidePhotoOver is DecidePhoto, and for a flash dump published as sent,
+// the backup check first: one it finds secrets in is ErrBackupSecrets
+// unless override, and then published over them, logged with the kinds
+// (`openipc reports file <id> <position> as_sent --override-check`).
+func (a *API) DecidePhotoOver(ctx context.Context, id string, position int, action string, regions []Region, by string, override bool) error {
 	if action != PhotoBlur && action != PhotoPrivate && action != PhotoAsSent {
 		return errBlur{errors.New("action is blur, private (not the sender's unit: never published) or as_sent")}
 	}
@@ -333,7 +363,28 @@ func (a *API) DecidePhoto(ctx context.Context, id string, position int, action s
 			return pc, func() error { _, err := a.Files.Put(out); return err }, nil
 		}
 	}
-	pc, orphan, err := st.SetPhotoPublic(ctx, id, position, action, regions, by, blur)
+	var checked *DumpChecked
+	if action == PhotoAsSent {
+		var kind, sum string
+		err := a.DB.QueryRow(ctx, `SELECT kind, sha256 FROM report_files WHERE report_id = $1 AND position = $2`, id, position).Scan(&kind, &sum)
+		if errors.Is(err, pgx.ErrNoRows) {
+			return ErrNotFound
+		}
+		if err != nil {
+			return err
+		}
+		if kind == "backup" {
+			if a.Files == nil {
+				return errors.New("reports: the backup check has no file store to read the dump from")
+			}
+			kinds := Kinds(a.Files.scan(sum))
+			if len(kinds) > 0 && !override {
+				return ErrBackupSecrets{Kinds: kinds}
+			}
+			checked = &DumpChecked{Sum: sum, Overrides: kinds}
+		}
+	}
+	pc, orphan, err := st.SetPhotoPublic(ctx, id, position, action, regions, by, blur, checked)
 	if err != nil {
 		if pc != nil {
 			// A copy placed before the decision failed belongs to no row.
