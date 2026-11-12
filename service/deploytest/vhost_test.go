@@ -230,3 +230,22 @@ func TestWallMirrorOrigins(t *testing.T) {
 		}
 	}
 }
+
+// A firmware download holds its connection for as long as the build or the
+// transfer takes -- minutes, for a hung build or a slow link. In the pages'
+// site_conc pool, one reader retrying such an image shed every page on the
+// site with 429 (2026-11-08), and Search Console counts a 429 as a server
+// error. The downloads have a pool of their own, defined beside the others.
+func TestFirmwareDownloadsHaveTheirOwnPool(t *testing.T) {
+	conc := read(t, "deploy/nginx/conf.d/openipc-snapshot-conc.conf")
+	mustMatch(t, `limit_conn_zone \$server_name zone=firmware_conc:`, conc, "the firmware downloads' pool is not defined")
+
+	dl := blockRe(vhost(t, "org.openipc"), regexp.MustCompile(`location ~ \S*download_full_image \{`))
+	if dl == "" {
+		t.Fatal("download_full_image has no location of its own")
+	}
+	d := directives(dl)
+	mustMatch(t, `limit_conn firmware_conc \d+;`, d, "the firmware downloads are not in their own pool")
+	mustNotContain(t, d, "site_conc", "a slow firmware build holds a slot the pages need")
+	mustContain(t, d, "limit_conn_status 429;", "the refusal is not a 429")
+}
