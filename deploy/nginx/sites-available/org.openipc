@@ -156,10 +156,13 @@ server {
     # No URI part on proxy_pass: nginx forbids one in a regex location, and the
     # full original URI is what should reach the service anyway.
     location ~ ^/(?:(?:ru|zh)/)?cameras/vendors/[^/]+/socs/[^/]+/download_full_image {
-        limit_conn site_conc 10;
+        # Its own pool, not site_conc: a hung build or a slow transfer holds a
+        # slot for minutes, and in site_conc that shed the pages
+        # (conf.d/openipc-snapshot-conc.conf).
+        limit_conn firmware_conc 10;
         limit_conn_status 429;
 
-        # Per address, where site_conc above is keyed on $server_name -- one
+        # Per address, where firmware_conc above is keyed on $server_name -- one
         # global pool of ten that a single client can take all of. See
         # conf.d/openipc-firmware-rate.conf for where the numbers come from.
         #

@@ -66,7 +66,7 @@ client, whatever transport they arrive on.
 That matters because it sits at **http level**, so it inherits into every
 location that does not declare a `limit_conn` of its own. A location that
 declares one *replaces* it rather than adding to it — which is how
-`site_conc`, `media_conc` and `snapshot_conc` escape it, and why `/wall/` and
+`site_conc`, `media_conc`, `snapshot_conc` and `firmware_conc` escape it, and why `/wall/` and
 `/assets|fonts/` now declare a generous one of their own. The Open Wall renders
 sixteen thumbnails; with stylesheets, fonts and a favicon, a cold first visit
 comes close enough to twenty that the page could shed its own images. Static
@@ -89,7 +89,7 @@ Shared definitions the vhosts reference. nginx includes `conf.d/` before
 |---|---|
 | `openipc-logformat.conf` | the `openipc` log format: combined plus cache status, request and upstream time, and the forwarded address |
 | `openipc-microcache.conf` | the `openipc_micro` cache zone |
-| `openipc-snapshot-conc.conf` | the `snapshot_conc`, `site_conc` and `media_conc` connection pools, 32 upstream connections between them |
+| `openipc-snapshot-conc.conf` | the `snapshot_conc`, `site_conc` and `media_conc` connection pools, 32 upstream connections to the web role between them, and `firmware_conc`, the firmware downloads' own ten |
 | `openipc-crawler-block.conf` | the `$openipc_blocked_crawler` map |
 | `openipc-routes.conf` | which Go process answers each surface, from the state files `openipc-route` writes under `/etc/nginx/openipc-routes/` |
 | `openipc-redirects.conf` | the route map `@fallback` answers — redirects, 410s for retired addresses, a 302 home for anything unclaimed. Maintained by hand (#302, #304) |
