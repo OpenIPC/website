@@ -234,20 +234,24 @@ func (im *Importer) apply(ctx context.Context, fsys fs.FS, load func(context.Con
 
 // applyOne makes one unit what its entry says.
 func (im *Importer) applyOne(ctx context.Context, fsys fs.FS, c Contribution, u *Unit) error {
-	same, link, err := im.unchanged(ctx, fsys, c, u)
+	same, link, placed, err := im.unchanged(ctx, fsys, c, u)
 	if err != nil {
 		return fmt.Errorf("%s: %w", c.Unit, err)
 	}
 	if same {
-		if link {
+		if link && placed {
 			return nil
 		}
-		// Only how sure the report's link is changed: the row says so, and
-		// the unit's directory -- the board's copy of what the owner sent --
-		// is left alone.
-		_, err := im.Pool.Exec(ctx, `UPDATE board_units SET link_certainty = $2, link_evidence = $3 WHERE id = $1 AND source = $4`,
-			c.Unit, null(c.LinkCertainty), c.LinkEvidence, Contributors)
-		if err == nil {
+		// Only how sure the report's link is, or where the unit stands
+		// among the others, changed: the row says so, and the unit's
+		// directory -- the board's copy of what the owner sent -- is left
+		// alone. A unit's position is its report's place in the list, so
+		// a review of an older report moves every unit after it; rewriting
+		// them all decoded every photo they hold, and the web role ran out
+		// of memory doing it (2026-11-12).
+		_, err := im.Pool.Exec(ctx, `UPDATE board_units SET link_certainty = $2, link_evidence = $3, position = $5 WHERE id = $1 AND source = $4`,
+			c.Unit, null(c.LinkCertainty), c.LinkEvidence, Contributors, u.Position)
+		if err == nil && !link {
 			im.Log.Info("boards: contribution's link certainty updated", "unit", c.Unit, "certainty", c.LinkCertainty)
 		}
 		return err
@@ -390,8 +394,9 @@ func (im *Importer) prune(ctx context.Context, keep []string, fromReports bool) 
 // They are apart because a change there alone is an UPDATE of the row,
 // never a rewrite of the unit; and a unit stored before migration 036 has
 // none (NULL), which is a confirmed link, so the first refresh after it
-// rebuilds nothing.
-func (im *Importer) unchanged(ctx context.Context, fsys fs.FS, c Contribution, u *Unit) (same, link bool, err error) {
+// rebuilds nothing. placed says whether its position is the entry's: a
+// unit moved, and nothing else, is an UPDATE as well.
+func (im *Importer) unchanged(ctx context.Context, fsys fs.FS, c Contribution, u *Unit) (same, link, placed bool, err error) {
 	var model, ref, by, evidence string
 	var sensor, chip, note, certainty *string
 	var flash *int
@@ -402,25 +407,25 @@ func (im *Importer) unchanged(ctx context.Context, fsys fs.FS, c Contribution, u
 		FROM board_units WHERE id = $1 AND source = $2`, c.Unit, Contributors).
 		Scan(&model, &ref, &by, &sensor, &chip, &flash, &note, &position, &certainty, &evidence, &private)
 	if errors.Is(err, pgx.ErrNoRows) {
-		return false, false, nil
+		return false, false, false, nil
 	}
 	if err != nil {
-		return false, false, err
+		return false, false, false, err
 	}
 	if model != c.Model || ref != u.SourceRef || by != c.By || deref(sensor) != c.Sensor ||
-		deref(chip) != c.FlashChip || deref(note) != c.Note || derefInt(flash) != c.FlashMB || position != u.Position ||
+		deref(chip) != c.FlashChip || deref(note) != c.Note || derefInt(flash) != c.FlashMB ||
 		private != c.PrivateDumps {
-		return false, false, nil
+		return false, false, false, nil
 	}
 	link = sureAs(deref(certainty)) == sureAs(c.LinkCertainty) && evidence == c.LinkEvidence
 	rows, err := im.Pool.Query(ctx, `SELECT kind::text || ' ' || name || ' ' || sha256 || coalesce(' ' || width || 'x' || height, '')
 		FROM board_artifacts WHERE unit_id = $1 ORDER BY position`, c.Unit)
 	if err != nil {
-		return false, false, err
+		return false, false, false, err
 	}
 	stored, err := pgx.CollectRows(rows, pgx.RowTo[string])
 	if err != nil {
-		return false, false, err
+		return false, false, false, err
 	}
 	var want []string
 	for _, f := range u.Files {
@@ -430,7 +435,7 @@ func (im *Importer) unchanged(ctx context.Context, fsys fs.FS, c Contribution, u
 		}
 		b, err := fs.ReadFile(fsys, f.Source)
 		if err != nil {
-			return false, false, err
+			return false, false, false, err
 		}
 		w := f.Kind + " " + f.Name + " " + sha256Hex(b)
 		// A photo's size is the one it is shown at: one stored before
@@ -443,7 +448,7 @@ func (im *Importer) unchanged(ctx context.Context, fsys fs.FS, c Contribution, u
 		want = append(want, w)
 	}
 	if !slices.Equal(stored, want) {
-		return false, false, nil
+		return false, false, false, nil
 	}
 	// The rows are right; the files must be there too (a restored database
 	// on an empty BOARDS_ROOT).
@@ -452,10 +457,10 @@ func (im *Importer) unchanged(ctx context.Context, fsys fs.FS, c Contribution, u
 			continue
 		}
 		if _, err := os.Stat(filepath.Join(im.Root, c.Unit, f.Name)); err != nil {
-			return false, false, nil
+			return false, false, false, nil
 		}
 	}
-	return true, link, nil
+	return true, link, position == u.Position, nil
 }
 
 // sureAs is a link certainty as compared: none is confirmed.

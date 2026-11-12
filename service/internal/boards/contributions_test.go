@@ -733,3 +733,48 @@ func TestAUnitWithASidewaysPhotoIsRebuilt(t *testing.T) {
 		t.Error("an unchanged unit was written again")
 	}
 }
+
+// A unit's position is its report's place among the published ones, so a
+// review of an older report moves every unit after it. That is an UPDATE of
+// each row, not a rewrite: a rewrite decodes every photo again, and a
+// review that moved thirty units took the web role past its memory
+// (2026-11-12).
+func TestAUnitMovedByAnOlderReportIsNotRewritten(t *testing.T) {
+	pool, root := imported(t)
+	ctx := context.Background()
+	im := &Importer{Pool: pool, Log: quiet(), Root: root}
+	store := fstest.MapFS{
+		"aa/photo": {Data: jpg(40, 30)},
+		"bb/text":  {Data: []byte("U-Boot\n")},
+	}
+	later := reportUnit("xiongmai-53h20-s-r-bbbbbbbb", "xiongmai-53h20-s", "r-bbbbbbbb", "aa/photo", "photo_other", "1-front.jpg")
+	if _, err := im.ApplyReportUnits(ctx, store, []Contribution{later}); err != nil {
+		t.Fatal(err)
+	}
+	marker := filepath.Join(root, later.Unit, "marker")
+	if err := os.WriteFile(marker, nil, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	position := func(unit string) (p int) {
+		t.Helper()
+		if err := pool.QueryRow(ctx, `SELECT position FROM board_units WHERE id = $1`, unit).Scan(&p); err != nil {
+			t.Fatal(err)
+		}
+		return p
+	}
+	before := position(later.Unit)
+
+	older := reportUnit("xiongmai-53h20-s-r-aaaaaaaa", "xiongmai-53h20-s", "r-aaaaaaaa", "bb/text", "boot_log", "1-boot.txt")
+	if _, err := im.ApplyReportUnits(ctx, store, []Contribution{older, later}); err != nil {
+		t.Fatal(err)
+	}
+	if got := position(later.Unit); got != before+1 {
+		t.Errorf("the later report's unit is at %d, want %d", got, before+1)
+	}
+	if got := position(older.Unit); got != before {
+		t.Errorf("the older report's unit is at %d, want %d", got, before)
+	}
+	if _, err := os.Stat(marker); err != nil {
+		t.Error("a unit that only moved was rewritten")
+	}
+}
