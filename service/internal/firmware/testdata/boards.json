@@ -63,6 +63,15 @@
     "nand_lite": "openipc.ak3918ev300-nand-lite.tgz"
   },
   {
+    "urlname": "ak3918ev300l",
+    "vendor": "Anyka",
+    "model": "AK3918EV300L",
+    "board": "ak3918ev300l",
+    "uboot": "",
+    "nor_lite": "openipc.ak3918ev300l-nor-lite.tgz",
+    "nand_lite": "openipc.ak3918ev300l-nand-lite.tgz"
+  },
+  {
     "urlname": "ak3918ev330",
     "vendor": "Anyka",
     "model": "AK3918EV330",
@@ -992,6 +1001,15 @@
     "nand_lite": "openipc.nt98566-nand-lite.tgz"
   },
   {
+    "urlname": "nt98523",
+    "vendor": "Novatek",
+    "model": "NT98523",
+    "board": "nt98523",
+    "uboot": "",
+    "nor_lite": "openipc.nt98523-nor-lite.tgz",
+    "nand_lite": "openipc.nt98523-nand-lite.tgz"
+  },
+  {
     "urlname": "rv1109",
     "vendor": "Rockchip",
     "model": "RV1109",
@@ -1314,6 +1332,15 @@
     "uboot": "",
     "nor_lite": "openipc.ssc387-nor-lite.tgz",
     "nand_lite": "openipc.ssc387-nand-lite.tgz"
+  },
+  {
+    "urlname": "ssr621q",
+    "vendor": "SigmaStar",
+    "model": "SSR621Q",
+    "board": "ssr621q",
+    "uboot": "",
+    "nor_lite": "openipc.ssr621q-nor-lite.tgz",
+    "nand_lite": "openipc.ssr621q-nand-lite.tgz"
   },
   {
     "urlname": "dm365",

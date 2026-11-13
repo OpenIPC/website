@@ -1073,6 +1073,27 @@
     <xhtml:link rel="alternate" hreflang="x-default" href="https://openipc.org/cameras/vendors/anyka/socs/ak3918ev300"/>
   </url>
   <url>
+    <loc>https://openipc.org/cameras/vendors/anyka/socs/ak3918ev300l</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://openipc.org/cameras/vendors/anyka/socs/ak3918ev300l"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://openipc.org/ru/cameras/vendors/anyka/socs/ak3918ev300l"/>
+    <xhtml:link rel="alternate" hreflang="zh" href="https://openipc.org/zh/cameras/vendors/anyka/socs/ak3918ev300l"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://openipc.org/cameras/vendors/anyka/socs/ak3918ev300l"/>
+  </url>
+  <url>
+    <loc>https://openipc.org/ru/cameras/vendors/anyka/socs/ak3918ev300l</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://openipc.org/cameras/vendors/anyka/socs/ak3918ev300l"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://openipc.org/ru/cameras/vendors/anyka/socs/ak3918ev300l"/>
+    <xhtml:link rel="alternate" hreflang="zh" href="https://openipc.org/zh/cameras/vendors/anyka/socs/ak3918ev300l"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://openipc.org/cameras/vendors/anyka/socs/ak3918ev300l"/>
+  </url>
+  <url>
+    <loc>https://openipc.org/zh/cameras/vendors/anyka/socs/ak3918ev300l</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://openipc.org/cameras/vendors/anyka/socs/ak3918ev300l"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://openipc.org/ru/cameras/vendors/anyka/socs/ak3918ev300l"/>
+    <xhtml:link rel="alternate" hreflang="zh" href="https://openipc.org/zh/cameras/vendors/anyka/socs/ak3918ev300l"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://openipc.org/cameras/vendors/anyka/socs/ak3918ev300l"/>
+  </url>
+  <url>
     <loc>https://openipc.org/cameras/vendors/anyka/socs/ak3918ev330</loc>
     <xhtml:link rel="alternate" hreflang="en" href="https://openipc.org/cameras/vendors/anyka/socs/ak3918ev330"/>
     <xhtml:link rel="alternate" hreflang="ru" href="https://openipc.org/ru/cameras/vendors/anyka/socs/ak3918ev330"/>
@@ -3194,6 +3215,27 @@
     <xhtml:link rel="alternate" hreflang="x-default" href="https://openipc.org/cameras/vendors/novatek/socs/nt98566"/>
   </url>
   <url>
+    <loc>https://openipc.org/cameras/vendors/novatek/socs/nt98523</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://openipc.org/cameras/vendors/novatek/socs/nt98523"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://openipc.org/ru/cameras/vendors/novatek/socs/nt98523"/>
+    <xhtml:link rel="alternate" hreflang="zh" href="https://openipc.org/zh/cameras/vendors/novatek/socs/nt98523"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://openipc.org/cameras/vendors/novatek/socs/nt98523"/>
+  </url>
+  <url>
+    <loc>https://openipc.org/ru/cameras/vendors/novatek/socs/nt98523</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://openipc.org/cameras/vendors/novatek/socs/nt98523"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://openipc.org/ru/cameras/vendors/novatek/socs/nt98523"/>
+    <xhtml:link rel="alternate" hreflang="zh" href="https://openipc.org/zh/cameras/vendors/novatek/socs/nt98523"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://openipc.org/cameras/vendors/novatek/socs/nt98523"/>
+  </url>
+  <url>
+    <loc>https://openipc.org/zh/cameras/vendors/novatek/socs/nt98523</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://openipc.org/cameras/vendors/novatek/socs/nt98523"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://openipc.org/ru/cameras/vendors/novatek/socs/nt98523"/>
+    <xhtml:link rel="alternate" hreflang="zh" href="https://openipc.org/zh/cameras/vendors/novatek/socs/nt98523"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://openipc.org/cameras/vendors/novatek/socs/nt98523"/>
+  </url>
+  <url>
     <loc>https://openipc.org/cameras/vendors/rockchip/socs/rv1109</loc>
     <xhtml:link rel="alternate" hreflang="en" href="https://openipc.org/cameras/vendors/rockchip/socs/rv1109"/>
     <xhtml:link rel="alternate" hreflang="ru" href="https://openipc.org/ru/cameras/vendors/rockchip/socs/rv1109"/>
@@ -3948,6 +3990,27 @@
     <xhtml:link rel="alternate" hreflang="ru" href="https://openipc.org/ru/cameras/vendors/sigmastar/socs/ssc387"/>
     <xhtml:link rel="alternate" hreflang="zh" href="https://openipc.org/zh/cameras/vendors/sigmastar/socs/ssc387"/>
     <xhtml:link rel="alternate" hreflang="x-default" href="https://openipc.org/cameras/vendors/sigmastar/socs/ssc387"/>
+  </url>
+  <url>
+    <loc>https://openipc.org/cameras/vendors/sigmastar/socs/ssr621q</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://openipc.org/cameras/vendors/sigmastar/socs/ssr621q"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://openipc.org/ru/cameras/vendors/sigmastar/socs/ssr621q"/>
+    <xhtml:link rel="alternate" hreflang="zh" href="https://openipc.org/zh/cameras/vendors/sigmastar/socs/ssr621q"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://openipc.org/cameras/vendors/sigmastar/socs/ssr621q"/>
+  </url>
+  <url>
+    <loc>https://openipc.org/ru/cameras/vendors/sigmastar/socs/ssr621q</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://openipc.org/cameras/vendors/sigmastar/socs/ssr621q"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://openipc.org/ru/cameras/vendors/sigmastar/socs/ssr621q"/>
+    <xhtml:link rel="alternate" hreflang="zh" href="https://openipc.org/zh/cameras/vendors/sigmastar/socs/ssr621q"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://openipc.org/cameras/vendors/sigmastar/socs/ssr621q"/>
+  </url>
+  <url>
+    <loc>https://openipc.org/zh/cameras/vendors/sigmastar/socs/ssr621q</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://openipc.org/cameras/vendors/sigmastar/socs/ssr621q"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://openipc.org/ru/cameras/vendors/sigmastar/socs/ssr621q"/>
+    <xhtml:link rel="alternate" hreflang="zh" href="https://openipc.org/zh/cameras/vendors/sigmastar/socs/ssr621q"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://openipc.org/cameras/vendors/sigmastar/socs/ssr621q"/>
   </url>
   <url>
     <loc>https://openipc.org/cameras/vendors/ti/socs/dm365</loc>

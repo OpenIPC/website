@@ -93,6 +93,16 @@
           "segment": null
         },
         {
+          "model": "AK3918EV300L",
+          "family": "AK3918EV300",
+          "version": "",
+          "urlname": "ak3918ev300l",
+          "status": "neq",
+          "load_address": "",
+          "featured": false,
+          "segment": null
+        },
+        {
           "model": "AK3918EV330",
           "family": null,
           "version": "",
@@ -1155,6 +1165,16 @@
           "urlname": "nt98566",
           "status": "wip",
           "load_address": "0x03100000",
+          "featured": false,
+          "segment": null
+        },
+        {
+          "model": "NT98523",
+          "family": "NT9852X",
+          "version": "",
+          "urlname": "nt98523",
+          "status": "neq",
+          "load_address": "",
           "featured": false,
           "segment": null
         }
@@ -5779,6 +5799,16 @@
               }
             ]
           }
+        },
+        {
+          "model": "SSR621Q",
+          "family": "INFINITY2M",
+          "version": "",
+          "urlname": "ssr621q",
+          "status": "neq",
+          "load_address": "",
+          "featured": false,
+          "segment": null
         }
       ]
     },

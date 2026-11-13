@@ -7,6 +7,7 @@ ak3916ev300	anyka	AK3918EV300
 ak3916ev301	anyka		
 ak3918ev200	anyka	AK3918EV200	
 ak3918ev300	anyka	AK3918EV300	
+ak3918ev300l	anyka	AK3918EV300	
 ak3918ev330	anyka		
 dm365	ti		
 fh8626v100	fullhan		
@@ -77,6 +78,7 @@ hi3536dv100	hisilicon	HI3536DV100	cctv
 msc313e	mstar	INFINITY3	
 msc316dc	mstar	INFINITY3	
 msc316dm	mstar	INFINITY3	
+nt98523	novatek	NT9852X	
 nt98533	novatek	NT9853X	
 nt98560	novatek	NT9856X	
 nt98561	novatek	NT9856X	
@@ -120,6 +122,7 @@ ssc378qe	sigmastar	INFINITY6C	fpv
 ssc385	sigmastar	SSC38X	
 ssc385d	sigmastar	SSC38X	
 ssc387	sigmastar	SSC38X	
+ssr621q	sigmastar	INFINITY2M	
 t10	ingenic	T21	consumer
 t20	ingenic	T21	consumer
 t21	ingenic	T21	consumer
