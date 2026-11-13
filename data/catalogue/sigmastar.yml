@@ -1,4 +1,4 @@
-# SigmaStar — 34 SoC(s).
+# SigmaStar — 35 SoC(s).
 #
 # Exported from the catalogue table (#161). This file is the source of
 # truth for the hardware pages: edit it in a pull request, not in the
@@ -1323,5 +1323,18 @@ socs:
   linux_filename: ''
   notes: SSC38X, the AI ISP line as Anjoy Vision names it (MC-A87); no OpenIPC build yet
   urlname: ssc387
+  featured: false
+  segment: null
+- family: INFINITY2M
+  model: SSR621Q
+  version: ''
+  status: neq
+  load_address: ''
+  sdk: ''
+  kernel: ''
+  uboot_filename: ''
+  linux_filename: ''
+  notes: 'Infinity2M (I2m in the IPL tag), an NVR SoC; ipctool does not know it yet'
+  urlname: ssr621q
   featured: false
   segment: null

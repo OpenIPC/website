@@ -1,4 +1,4 @@
-# Anyka — 5 SoC(s).
+# Anyka — 6 SoC(s).
 #
 # Exported from the catalogue table (#161). This file is the source of
 # truth for the hardware pages: edit it in a pull request, not in the
@@ -59,6 +59,19 @@ socs:
   linux_filename: openipc.ak3918ev300-nor-lite.tgz
   notes: ''
   urlname: ak3918ev300
+  featured: false
+  segment: null
+- family: AK3918EV300
+  model: AK3918EV300L
+  version: ''
+  status: neq
+  load_address: ''
+  sdk: ''
+  kernel: ''
+  uboot_filename: ''
+  linux_filename: ''
+  notes: 'AK3918EV300 with less memory (64 MB to U-Boot); ipctool names it, the package reads AK3918EV300'
+  urlname: ak3918ev300l
   featured: false
   segment: null
 - family: null
