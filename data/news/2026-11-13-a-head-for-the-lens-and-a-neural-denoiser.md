@@ -103,7 +103,8 @@ a memory budget instead of whatever the phone sent.
 
 ## Also
 
-Thirty-two repositories saw work this week.
+Thirty-two repositories saw work this week. Three of them are above —
+**devourer**, **majestic-webui** and the **wiki** — and here are the rest.
 
 - **qemu-bench** built the Hi3516CV610 twin: the gen-5 encoder, VI and VPSS
   online, the ISP statistics in V5's layout so the streamer's exposure and
