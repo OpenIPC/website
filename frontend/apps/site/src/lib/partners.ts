@@ -36,8 +36,9 @@ export type PartnerGroupKey =
  * EMAX and the six at the end of RU_INTEGRATORS were commented out on the
  * original wall and are carried across that way, with the same URLs. Entries
  * taken off since -- Techno-Shield (#438), GoodCam and AnyCam (#528), WebGlazok,
- * Yucca, MyWiFi and AlarmSystem (#532), RunCam and CCDCAM -- say why next to
- * them. Uncommenting a line is how one comes back.
+ * Yucca, MyWiFi and AlarmSystem (#532), RunCam (#533), Really -- say why
+ * next to them. CCDCAM, off in #533, is back until the end of 2026.
+ * Uncommenting a line is how one comes back.
  *
  * partners/majestic_mini.png is on no list and is kept on purpose.
  */
@@ -52,8 +53,9 @@ export const PARTNER_GROUPS: Record<PartnerGroupKey, Partner[]> = {
     // Cooperation suspended; off the wall, uncomment to bring it back.
     // { name: 'RunCam', url: 'https://runcam.com/', img: 'runcam_mini' },
     { name: 'AnjVision', url: 'https://www2.anjvision.com/', img: 'anjvision_mini' },
-    // Cooperation suspended; off the wall, uncomment to bring it back.
-    // { name: 'CCDCAM', url: 'https://ccdcam.com/', img: 'ccdcam_mini' },
+    // CCDCAM and IR LAB: the agreements run to 31 December 2026. Both come off
+    // on 1 January 2027 unless they are renewed.
+    { name: 'CCDCAM', url: 'https://ccdcam.com/', img: 'ccdcam_mini' },
     { name: 'IR LAB', url: 'https://irlab.net/', img: 'irlab_mini' },
     // SkyCam serves Russia only.
     { name: 'SkyCam', url: 'https://openipc.su/', img: 'skycam_mini', onlyIn: ['ru'] },
@@ -74,7 +76,8 @@ export const PARTNER_GROUPS: Record<PartnerGroupKey, Partner[]> = {
     { name: 'wfb-ng', url: 'https://github.com/svpcom/wfb-ng/', img: 'wfb-ng_mini' },
     { name: 'RubyFPV', url: 'https://rubyfpv.com/', img: 'rubyfpv_mini' },
     { name: 'Mario FPV', url: 'https://www.youtube.com/@mariofpv', img: 'mariofpv_mini' },
-    { name: 'Really', url: 'https://opencollective.com/really-541ee976', img: 'really_mini' },
+    // Off the wall while it has no donations; uncomment to bring it back.
+    // { name: 'Really', url: 'https://opencollective.com/really-541ee976', img: 'really_mini' },
   ],
   // Student and university teams flying or teaching on OpenIPC.
   education: [
