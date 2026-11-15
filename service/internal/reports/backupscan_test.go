@@ -554,3 +554,29 @@ func TestTheBackupCheckFindsATangeSerialFile(t *testing.T) {
 		t.Errorf("a list taken for tange_sn.txt: %+v", fs)
 	}
 }
+
+// A secret repeated all over a dump -- the same Wi-Fi network in every
+// node of a JFFS2 -- keeps a few findings of its kind and does not stop the
+// scan: a different secret after them is still found, so a review that
+// published the dump over the first kind cannot leave the second public.
+func TestTheBackupCheckFindsALaterKindPastRepeats(t *testing.T) {
+	var dump []byte
+	for i := 0; i < 200; i++ {
+		dump = append(dump, noise(64, int64(30+i))...)
+		dump = append(dump, []byte("\x00network={\n\tssid=\"TestNet\"\n\tpsk=\""+fakePassphrase+"\"\n}\n\x00")...)
+	}
+	dump = append(dump, []byte("\x00root:$6$abcdefgh$0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJ:19000:0:99999:7:::\n\x00")...)
+	fs := scan(t, dump)
+	if k := Kinds(fs); !slices.Equal(k, []string{"password_hash", "wifi_psk"}) {
+		t.Errorf("kinds: %v", k)
+	}
+	n := 0
+	for _, f := range fs {
+		if f.Kind == "wifi_psk" {
+			n++
+		}
+	}
+	if n == 0 || n > maxPerKind {
+		t.Errorf("%d wifi_psk findings kept, want 1..%d", n, maxPerKind)
+	}
+}
