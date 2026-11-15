@@ -376,6 +376,6 @@ export interface ClubToken {
 }
 export const fetchTokens = () => call<{ tokens: ClubToken[] }>('/tokens').then((r) => r.tokens);
 /** A new token: its value is in this answer and never again. */
-export const mintToken = (name: string, days: number, allowedCidr: string) =>
-  post<{ token: string; about: ClubToken }>('/tokens', { name, days, allowed_cidr: allowedCidr });
+export const mintToken = (name: string, days: number, allowedCidr: string, correct = false) =>
+  post<{ token: string; about: ClubToken }>('/tokens', { name, days, allowed_cidr: allowedCidr, correct });
 export const revokeToken = (id: number) => post<{ id: number; revoked: boolean }>(`/tokens/${id}/revoke`);

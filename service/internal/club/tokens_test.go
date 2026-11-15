@@ -217,3 +217,66 @@ func TestEveryTokenRequestIsWrittenDownAndTokensAreCapped(t *testing.T) {
 		t.Errorf("%d live tokens, %v", live, err)
 	}
 }
+
+// postWithToken posts JSON to /api/v1/maint/ as a maintainer's tool does.
+func (e *env) postWithToken(t *testing.T, token, path string, in any) (int, map[string]any) {
+	t.Helper()
+	raw, _ := json.Marshal(in)
+	req := httptest.NewRequest("POST", site+path, bytes.NewReader(raw))
+	req.Header.Set("Authorization", "Bearer "+token)
+	req.Header.Set("Content-Type", "application/json")
+	req.RemoteAddr = "203.0.113.9:4000"
+	rec := httptest.NewRecorder()
+	e.mux.ServeHTTP(rec, req)
+	var out map[string]any
+	_ = json.Unmarshal(rec.Body.Bytes(), &out)
+	return rec.Code, out
+}
+
+// A token made to correct names a report's chip from what the report
+// shows, as `openipc reports chip` does; one that only reads the dumps may
+// not, and every correction says which member and token made it.
+func TestATokenMadeToCorrectNamesAReportsChip(t *testing.T) {
+	e := newEnv(t)
+	ctx := context.Background()
+	ivan := e.signedIn(t, 777, "ivan_k", "198.51.100.1")
+	code, out := ivan.send(t, map[string]string{"channel": "web", "model": "anjoy-ms-j10"},
+		map[string][]byte{"backup": bytes.Repeat([]byte{0x5a}, 1<<20)})
+	if code != http.StatusCreated {
+		t.Fatalf("send: %d %v", code, out)
+	}
+	id := out["id"].(string)
+	maint := e.maintainer(t)
+	_, out = maint.mint(t, map[string]any{"name": "reader"})
+	reader := out["token"].(string)
+	_, out = maint.mint(t, map[string]any{"name": "corrector", "correct": true})
+	corrector := out["token"].(string)
+	if out["about"].(map[string]any)["scope"] != "dumps:read reports:correct" {
+		t.Errorf("scope: %v", out["about"])
+	}
+	chip := map[string]any{"vendor": "Anyka", "model": "AK3918AV130", "evidence": "device tree: anyka,ak3918av130"}
+
+	if code, _ := e.postWithToken(t, reader, "/api/v1/maint/reports/"+id+"/chip", chip); code != http.StatusForbidden {
+		t.Errorf("a read-only token corrected a chip: %d", code)
+	}
+	if code, out := e.postWithToken(t, corrector, "/api/v1/maint/reports/"+id+"/chip",
+		map[string]any{"vendor": "Anyka", "model": "AK3918AV130"}); code != http.StatusBadRequest {
+		t.Errorf("no evidence: %d %v", code, out)
+	}
+	if code, _ := e.postWithToken(t, corrector, "/api/v1/maint/reports/r-00000000/chip", chip); code != http.StatusNotFound {
+		t.Errorf("no such report: %d", code)
+	}
+	code, out = e.postWithToken(t, corrector, "/api/v1/maint/reports/"+id+"/chip", chip)
+	if code != 200 || out["chip_model"] != "AK3918AV130" || out["corrected"] != true {
+		t.Fatalf("correct: %d %v", code, out)
+	}
+	var by string
+	if err := e.pool.QueryRow(ctx, `SELECT by_who FROM report_chips WHERE report_id = $1`, id).Scan(&by); err != nil ||
+		!strings.HasPrefix(by, "m-") || !strings.Contains(by, "token") {
+		t.Errorf("by %q: %v", by, err)
+	}
+	dumps, err := e.api.Reports.Store().Dumps(ctx)
+	if err != nil || len(dumps) != 1 || dumps[0].ChipModel != "AK3918AV130" {
+		t.Errorf("the dump listing: %+v %v", dumps, err)
+	}
+}

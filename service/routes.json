@@ -296,6 +296,11 @@
   },
   {
     "role": "web",
+    "method": "POST",
+    "path": "/api/v1/maint/reports/{id}/chip"
+  },
+  {
+    "role": "web",
     "method": "GET",
     "path": "/api/v1/club/cameras"
   },

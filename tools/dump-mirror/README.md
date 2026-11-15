@@ -29,5 +29,18 @@ append-only.
 The token is sent only to an https site, and a redirect is refused rather
 than followed. Two syncs never run at once.
 
+## Correcting a report's chip
+
+A dump sent without ipctool's output names no chip, and an unlabelled dump can
+turn out to be another chip than the one its U-Boot was built for (r-5uwdebux:
+the AV100 SDK's U-Boot, an AK3918AV130 by both its device trees). With a token
+made in `/club` with **May also correct a report's chip** ticked:
+
+    dump-mirror chip r-5uwdebux Anyka AK3918AV130 --evidence "device trees: anyka,ak3918av130"
+
+The report stays as sent. The correction is kept with the evidence, the member
+and the token. The next `sync` files the dump under its chip in `index.jsonl`.
+`dump-mirror chip <id> "" "" --evidence why` takes a correction back.
+
 Keep the directory out of git checkouts and out of external backups. Revoke the
 token in `/club` when the machine stops using it.

@@ -196,7 +196,9 @@ restores the image but never the schema, so keep migrations additive.
   uImage, FIT, zImage) other than gzip and bzip2, which it inflates, are
   unread. Any other dump is withheld with the kinds found. Every request
   is a row in append-only `dump_access`.
-  `tools/dump-mirror` is the puller.
+  `tools/dump-mirror` is the puller. A token made with "may correct"
+  (scope `dumps:read reports:correct`, migration 052) also names a report's
+  chip at `POST /api/v1/maint/reports/{id}/chip`, as `reports chip` does.
 - `internal/club` -- **the OpenIPC Club**: signing in with Telegram (the bot
   takes Start with a code the asking browser shows, then tells the member
   what happened to what they sent), GitHub (a member of `CLUB_MAINTAINER_ORG`

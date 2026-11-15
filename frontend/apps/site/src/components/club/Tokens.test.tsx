@@ -34,7 +34,7 @@ test('a token is shown once, listed by its name, and revoked', async () => {
   fireEvent.input(getByLabelText('Only from this address or network (optional)'), { target: { value: '203.0.113.7' } });
   fireEvent.click(getByText('Make a token'));
   expect(await findByText('oipc_secretvalue')).toBeTruthy();
-  expect(calls.find((c) => c.body !== null)).toEqual({ url: '/api/v1/club/tokens', body: { name: 'dev box agents', days: 90, allowed_cidr: '203.0.113.7' } });
+  expect(calls.find((c) => c.body !== null)).toEqual({ url: '/api/v1/club/tokens', body: { name: 'dev box agents', days: 90, allowed_cidr: '203.0.113.7', correct: false } });
   expect(await findByText('dev box agents')).toBeTruthy();
   fireEvent.click(getByText('Revoke'));
   await waitFor(() => expect(queryByText('Revoke')).toBeNull());

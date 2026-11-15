@@ -329,6 +329,8 @@
       "tg_waiting": "正在等待 Telegram… 此码还剩 {time} 有效。",
       "tokens_about": "令牌让你自己的工具（代理、你机器上的脚本）无需登录即可在 /api/v1/maint/dumps 读取用户提交的闪存转储。只有当备份检查完整读取了转储且未发现任何属于用户的私密信息时才会发送；每次请求转储都会被记录。",
       "tokens_cidr": "仅限此地址或网络（可选）",
+      "tokens_correct": "还可以根据报告内容（设备树、启动日志）更正其芯片",
+      "tokens_corrects": "可更正芯片",
       "tokens_days": "天数",
       "tokens_link": "供你的工具使用的令牌",
       "tokens_mint": "创建令牌",

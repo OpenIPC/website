@@ -474,15 +474,15 @@ func (s *Store) SetChip(ctx context.Context, id, vendor, model, evidence, by str
 	evidence = strings.Join(strings.Fields(evidence), " ")
 	switch {
 	case model == "" && vendor != "":
-		return errors.New("a chip vendor without a model")
+		return fmt.Errorf("%w: a chip vendor without a model", ErrBadChip)
 	case model != "" && (!chipName.MatchString(model) || (vendor != "" && !chipName.MatchString(vendor))):
-		return fmt.Errorf("chip %q %q is not a part number", vendor, model)
+		return fmt.Errorf("%w: chip %q %q is not a part number", ErrBadChip, vendor, model)
 	case evidence == "":
-		return errors.New("evidence: what shows the chip, e.g. \"device tree: anyka,ak3918av130\"")
+		return fmt.Errorf("%w: evidence: what shows the chip, e.g. \"device tree: anyka,ak3918av130\"", ErrBadChip)
 	case utf8.RuneCountInString(evidence) > 200:
-		return errors.New("evidence: at most 200 characters")
+		return fmt.Errorf("%w: evidence: at most 200 characters", ErrBadChip)
 	case strings.TrimSpace(by) == "":
-		return errors.New("by: who says so")
+		return fmt.Errorf("%w: by: who says so", ErrBadChip)
 	}
 	tag, err := s.DB.Exec(ctx, `
 		INSERT INTO report_chips (report_id, chip_vendor, chip_model, evidence, by_who)
@@ -515,6 +515,10 @@ func (s *Store) WithChip(ctx context.Context, id string, f Facts) (Facts, error)
 	f.ChipVendor, f.ChipModel = vendor, model
 	return f, nil
 }
+
+// ErrBadChip is SetChip's answer for a correction it refuses: no evidence,
+// a vendor without a model, a name that is no part number.
+var ErrBadChip = errors.New("bad chip correction")
 
 // ErrNoLink is SetCertainty's and SetSensor's answer for a report not linked
 // to the board.

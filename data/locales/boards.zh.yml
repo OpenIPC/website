@@ -597,6 +597,8 @@ zh:
       tokens_days: '天数'
       tokens_cidr: '仅限此地址或网络（可选）'
       tokens_mint: '创建令牌'
+      tokens_correct: '还可以根据报告内容（设备树、启动日志）更正其芯片'
+      tokens_corrects: '可更正芯片'
       tokens_until: '有效期至 {date}'
       tokens_used: '上次使用 {date}'
       tokens_unused: '从未使用'

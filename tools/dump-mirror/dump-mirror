@@ -10,6 +10,11 @@ Every request is recorded on the site (dump_access).
 
     dump-mirror sync [--site URL] [--dest DIR] [--retry-days N]
     dump-mirror status [--dest DIR]
+    dump-mirror chip <report> <vendor> <model> --evidence WHY [--site URL]
+
+`chip` names a report's chip from what its dump shows (a device tree, a
+boot log), with a token made in /club to correct reports; "" "" takes a
+correction back.
 
 The token is OPENIPC_TOKEN, or the first line of ~/.config/openipc/token
 (mode 0600). Nothing but the standard library.
@@ -58,11 +63,14 @@ def token():
         return f.readline().strip()
 
 
-def request(site, tok, path, tries=5):
+def request(site, tok, path, tries=5, data=None):
     if not site.startswith("https://") and not site.startswith("http://127.0.0.1"):
         sys.exit(f"{site}: the token goes only to an https site")
-    req = urllib.request.Request(site.rstrip("/") + path, headers={
-        "Authorization": "Bearer " + tok, "User-Agent": "openipc-dump-mirror/1"})
+    headers = {"Authorization": "Bearer " + tok, "User-Agent": "openipc-dump-mirror/1"}
+    if data is not None:
+        headers["Content-Type"] = "application/json"
+        data = json.dumps(data).encode()
+    req = urllib.request.Request(site.rstrip("/") + path, data=data, headers=headers)
     for attempt in range(tries):
         try:
             return OPENER.open(req, timeout=300)
@@ -148,6 +156,15 @@ def sync(args):
             failed += 1
             continue
         if s in state["have"]:
+            # The listing is the truth for what is known of a dump (a chip
+            # corrected since it was fetched): refresh it, and file the dump
+            # under its chip.
+            have = state["have"][s]
+            rel = os.path.join(safe(d.get("chip_model")), os.path.basename(have["path"]))
+            if rel != have["path"]:
+                os.makedirs(os.path.join(args.dest, os.path.dirname(rel)), mode=0o700, exist_ok=True)
+                os.replace(os.path.join(args.dest, have["path"]), os.path.join(args.dest, rel))
+            state["have"][s] = dict(d, path=rel, fetched_at=have.get("fetched_at"))
             continue
         w = state["withheld"].get(s)
         if w and now - dt.datetime.fromisoformat(w["at"]) < dt.timedelta(days=args.retry_days):
@@ -175,6 +192,12 @@ def sync(args):
             got += 1
         save_state(args.dest, state)
 
+    save_state(args.dest, state)
+    # A chip folder holds only what was kept: none for dumps withheld.
+    for entry in os.scandir(args.dest):
+        if entry.is_dir() and not any(os.scandir(entry.path)):
+            os.rmdir(entry.path)
+
     def index(f):
         for _, d in sorted(state["have"].items(), key=lambda kv: (kv[1]["received_at"], kv[1]["report"])):
             f.write(json.dumps(d, sort_keys=True) + "\n")
@@ -195,6 +218,23 @@ def status(args):
     print(f"{len(state['withheld'])} withheld:", ", ".join(f"{k} {n}" for k, n in sorted(kinds.items())) or "none")
 
 
+def chip(args):
+    if not REPORT.match(args.report):
+        sys.exit(f"{args.report}: a report id is r- and eight letters or digits")
+    try:
+        with request(args.site, token(), f"/api/v1/maint/reports/{args.report}/chip", tries=1,
+                     data={"vendor": args.vendor, "model": args.model, "evidence": args.evidence}) as r:
+            out = json.load(r)
+    except urllib.error.HTTPError as e:
+        try:
+            why = json.load(e).get("error", "")
+        except ValueError:
+            why = ""
+        sys.exit(f"{args.report}: HTTP {e.code} {why}")
+    print(f"{out['id']}: {out['chip_vendor']} {out['chip_model']}".rstrip()
+          + ("" if out.get("corrected") else " (as sent)"))
+
+
 def main():
     os.umask(0o077)  # everything written here is the owners'
     p = argparse.ArgumentParser(description=__doc__.splitlines()[0])
@@ -205,8 +245,14 @@ def main():
     s.add_argument("--retry-days", type=int, default=7)
     st = sub.add_parser("status")
     st.add_argument("--dest", default=DEFAULT_DEST)
+    c = sub.add_parser("chip")
+    c.add_argument("report")
+    c.add_argument("vendor")
+    c.add_argument("model")
+    c.add_argument("--evidence", required=True, help="what shows it, e.g. 'device tree: anyka,ak3918av130'")
+    c.add_argument("--site", default=os.environ.get("OPENIPC_SITE", DEFAULT_SITE))
     args = p.parse_args()
-    {"sync": sync, "status": status}[args.cmd](args)
+    {"sync": sync, "status": status, "chip": chip}[args.cmd](args)
 
 
 if __name__ == "__main__":

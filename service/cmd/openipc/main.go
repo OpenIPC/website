@@ -212,6 +212,7 @@ var routes = []Route{
 	{"web", "POST", "/api/v1/club/tokens/{id}/revoke"},
 	{"web", "GET", "/api/v1/maint/dumps"},
 	{"web", "GET", "/api/v1/maint/dumps/{sha256}"},
+	{"web", "POST", "/api/v1/maint/reports/{id}/chip"},
 	{"web", "GET", "/api/v1/club/cameras"},
 	{"web", "POST", "/api/v1/club/cameras/code"},
 	{"web", "POST", "/api/v1/club/cameras/{camera}/unlink"},

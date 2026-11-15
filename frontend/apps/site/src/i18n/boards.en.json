@@ -331,6 +331,8 @@
       "tg_waiting": "Waiting for Telegram… This code works for {time} more.",
       "tokens_about": "A token lets your own tools -- an agent, a script on your machine -- read the flash dumps owners sent, at /api/v1/maint/dumps, without signing in. A dump is sent only when the backup scan read all of it and found nothing of its owner's in it; every dump asked for is recorded.",
       "tokens_cidr": "Only from this address or network (optional)",
+      "tokens_correct": "May also correct a report's chip from what it shows (a device tree, a boot log)",
+      "tokens_corrects": "corrects chips",
       "tokens_days": "Days",
       "tokens_link": "Tokens for your tools",
       "tokens_mint": "Make a token",
