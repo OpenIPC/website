@@ -528,23 +528,16 @@ func TestTheWholeScanReadsWhatIsCompressedOutsideTheFactorysImages(t *testing.T)
 }
 
 // A Tange Cloud camera keeps its serial and key in /config/tange_sn.txt on
-// a JFFS2, uncompressed or not: the backup check finds both, so the dump
-// is kept private and the maintainers' tools are not sent it.
+// a JFFS2: the backup check knows the file by its name, so the dump is
+// kept private and the maintainers' tools are not sent it. A line of the
+// same shape in another file -- or a fragment's end that looks like one --
+// is not taken for it.
 func TestTheBackupCheckFindsATangeSerialFile(t *testing.T) {
 	const line = "1A2B3CDEF45G,aB1cD2eF3gH4iJ5kL6mN7oP8qR9sT0uV"
 	e := binary.LittleEndian
 	for _, compr := range []byte{jffs2None, jffs2Zlib} {
-		// On the camera the node header's CRC, right before the file's
-		// bytes, is printable, so a raw read runs it into the line: pick
-		// an inode number that makes it so here too.
-		ino := uint32(9)
-		for ; ; ino++ {
-			if c := inodeNode(e, ino, []byte(line), compr)[67]; c > 0x20 && c < 0x7f {
-				break
-			}
-		}
-		part := append(append(noise(4096, 21), direntNode(e, ino, "tange_sn.txt")...),
-			inodeNode(e, ino, []byte(line), compr)...)
+		part := append(append(noise(4096, 21), direntNode(e, 9, "tange_sn.txt")...),
+			inodeNode(e, 9, []byte(line), compr)...)
 		fs := scan(t, append(part, bytes.Repeat([]byte{0xff}, 4096)...))
 		if k := Kinds(fs); !slices.Equal(k, []string{"cloud_secret", "device_id"}) {
 			t.Errorf("compr %d: %v", compr, k)
@@ -552,5 +545,12 @@ func TestTheBackupCheckFindsATangeSerialFile(t *testing.T) {
 		if j, _ := json.Marshal(fs); bytes.Contains(j, []byte("1A2B3CDEF45G")) {
 			t.Errorf("the finding carries the value: %s", j)
 		}
+	}
+	// A list's first fragment ending where a Tange line would.
+	first := fragmentNode(e, 11, 1, 0, []byte("1A2B3CDEF45G,aB1cD2eF3gH4iJ5kL6mN7oP8q"), jffs2None)
+	next := fragmentNode(e, 11, 1, 38, []byte(",more,fields\n"), jffs2None)
+	part := append(append(append(noise(4096, 22), direntNode(e, 11, "list.csv")...), first...), next...)
+	if fs := scan(t, append(part, bytes.Repeat([]byte{0xff}, 4096)...)); len(fs) != 0 {
+		t.Errorf("a list taken for tange_sn.txt: %+v", fs)
 	}
 }

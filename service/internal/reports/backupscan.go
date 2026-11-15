@@ -72,6 +72,9 @@ func before(what string, within int) func([]byte, []int) bool {
 var textPatterns = func() []textPattern {
 	var ps []textPattern
 	for _, f := range identifierForms {
+		if f.re == tangeSerial || f.re == tangeKey {
+			continue // a whole line: a fragment's end would pass for one
+		}
 		ps = append(ps, textPattern{kind: f.name, re: f.re, group: f.group, ok: func(text []byte, m []int) bool {
 			return plausibleIdentifier(f.name, string(bytes.ReplaceAll(text[m[2*f.group]:m[2*f.group+1]], []byte{0}, nil)))
 		}})
@@ -481,6 +484,9 @@ const (
 // jffs2CRC is the kernel's crc32(0, ...): no inversion before or after.
 func jffs2CRC(b []byte) uint32 { return ^crc32.Update(^uint32(0), crc32.IEEETable, b) }
 
+// tangeFile holds a Tange Cloud camera's serial and key (/config).
+const tangeFile = "tange_sn.txt"
+
 // certificateName is a Gwell camera's device certificate and key.
 var certificateName = regexp.MustCompile(`^Certificate(?:_[A-Za-z0-9_-]+)?\.bin$`)
 
@@ -531,6 +537,12 @@ func (s *backupScan) node(off int64) error {
 		if certificateName.Match(name) {
 			s.add("device_certificate", off, "jffs2")
 		}
+		// A Tange Cloud camera's serial and key, "<SN>,<key>" with neither
+		// named (parse.go tangeSerial): known by the file's name.
+		if string(name) == tangeFile {
+			s.add("device_id", off, "jffs2")
+			s.add("cloud_secret", off, "jffs2")
+		}
 	case jffs2Inode:
 		csize, dsize, compr := e.Uint32(h[48:]), e.Uint32(h[52:]), h[56]
 		if e.Uint32(h[64:]) != jffs2CRC(h[:60]) || csize == 0 {
@@ -559,14 +571,8 @@ func (s *backupScan) node(off int64) error {
 			return nil
 		}
 		if compr == jffs2None {
-			// Read as raw bytes already, but run into the node header in
-			// front of it, whose CRC can be printable: read the file's
-			// bytes alone too, so a form that is a whole line of its own
-			// (a Tange camera's tange_sn.txt) still starts a line. Its
-			// joins with the fragments beside it are read as well.
-			s.nodeAt, s.nodeIn = off, "jffs2"
-			s.inflated.feed(data, 0)
-			s.inflated.end()
+			// Read as raw bytes already; only its joins with the
+			// fragments beside it, which a node header cuts, are not.
 			s.joinEdges(e.Uint32(h[12:]), e.Uint32(h[16:]), e.Uint32(h[44:]), data, off)
 			return nil
 		}
