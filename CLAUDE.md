@@ -196,7 +196,15 @@ restores the image but never the schema, so keep migrations additive.
   uImage, FIT, zImage) other than gzip and bzip2, which it inflates, are
   unread. Any other dump is withheld with the kinds found. Every request
   is a row in append-only `dump_access`.
-  `tools/dump-mirror` is the puller. A token made with "may correct"
+  A dump withheld only for findings a
+  redaction can take out is sent as a redacted copy instead
+  (`reports/redact_dump.go`, `report_dump_redactions`, migration 053):
+  each value overwritten with as many 'X's, in place, in plain text and
+  inside zlib or rtime JFFS2 nodes (compressed again into their space,
+  CRCs made again); the copy is scanned again and sent only if clean, its
+  sum in `X-Dump-Redacted`; it goes with the dump at takedown. A value in
+  an archive stream, across JFFS2 fragments, a file known by its name or a
+  binary key keeps the dump withheld. `tools/dump-mirror` is the puller. A token made with "may correct"
   (scope `dumps:read reports:correct`, migration 052) also names a report's
   chip at `POST /api/v1/maint/reports/{id}/chip`, as `reports chip` does.
 - `internal/club` -- **the OpenIPC Club**: signing in with Telegram (the bot

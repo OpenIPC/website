@@ -297,6 +297,13 @@ type backupScan struct {
 	tails, heads edgeMap
 	// unread: what of the dump the scan could not read (Unread).
 	unread map[string]bool
+	// spans: where each value found lies, for RedactDump; runAt is where
+	// the run text is reading starts in its node's data. unredactable: a
+	// finding no span can take out (inside an archive, across fragments,
+	// a file known by its name, a binary key).
+	spans        []span
+	runAt        int64
+	unredactable bool
 	// whole: ScanBackupWhole, which also reads, or marks unread, what is
 	// compressed outside the factory's images (backupstreams.go).
 	whole  bool
@@ -365,12 +372,82 @@ func (s *backupScan) text(run []byte, at int64, in string) {
 			if p.ok != nil && !p.ok(run, m) {
 				continue
 			}
+			if redactedValue(p, run, m) {
+				continue
+			}
 			off := at
 			if in == "raw" {
 				off += int64(m[0])
 			}
 			s.add(p.kind, off, in)
+			s.spanOf(p, run, m, at, in)
 		}
+	}
+}
+
+// redactedValue: the value of match m is all redaction filler ('X', inside
+// its quotes if quoted) -- a value RedactDump took out, no value at all.
+func redactedValue(p textPattern, run []byte, m []int) bool {
+	vs, ve := valueOf(p, m)
+	v := bytes.Trim(run[vs:ve], "\"'")
+	if p.kind == "wifi_psk" && p.group == 0 {
+		v = bytes.Trim(bytes.TrimPrefix(v, []byte("psk=")), "\"")
+	}
+	return len(v) > 0 && len(bytes.Trim(v, "X")) == 0
+}
+
+// valueOf is where the value of match m of p lies in its run.
+func valueOf(p textPattern, m []int) (int, int) {
+	g := p.group
+	if vs, ve := m[2*g], m[2*g+1]; vs >= 0 {
+		// a psk="..." setting: the passphrase inside its quotes, so the
+		// setting keeps its form
+		if p.kind == "wifi_psk" && g == 0 && len(m) >= 4 && m[2] >= 0 {
+			vs, ve = m[2], m[3]
+		}
+		return vs, ve
+	}
+	return m[0], m[1]
+}
+
+// span is where one value found lies: in the dump (node < 0), or at
+// [start, end) of the decompressed data of the JFFS2 node at node.
+type span struct {
+	node       int64
+	start, end int64
+}
+
+// spanOf keeps where the value of match m of p in run lies, for RedactDump.
+// A PEM key is the whole block, not the banner the pattern stops after.
+func (s *backupScan) spanOf(p textPattern, run []byte, m []int, at int64, in string) {
+	vs, ve := valueOf(p, m)
+	if p.kind == "wifi_psk" && ve-vs >= 2 && run[vs] == '"' && run[ve-1] == '"' {
+		vs, ve = vs+1, ve-1 // the passphrase, not its quotes
+	}
+	if p.kind == "private_key" {
+		end := bytes.Index(run[m[0]:], []byte("-----END "))
+		if end < 0 {
+			s.unredactable = true
+			return
+		}
+		close := bytes.Index(run[m[0]+end+9:], []byte("-----"))
+		if close < 0 {
+			s.unredactable = true
+			return
+		}
+		vs, ve = m[0], m[0]+end+9+close+5
+	}
+	switch in {
+	case "raw":
+		s.spans = append(s.spans, span{node: -1, start: at + int64(vs), end: at + int64(ve)})
+	case "jffs2 none":
+		// an uncompressed node's data is the dump's bytes after its header
+		base := at + 68 + s.runAt
+		s.spans = append(s.spans, span{node: -1, start: base + int64(vs), end: base + int64(ve)})
+	case "jffs2 zlib", "jffs2 rtime":
+		s.spans = append(s.spans, span{node: at, start: s.runAt + int64(vs), end: s.runAt + int64(ve)})
+	default:
+		s.unredactable = true
 	}
 }
 
@@ -390,6 +467,7 @@ func (s *backupScan) sshKeys(b []byte, own int, more func(i int) []byte, at int6
 					off += int64(i)
 				}
 				s.add("ssh_private_key", off, in)
+				s.unredactable = true
 			}
 			i++
 		}
@@ -442,7 +520,10 @@ var ubifsMagic = []byte{0x31, 0x18, 0x10, 0x06}
 func scanBackup(r io.ReaderAt, size int64, whole bool) (*backupScan, error) {
 	s := &backupScan{r: r, size: size, seen: map[findingKey]bool{}, perKind: map[string]int{}, unread: map[string]bool{}, whole: whole,
 		nodeBuf: make([]byte, maxNodeData), out: make([]byte, maxNodeData), sshBuf: make([]byte, sshKeyRead)}
-	s.inflated.emit = func(run []byte, _ int64) { s.text(run, s.nodeAt, s.nodeIn) }
+	s.inflated.emit = func(run []byte, at int64) {
+		s.runAt = at
+		s.text(run, s.nodeAt, s.nodeIn)
+	}
 	raw := runner{emit: func(run []byte, at int64) { s.text(run, at, "raw") }}
 	buf := make([]byte, scanChunk+scanTail)
 	for at := int64(0); at < size; at += scanChunk {
@@ -544,12 +625,14 @@ func (s *backupScan) node(off int64) error {
 		}
 		if certificateName.Match(name) {
 			s.add("device_certificate", off, "jffs2")
+			s.unredactable = true
 		}
 		// A Tange Cloud camera's serial and key, "<SN>,<key>" with neither
 		// named (parse.go tangeSerial): known by the file's name.
 		if string(name) == tangeFile {
 			s.add("device_id", off, "jffs2")
 			s.add("cloud_secret", off, "jffs2")
+			s.unredactable = true
 		}
 	case jffs2Inode:
 		csize, dsize, compr := e.Uint32(h[48:]), e.Uint32(h[52:]), h[56]
@@ -579,8 +662,15 @@ func (s *backupScan) node(off int64) error {
 			return nil
 		}
 		if compr == jffs2None {
-			// Read as raw bytes already; only its joins with the
-			// fragments beside it, which a node header cuts, are not.
+			// Read as raw bytes already, but run into the node header in
+			// front of it, whose CRC can be printable: read the file's
+			// bytes alone too, so a line of its own (a shadow file's)
+			// still starts a line. The whole-line forms a fragment's end
+			// could pass for are not read in a dump (tangeSerial). Its
+			// joins with the fragments beside it are read as well.
+			s.nodeAt, s.nodeIn = off, "jffs2 none"
+			s.inflated.feed(data, 0)
+			s.inflated.end()
 			s.joinEdges(e.Uint32(h[12:]), e.Uint32(h[16:]), e.Uint32(h[44:]), data, off)
 			return nil
 		}

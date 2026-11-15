@@ -261,7 +261,8 @@ func (s *Store) RemoveUnreferenced(ctx context.Context, files *Files, sum string
 			return err
 		}
 		var used bool
-		if err := tx.QueryRow(ctx, `SELECT EXISTS (SELECT 1 FROM report_files WHERE sha256 = $1 OR public_sha256 = $1)`,
+		if err := tx.QueryRow(ctx, `SELECT EXISTS (SELECT 1 FROM report_files WHERE sha256 = $1 OR public_sha256 = $1)
+			OR EXISTS (SELECT 1 FROM report_dump_redactions WHERE redacted_sha256 = $1)`,
 			sum).Scan(&used); err != nil {
 			return err
 		}
@@ -635,6 +636,13 @@ func (s *Store) Takedown(ctx context.Context, id, by, note string) ([]string, er
 		if err := rows.Err(); err != nil {
 			return err
 		}
+		// A redacted copy of a dump (redact_dump.go) is the owner's too:
+		// it goes with the dump, unless another report sent the same bytes.
+		reds, err := dropRedactions(ctx, tx, sums)
+		if err != nil {
+			return err
+		}
+		sums = append(sums, reds...)
 		if _, err := tx.Exec(ctx, `
 			UPDATE reports SET yaml = '', yaml_public = '', yaml_sha256 = repeat('0', 64), note = '', note_public = '', id_hashes = '{}',
 			  chip_vendor = '', chip_model = '', sensor = '', flash_id = '', flash_size = '',

@@ -125,13 +125,30 @@ def forget(dest, state, s):
 
 
 def fetch(site, tok, d, path):
-    """Fetch dump d into path, checking its sha256; None, or the reasons it was withheld."""
+    """Fetch dump d into path, checking its sha256: (None, the path written),
+    or (the reasons it was withheld, None). A redacted copy -- the site took
+    out what the dump held of its owner's -- is checked against the sha256
+    X-Dump-Redacted names, written beside path as .redacted.bin, and noted
+    in d (redacted_sha256, redacted_kinds)."""
     try:
         resp = request(site, tok, "/api/v1/maint/dumps/" + d["sha256"])
     except urllib.error.HTTPError as e:
         if e.code == 409:
-            return json.load(e).get("withheld", ["withheld"])
+            return json.load(e).get("withheld", ["withheld"]), None
         raise
+    if path.endswith(".redacted.bin"):
+        path = path[:-len(".redacted.bin")] + ".bin"
+    want = d["sha256"]
+    d.pop("redacted_sha256", None)
+    d.pop("redacted_kinds", None)
+    red = resp.headers.get("X-Dump-Redacted", "")
+    if red:
+        if not HEX64.match(red):
+            raise RuntimeError(f"{want}: a redacted copy named {red[:80]!r}")
+        want = red
+        d["redacted_sha256"] = red
+        d["redacted_kinds"] = [k for k in resp.headers.get("X-Dump-Redacted-Kinds", "").split(",") if k]
+        path = path[:-len(".bin")] + ".redacted.bin"
     h = hashlib.sha256()
     fd, tmp = tempfile.mkstemp(dir=os.path.dirname(path), prefix=".part.")
     try:
@@ -139,14 +156,14 @@ def fetch(site, tok, d, path):
             while chunk := resp.read(1 << 20):
                 h.update(chunk)
                 f.write(chunk)
-        if h.hexdigest() != d["sha256"]:
-            raise RuntimeError(f"{d['sha256']}: the bytes hash to {h.hexdigest()}")
+        if h.hexdigest() != want:
+            raise RuntimeError(f"{d['sha256']}: the bytes hash to {h.hexdigest()}, not {want}")
         os.chmod(tmp, 0o600)
         os.replace(tmp, path)
     except BaseException:
         os.unlink(tmp)
         raise
-    return None
+    return None, path
 
 
 def sync(args):
@@ -179,7 +196,8 @@ def sync(args):
                 os.makedirs(os.path.join(args.dest, os.path.dirname(rel)), mode=0o700, exist_ok=True)
                 os.replace(os.path.join(args.dest, have["path"]), os.path.join(args.dest, rel))
             state["have"][s] = have = dict(d, path=rel, fetched_at=have.get("fetched_at"),
-                                           checked_at=have.get("checked_at") or have.get("fetched_at"))
+                                           checked_at=have.get("checked_at") or have.get("fetched_at"),
+                                           **{k: have[k] for k in ("redacted_sha256", "redacted_kinds") if k in have})
             # Asked for again once the retry interval has passed: a rule
             # the scan learnt since may withhold it now, and then the copy
             # here goes too.
@@ -187,7 +205,7 @@ def sync(args):
             if last and now - dt.datetime.fromisoformat(last) < dt.timedelta(days=args.retry_days):
                 continue
             try:
-                reasons = fetch(args.site, tok, d, os.path.join(args.dest, rel))
+                reasons, written = fetch(args.site, tok, d, os.path.join(args.dest, rel))
             except urllib.error.HTTPError as e:
                 if e.code == 404:
                     # withdrawn since the listing: as one no longer listed
@@ -208,7 +226,15 @@ def sync(args):
                 print(f"{d['report']}: now withheld ({', '.join(reasons)}); the copy here is deleted", file=sys.stderr)
                 held += 1
             else:
-                have["checked_at"] = now.isoformat()
+                # sent as it was, or as a redacted copy now (or no longer):
+                # the file here is what was sent this time
+                new = os.path.relpath(written, args.dest)
+                if new != rel:
+                    try:
+                        os.unlink(os.path.join(args.dest, rel))
+                    except FileNotFoundError:
+                        pass
+                state["have"][s] = dict(d, path=new, fetched_at=now.isoformat(), checked_at=now.isoformat())
             save_state(args.dest, state)
             continue
         w = state["withheld"].get(s)
@@ -223,7 +249,7 @@ def sync(args):
             continue
         os.makedirs(os.path.join(args.dest, chip), mode=0o700, exist_ok=True)
         try:
-            reasons = fetch(args.site, tok, d, os.path.join(args.dest, rel))
+            reasons, written = fetch(args.site, tok, d, os.path.join(args.dest, rel))
         except urllib.error.HTTPError as e:
             if e.code == 404:
                 forget(args.dest, state, s)  # withdrawn since the listing
@@ -240,7 +266,8 @@ def sync(args):
             held += 1
         else:
             state["withheld"].pop(s, None)
-            state["have"][s] = dict(d, path=rel, fetched_at=now.isoformat(), checked_at=now.isoformat())
+            state["have"][s] = dict(d, path=os.path.relpath(written, args.dest), fetched_at=now.isoformat(),
+                                    checked_at=now.isoformat())
             got += 1
         save_state(args.dest, state)
 
