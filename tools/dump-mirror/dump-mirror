@@ -1,0 +1,213 @@
+#!/usr/bin/env python3
+"""Mirror the flash dumps owners sent to openipc.org onto a maintainer's machine.
+
+Reads /api/v1/maint/dumps with a maintainer's token (made in /club, "Tokens
+for your tools") and fetches each dump not yet here. The site sends a dump
+only when its backup scan read all of it and found nothing of its owner's
+(service/internal/reports/dumps.go); one it withholds is remembered with why
+and asked for again after --retry-days, as the scan learns to read more.
+Every request is recorded on the site (dump_access).
+
+    dump-mirror sync [--site URL] [--dest DIR] [--retry-days N]
+    dump-mirror status [--dest DIR]
+
+The token is OPENIPC_TOKEN, or the first line of ~/.config/openipc/token
+(mode 0600). Nothing but the standard library.
+"""
+import argparse
+import datetime as dt
+import fcntl
+import hashlib
+import json
+import os
+import re
+import sys
+import tempfile
+import time
+import urllib.error
+import urllib.request
+
+DEFAULT_SITE = "https://openipc.org"
+DEFAULT_DEST = os.path.expanduser("~/openipc-dumps")
+TOKEN_FILE = os.path.expanduser("~/.config/openipc/token")
+HEX64 = re.compile(r"^[0-9a-f]{64}$")
+REPORT = re.compile(r"^r-[a-z0-9]{8}$")
+
+
+class NoRedirects(urllib.request.HTTPRedirectHandler):
+    """A redirect would carry the token wherever it points: refuse them all."""
+
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        raise urllib.error.HTTPError(req.full_url, code, f"refusing to follow a redirect to {newurl}", headers, fp)
+
+
+OPENER = urllib.request.build_opener(NoRedirects)
+
+
+def token():
+    t = os.environ.get("OPENIPC_TOKEN", "").strip()
+    if t:
+        return t
+    try:
+        st = os.stat(TOKEN_FILE)
+    except FileNotFoundError:
+        sys.exit(f"no token: set OPENIPC_TOKEN or write it to {TOKEN_FILE}")
+    if st.st_mode & 0o077:
+        sys.exit(f"{TOKEN_FILE} is readable by others: chmod 600 it")
+    with open(TOKEN_FILE) as f:
+        return f.readline().strip()
+
+
+def request(site, tok, path, tries=5):
+    if not site.startswith("https://") and not site.startswith("http://127.0.0.1"):
+        sys.exit(f"{site}: the token goes only to an https site")
+    req = urllib.request.Request(site.rstrip("/") + path, headers={
+        "Authorization": "Bearer " + tok, "User-Agent": "openipc-dump-mirror/1"})
+    for attempt in range(tries):
+        try:
+            return OPENER.open(req, timeout=300)
+        except urllib.error.HTTPError as e:
+            if e.code in (429, 502, 503, 504) and attempt < tries - 1:
+                time.sleep(2 ** attempt * 2)
+                continue
+            raise
+
+
+def safe(s):
+    s = re.sub(r"[^A-Za-z0-9._-]+", "_", s or "").strip("._")
+    return s.lower() or "unknown"
+
+
+def load_state(dest):
+    try:
+        with open(os.path.join(dest, "state.json")) as f:
+            return json.load(f)
+    except FileNotFoundError:
+        return {"have": {}, "withheld": {}}
+
+
+def replace(path, write):
+    """Write path whole through a temporary file of its own, then rename it."""
+    fd, tmp = tempfile.mkstemp(dir=os.path.dirname(path), prefix=".tmp.")
+    try:
+        with os.fdopen(fd, "w") as f:
+            write(f)
+        os.replace(tmp, path)
+    except BaseException:
+        os.unlink(tmp)
+        raise
+
+
+def save_state(dest, state):
+    replace(os.path.join(dest, "state.json"), lambda f: json.dump(state, f, indent=1, sort_keys=True))
+
+
+def fetch(site, tok, d, path):
+    """Fetch dump d into path, checking its sha256; None, or the reasons it was withheld."""
+    try:
+        resp = request(site, tok, "/api/v1/maint/dumps/" + d["sha256"])
+    except urllib.error.HTTPError as e:
+        if e.code == 409:
+            return json.load(e).get("withheld", ["withheld"])
+        raise
+    h = hashlib.sha256()
+    fd, tmp = tempfile.mkstemp(dir=os.path.dirname(path), prefix=".part.")
+    try:
+        with os.fdopen(fd, "wb") as f:
+            while chunk := resp.read(1 << 20):
+                h.update(chunk)
+                f.write(chunk)
+        if h.hexdigest() != d["sha256"]:
+            raise RuntimeError(f"{d['sha256']}: the bytes hash to {h.hexdigest()}")
+        os.chmod(tmp, 0o600)
+        os.replace(tmp, path)
+    except BaseException:
+        os.unlink(tmp)
+        raise
+    return None
+
+
+def sync(args):
+    tok = token()
+    os.makedirs(args.dest, mode=0o700, exist_ok=True)
+    os.chmod(args.dest, 0o700)
+    lock = open(os.path.join(args.dest, ".lock"), "w")
+    try:
+        fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+    except BlockingIOError:
+        sys.exit(f"another dump-mirror is syncing {args.dest}")
+    state = load_state(args.dest)
+    with request(args.site, tok, "/api/v1/maint/dumps") as r:
+        dumps = json.load(r)["dumps"]
+    now = dt.datetime.now(dt.timezone.utc)
+    got = held = failed = 0
+    for d in dumps:
+        s = d.get("sha256", "")
+        if not HEX64.match(s) or not REPORT.match(str(d.get("report", ""))) or type(d.get("position")) is not int:
+            print(f"skipping a dump the site described oddly: {json.dumps(d)[:200]}", file=sys.stderr)
+            failed += 1
+            continue
+        if s in state["have"]:
+            continue
+        w = state["withheld"].get(s)
+        if w and now - dt.datetime.fromisoformat(w["at"]) < dt.timedelta(days=args.retry_days):
+            continue
+        chip = safe(d.get("chip_model"))
+        rel = os.path.join(chip, f"{d['report']}-{d['position']}-{s[:12]}.bin")
+        root = os.path.realpath(args.dest)
+        if os.path.commonpath([root, os.path.realpath(os.path.join(root, rel))]) != root:
+            print(f"{s}: {rel} would land outside {root}", file=sys.stderr)
+            failed += 1
+            continue
+        os.makedirs(os.path.join(args.dest, chip), mode=0o700, exist_ok=True)
+        try:
+            reasons = fetch(args.site, tok, d, os.path.join(args.dest, rel))
+        except (urllib.error.URLError, OSError, RuntimeError, ValueError) as e:
+            print(f"{s}: {e}", file=sys.stderr)
+            failed += 1
+            continue
+        if reasons:
+            state["withheld"][s] = {"at": now.isoformat(), "reasons": reasons, "report": d["report"]}
+            held += 1
+        else:
+            state["withheld"].pop(s, None)
+            state["have"][s] = dict(d, path=rel, fetched_at=now.isoformat())
+            got += 1
+        save_state(args.dest, state)
+
+    def index(f):
+        for _, d in sorted(state["have"].items(), key=lambda kv: (kv[1]["received_at"], kv[1]["report"])):
+            f.write(json.dumps(d, sort_keys=True) + "\n")
+    replace(os.path.join(args.dest, "index.jsonl"), index)
+    print(f"{len(dumps)} listed, {got} fetched, {held} withheld, {failed} failed, "
+          f"{len(state['have'])} here, {len(state['withheld'])} withheld in all")
+    if failed:
+        sys.exit(1)
+
+
+def status(args):
+    state = load_state(args.dest)
+    print(f"{len(state['have'])} dumps in {args.dest}")
+    kinds = {}
+    for w in state["withheld"].values():
+        for k in w["reasons"]:
+            kinds[k] = kinds.get(k, 0) + 1
+    print(f"{len(state['withheld'])} withheld:", ", ".join(f"{k} {n}" for k, n in sorted(kinds.items())) or "none")
+
+
+def main():
+    os.umask(0o077)  # everything written here is the owners'
+    p = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    sub = p.add_subparsers(dest="cmd", required=True)
+    s = sub.add_parser("sync")
+    s.add_argument("--site", default=os.environ.get("OPENIPC_SITE", DEFAULT_SITE))
+    s.add_argument("--dest", default=DEFAULT_DEST)
+    s.add_argument("--retry-days", type=int, default=7)
+    st = sub.add_parser("status")
+    st.add_argument("--dest", default=DEFAULT_DEST)
+    args = p.parse_args()
+    {"sync": sync, "status": status}[args.cmd](args)
+
+
+if __name__ == "__main__":
+    main()

@@ -20,6 +20,7 @@ import { size, waiting } from '../../lib/reports';
 import Cameras from './Cameras';
 import Crashes from './Crashes';
 import IpctoolCode from './IpctoolCode';
+import Tokens from './Tokens';
 import EditReport from './EditReport';
 import { PartStars, STATUS_TONE, Stars } from './parts';
 
@@ -316,6 +317,7 @@ function MemberPage({ member, ways, locale, t, onChange }: {
           : <button type="button" class="w-fit cursor-pointer p-0 text-[13px] text-brand-blue underline" onClick={() => setNaming(true)}>{t('club.rename')}</button>}
         {member.maintainer && <a class="site-btn site-btn-dark site-btn-sm w-fit" href={pathFor(locale, '/club/review')}>{t('club.review_link')}</a>}
         {member.maintainer && <a class="site-btn site-btn-outline-secondary site-btn-sm w-fit" href={pathFor(locale, '/club/crashes')}>{t('crashes.triage_link')}</a>}
+        {member.maintainer && <Tokens locale={locale} t={t} />}
         {member.maintainer_lapsed && (
           <p class="m-0 text-[13px] text-[#9a5b00]">
             {t('club.maintainer_lapsed')} <a href="/api/v1/club/github">{t('club.maintainer_renew')}</a>

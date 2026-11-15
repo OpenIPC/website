@@ -2,11 +2,13 @@ package reports
 
 import (
 	"bytes"
+	"compress/gzip"
 	"compress/zlib"
 	"context"
 	"encoding/binary"
 	"encoding/json"
 	"errors"
+	"hash/crc32"
 	"math/rand"
 	"slices"
 	"strings"
@@ -413,4 +415,114 @@ func sumOf(t *testing.T, e *env, id string, pos int) string {
 		t.Fatal(err)
 	}
 	return sum
+}
+
+// A dump is known to hold nothing of its owner's only when the scan read
+// all of it: a JFFS2 node compressed with LZO or LZMA, or any UBIFS, is
+// what it cannot read, and says so. Zeroes and nodes it reads are not.
+func TestTheBackupScanSaysWhatItCouldNotRead(t *testing.T) {
+	whole := func(dump []byte) []string {
+		t.Helper()
+		found, unread, err := ScanBackupWhole(bytes.NewReader(dump), int64(len(dump)))
+		if err != nil || len(found) != 0 {
+			t.Fatalf("%v %v", found, err)
+		}
+		return unread
+	}
+	e := binary.LittleEndian
+	read := append(append(noise(4096, 3), inodeNode(e, 7, []byte("nothing of anyone's here\n"), jffs2Zlib)...),
+		inodeNode(e, 8, bytes.Repeat([]byte{0}, 64), jffs2Zero)...)
+	if u := whole(read); len(u) != 0 {
+		t.Errorf("zlib and zero nodes: %v", u)
+	}
+	const lzo = 7
+	if u := whole(append(noise(4096, 4), inodeNode(e, 9, []byte("compressed with lzo, unread"), lzo)...)); !slices.Equal(u, []string{UnreadJFFS2}) {
+		t.Errorf("an LZO node: %v", u)
+	}
+	ubifs := append(noise(4096, 5), 0x31, 0x18, 0x10, 0x06)
+	ubifs = append(ubifs, noise(4092, 6)...)
+	if u := whole(ubifs); !slices.Equal(u, []string{UnreadUBIFS}) {
+		t.Errorf("UBIFS: %v", u)
+	}
+}
+
+// A JFFS2 node the scan cannot read whole -- larger than the kernel writes,
+// its data torn, or inflating short of what it says -- is unread, not clean.
+func TestTheWholeScanCountsADamagedNodeUnread(t *testing.T) {
+	e := binary.LittleEndian
+	unread := func(dump []byte) []string {
+		t.Helper()
+		_, u, err := ScanBackupWhole(bytes.NewReader(dump), int64(len(dump)))
+		if err != nil {
+			t.Fatal(err)
+		}
+		return u
+	}
+	node := inodeNode(e, 7, []byte(wpaConf), jffs2Zlib)
+
+	big := append([]byte{}, node...)
+	e.PutUint32(big[52:], maxNodeData+1) // dsize
+	e.PutUint32(big[64:], jffs2CRC(big[:60]))
+	torn := append([]byte{}, node...)
+	torn[70] ^= 0xff // the data, after its CRC was taken
+	short := append([]byte{}, node...)
+	e.PutUint32(short[52:], uint32(len(wpaConf)+100)) // says it holds more than it inflates to
+	e.PutUint32(short[64:], jffs2CRC(short[:60]))
+
+	for name, n := range map[string][]byte{"oversized": big, "torn": torn, "short": short} {
+		if u := unread(append(noise(4096, 7), n...)); !slices.Contains(u, UnreadJFFS2Damaged) {
+			t.Errorf("%s: %v", name, u)
+		}
+	}
+}
+
+// Outside the factory's images, a gzip stream is inflated and read, and an
+// xz is unread; inside a squashfs or a uImage, both are the factory's.
+func TestTheWholeScanReadsWhatIsCompressedOutsideTheFactorysImages(t *testing.T) {
+	var gz bytes.Buffer
+	zw := gzip.NewWriter(&gz)
+	zw.Write([]byte(wpaConf))
+	zw.Close()
+	xz := append([]byte{0xfd, '7', 'z', 'X', 'Z', 0}, noise(200, 8)...)
+
+	scanWhole := func(dump []byte) ([]Finding, []string) {
+		t.Helper()
+		f, u, err := ScanBackupWhole(bytes.NewReader(dump), int64(len(dump)))
+		if err != nil {
+			t.Fatal(err)
+		}
+		return f, u
+	}
+	if bytes.Contains(gz.Bytes(), []byte("psk=")) {
+		t.Fatal("not compressed")
+	}
+	f, u := scanWhole(append(append(noise(4096, 9), gz.Bytes()...), noise(4096, 10)...))
+	if len(f) != 1 || f[0].Kind != "wifi_psk" || f[0].In != "gzip" || len(u) != 0 {
+		t.Errorf("gzip outside: %v %v", f, u)
+	}
+	if fs := scan(t, append(noise(4096, 9), gz.Bytes()...)); len(fs) != 0 {
+		t.Errorf("the backup check now inflates gzip: %v", fs)
+	}
+	if _, u := scanWhole(append(noise(4096, 11), xz...)); !slices.Equal(u, []string{UnreadCompressed}) {
+		t.Errorf("xz outside: %v", u)
+	}
+
+	// a squashfs 4.0 superblock, its bytes_used covering what follows
+	inside := append(append(gz.Bytes(), xz...), noise(1024, 12)...)
+	sq := make([]byte, 96)
+	copy(sq, "hsqs")
+	binary.LittleEndian.PutUint16(sq[28:], 4)
+	binary.LittleEndian.PutUint64(sq[40:], uint64(96+len(inside)))
+	if f, u := scanWhole(append(append(noise(4096, 13), sq...), inside...)); len(f) != 0 || len(u) != 0 {
+		t.Errorf("inside a squashfs: %v %v", f, u)
+	}
+
+	// a uImage header with its CRC
+	ui := make([]byte, 64)
+	binary.BigEndian.PutUint32(ui[0:], 0x27051956)
+	binary.BigEndian.PutUint32(ui[12:], uint32(len(inside)))
+	binary.BigEndian.PutUint32(ui[4:], crc32.ChecksumIEEE(ui))
+	if f, u := scanWhole(append(append(noise(4096, 14), ui...), inside...)); len(f) != 0 || len(u) != 0 {
+		t.Errorf("inside a uImage: %v %v", f, u)
+	}
 }

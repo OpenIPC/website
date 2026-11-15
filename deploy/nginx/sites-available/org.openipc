@@ -533,6 +533,25 @@ server {
         add_header X-Served-By go always;
     }
 
+    # The maintainers' tools reading the flash dumps owners sent, with a
+    # token a maintainer minted in /club (service/internal/club/tokens.go):
+    # no cookie, nothing cached, every request written down by the web
+    # role. A dump is a few megabytes, sent by nginx from /report-files/.
+    location ^~ /api/v1/maint/ {
+        limit_req zone=boards_search burst=30 nodelay;
+        limit_req_status 429;
+        proxy_read_timeout 120;
+        proxy_pass http://127.0.0.1:3002;
+        proxy_set_header Host $host;
+        # The client as nginx knows it (a mirror's reader, by set_real_ip_from),
+        # never a chain the client wrote: a token pinned to a network is
+        # checked against this address.
+        proxy_set_header X-Forwarded-For $remote_addr;
+        proxy_set_header X-Request-Id $request_id;
+        add_header Strict-Transport-Security max-age=15768000;
+        add_header X-Served-By go always;
+    }
+
     # The OpenIPC Club (service/internal/club): signing in, the send form,
     # members' own reports and the maintainers' review. Its session cookie's
     # path is this prefix, so nothing else on the site ever receives it, and
@@ -568,8 +587,10 @@ server {
     }
 
     # The reports' files, content-addressed. Internal: reachable only through
-    # the web role's X-Accel-Redirect, which sends a published report's
-    # shareable files and never a private backup. Never alias this directory
+    # the web role's X-Accel-Redirect, which decides who gets what: a
+    # published report's shareable files to anyone, any file to its sender
+    # and the maintainers in /club, and a dump the backup scan read whole and
+    # found clean to a maintainer's token. Never alias this directory
     # anywhere else.
     location ^~ /report-files/ {
         internal;

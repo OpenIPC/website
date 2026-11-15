@@ -368,3 +368,14 @@ export function secondsLeft(iso: string, now = Date.now()): number {
 export function clock(seconds: number): string {
   return `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`;
 }
+
+/** A maintainer's token for their own tools (GET /api/v1/club/tokens), never its value. */
+export interface ClubToken {
+  id: number; name: string; scope: string; allowed_cidr?: string;
+  created_at: string; expires_at: string; revoked_at?: string; last_used_at?: string;
+}
+export const fetchTokens = () => call<{ tokens: ClubToken[] }>('/tokens').then((r) => r.tokens);
+/** A new token: its value is in this answer and never again. */
+export const mintToken = (name: string, days: number, allowedCidr: string) =>
+  post<{ token: string; about: ClubToken }>('/tokens', { name, days, allowed_cidr: allowedCidr });
+export const revokeToken = (id: number) => post<{ id: number; revoked: boolean }>(`/tokens/${id}/revoke`);

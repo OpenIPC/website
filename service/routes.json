@@ -272,6 +272,31 @@
   {
     "role": "web",
     "method": "GET",
+    "path": "/api/v1/club/tokens"
+  },
+  {
+    "role": "web",
+    "method": "POST",
+    "path": "/api/v1/club/tokens"
+  },
+  {
+    "role": "web",
+    "method": "POST",
+    "path": "/api/v1/club/tokens/{id}/revoke"
+  },
+  {
+    "role": "web",
+    "method": "GET",
+    "path": "/api/v1/maint/dumps"
+  },
+  {
+    "role": "web",
+    "method": "GET",
+    "path": "/api/v1/maint/dumps/{sha256}"
+  },
+  {
+    "role": "web",
+    "method": "GET",
     "path": "/api/v1/club/cameras"
   },
   {
