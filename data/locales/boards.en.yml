@@ -602,6 +602,8 @@ en:
       tokens_days: 'Days'
       tokens_cidr: 'Only from this address or network (optional)'
       tokens_mint: 'Make a token'
+      tokens_correct: 'May also correct a report''s chip from what it shows (a device tree, a boot log)'
+      tokens_corrects: 'corrects chips'
       tokens_until: 'until {date}'
       tokens_used: 'last used {date}'
       tokens_unused: 'never used'

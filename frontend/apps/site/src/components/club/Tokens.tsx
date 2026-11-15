@@ -16,6 +16,7 @@ export default function Tokens({ locale, t }: { locale: Locale; t: BoardsT }) {
   const [name, setName] = useState('');
   const [days, setDays] = useState(90);
   const [cidr, setCidr] = useState('');
+  const [correct, setCorrect] = useState(false);
   const [fresh, setFresh] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
@@ -49,7 +50,7 @@ export default function Tokens({ locale, t }: { locale: Locale; t: BoardsT }) {
       <form class="grid gap-1.5" onSubmit={(e) => {
         e.preventDefault();
         setError(null);
-        mintToken(name, days, cidr).then((r) => { setFresh(r.token); setName(''); setCidr(''); return load(); })
+        mintToken(name, days, cidr, correct).then((r) => { setFresh(r.token); setName(''); setCidr(''); setCorrect(false); return load(); })
           .catch((err: Error) => setError(err.message));
       }}>
         <label class="grid gap-0.5">
@@ -69,6 +70,10 @@ export default function Tokens({ locale, t }: { locale: Locale; t: BoardsT }) {
               class="min-w-0 rounded-md border border-hairline px-2 py-1 text-sm" />
           </label>
         </div>
+        <label class="flex items-start gap-1.5">
+          <input type="checkbox" checked={correct} onChange={(e) => setCorrect((e.target as HTMLInputElement).checked)} class="mt-0.5" />
+          <span>{t('club.tokens_correct')}</span>
+        </label>
         <button type="submit" class="site-btn site-btn-primary site-btn-sm w-fit">{t('club.tokens_mint')}</button>
       </form>
       {error && <span class="text-[12.5px] text-[#a3262e]" role="alert">{error}</span>}
@@ -80,6 +85,7 @@ export default function Tokens({ locale, t }: { locale: Locale; t: BoardsT }) {
                 <span class={live(k) ? 'font-medium' : 'text-body-secondary line-through'}>{k.name}</span>{' '}
                 <span class="text-[12px] text-body-secondary">
                   {t('club.tokens_until', { date: date(k.expires_at) })}
+                  {k.scope.includes('reports:correct') && ` · ${t('club.tokens_corrects')}`}
                   {k.allowed_cidr && ` · ${k.allowed_cidr}`}
                   {' · '}{k.last_used_at ? t('club.tokens_used', { date: date(k.last_used_at) }) : t('club.tokens_unused')}
                 </span>

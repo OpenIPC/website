@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net"
 	"net/http"
 	"net/netip"
@@ -30,6 +31,11 @@ const (
 	tokenMaxDays = 366
 	// maxTokens: live tokens a maintainer holds at once.
 	maxTokens = 10
+
+	// The scopes a token is made with: every one reads the dumps; one
+	// made so may also correct a report's chip (migration 052).
+	scopeRead    = "dumps:read"
+	scopeCorrect = "dumps:read reports:correct"
 )
 
 // Token is one of a maintainer's tokens, never its value.
@@ -51,6 +57,7 @@ func (a *API) tokenHandlers() map[string]http.Handler {
 		"POST /api/v1/club/tokens/{id}/revoke": a.post(a.revokeToken),
 		"GET /api/v1/maint/dumps":              http.HandlerFunc(a.dumps),
 		"GET /api/v1/maint/dumps/{sha256}":     http.HandlerFunc(a.dump),
+		"POST /api/v1/maint/reports/{id}/chip": http.HandlerFunc(a.correctChip),
 	}
 }
 
@@ -92,6 +99,8 @@ func (a *API) mintToken(w http.ResponseWriter, r *http.Request) {
 		Name        string `json:"name"`
 		Days        int    `json:"days"`
 		AllowedCIDR string `json:"allowed_cidr"`
+		// Correct: the token may also correct a report's chip.
+		Correct bool `json:"correct"`
 	}
 	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 1024)).Decode(&in); err != nil {
 		a.refuse(w, http.StatusBadRequest, `send {"name": "...", "days": 90, "allowed_cidr": ""}`)
@@ -121,7 +130,11 @@ func (a *API) mintToken(w http.ResponseWriter, r *http.Request) {
 	}
 	value := tokenPrefix + randomString(32)
 	now := a.now()
-	t := Token{Name: in.Name, Scope: "dumps:read", CreatedAt: now, ExpiresAt: now.Add(time.Duration(in.Days) * 24 * time.Hour)}
+	scope := scopeRead
+	if in.Correct {
+		scope = scopeCorrect
+	}
+	t := Token{Name: in.Name, Scope: scope, CreatedAt: now, ExpiresAt: now.Add(time.Duration(in.Days) * 24 * time.Hour)}
 	if cidr != nil {
 		t.AllowedCIDR = *cidr
 	}
@@ -199,29 +212,29 @@ func parsePrefix(s string) (netip.Prefix, error) {
 // bearer is the maintainer whose token the request carries, and the
 // token's id; it answers 401 or 403 itself when there is none. Every
 // refusal says the same, so a token's state is not told to who holds it.
-func (a *API) bearer(w http.ResponseWriter, r *http.Request) (*Member, int64, bool) {
-	refuse := func() (*Member, int64, bool) {
+func (a *API) bearer(w http.ResponseWriter, r *http.Request) (*Member, *bearerToken, bool) {
+	refuse := func() (*Member, *bearerToken, bool) {
 		w.Header().Set("WWW-Authenticate", `Bearer realm="openipc"`)
 		a.refuse(w, http.StatusUnauthorized, "send a maintainer's token: Authorization: Bearer oipc_...")
-		return nil, 0, false
+		return nil, nil, false
 	}
 	value, ok := strings.CutPrefix(r.Header.Get("Authorization"), "Bearer ")
 	if !ok || !strings.HasPrefix(value, tokenPrefix) || len(value) > 100 {
 		return refuse()
 	}
 	var id int64
-	var member string
+	var member, scope string
 	var cidr *string
 	err := a.DB.QueryRow(r.Context(), `
-		SELECT id, member_id, host(allowed_cidr) || '/' || masklen(allowed_cidr) FROM club_tokens
+		SELECT id, member_id, scope, host(allowed_cidr) || '/' || masklen(allowed_cidr) FROM club_tokens
 		WHERE token_sha256 = $1 AND revoked_at IS NULL AND expires_at > $2`,
-		sha(value), a.now()).Scan(&id, &member, &cidr)
+		sha(value), a.now()).Scan(&id, &member, &scope, &cidr)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return refuse()
 	}
 	if err != nil {
 		a.fail(w, "the token", err)
-		return nil, 0, false
+		return nil, nil, false
 	}
 	if cidr != nil {
 		p, err := netip.ParsePrefix(*cidr)
@@ -234,24 +247,39 @@ func (a *API) bearer(w http.ResponseWriter, r *http.Request) (*Member, int64, bo
 	m, err := a.member(r.Context(), member)
 	if err != nil {
 		a.fail(w, "the member", err)
-		return nil, 0, false
+		return nil, nil, false
 	}
 	if !m.Maintainer {
 		// A maintainer no longer: the token waits, unusable, until they are
 		// one again or it expires.
 		a.refuse(w, http.StatusForbidden, "this token's member is not one of OpenIPC's maintainers now")
-		return nil, 0, false
+		return nil, nil, false
 	}
 	if _, err := a.DB.Exec(r.Context(), `UPDATE club_tokens SET last_used_at = $2 WHERE id = $1`, id, a.now()); err != nil {
 		a.fail(w, "the token", err)
-		return nil, 0, false
+		return nil, nil, false
 	}
-	return m, id, true
+	return m, &bearerToken{id: id, scope: scope}, true
+}
+
+// bearerToken is the token a request was made with.
+type bearerToken struct {
+	id    int64
+	scope string
+}
+
+func (t *bearerToken) may(scope string) bool {
+	for _, s := range strings.Fields(t.scope) {
+		if s == scope {
+			return true
+		}
+	}
+	return false
 }
 
 // audit writes down one request made with a token (dump_access). A
 // request that cannot be written down is not answered.
-func (a *API) audit(r *http.Request, m *Member, token int64, sum, outcome string, reasons []string) error {
+func (a *API) audit(r *http.Request, m *Member, token *bearerToken, sum, outcome string, reasons []string) error {
 	var ip, dump *string
 	if s := httpx.ClientIP(r); net.ParseIP(s) != nil {
 		ip = &s
@@ -264,7 +292,7 @@ func (a *API) audit(r *http.Request, m *Member, token int64, sum, outcome string
 	}
 	_, err := a.DB.Exec(context.WithoutCancel(r.Context()), `
 		INSERT INTO dump_access (token_id, member_id, sha256, ip, outcome, reasons, at) VALUES ($1, $2, $3, $4, $5, $6, $7)`,
-		token, m.ID, dump, ip, outcome, reasons, a.now())
+		token.id, m.ID, dump, ip, outcome, reasons, a.now())
 	return err
 }
 
@@ -326,11 +354,56 @@ func (a *API) dump(w http.ResponseWriter, r *http.Request) {
 		a.fail(w, "the dump", err)
 		return
 	}
-	a.Log.Info("club: dump asked for with a token", "sha256", sum, "member", m.ID, "token", token, "outcome", outcome, "reasons", reasons)
+	a.Log.Info("club: dump asked for with a token", "sha256", sum, "member", m.ID, "token", token.id, "outcome", outcome, "reasons", reasons)
 	if outcome == "withheld" {
 		writeJSON(w, http.StatusConflict, map[string]any{"error": "the dump holds what its owner did not share, or what the scan cannot read",
 			"withheld": reasons})
 		return
 	}
 	a.Reports.ServeDump(w, sum)
+}
+
+// correctChip is POST /api/v1/maint/reports/{id}/chip {"vendor", "model",
+// "evidence"}: a token made to correct (reports:correct) names a report's
+// chip from what the report shows -- a dump's device tree, a boot log --
+// as `openipc reports chip` does (reports.Store.SetChip). Empty vendor and
+// model, with evidence, take a correction back. Each one is kept, by the
+// member and the token that made it.
+func (a *API) correctChip(w http.ResponseWriter, r *http.Request) {
+	m, token, ok := a.bearer(w, r)
+	if !ok {
+		return
+	}
+	if !token.may("reports:correct") {
+		a.refuse(w, http.StatusForbidden, "this token reads the dumps only; make one in /club that may correct reports")
+		return
+	}
+	var in struct {
+		Vendor   string `json:"vendor"`
+		Model    string `json:"model"`
+		Evidence string `json:"evidence"`
+	}
+	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 2048)).Decode(&in); err != nil {
+		a.refuse(w, http.StatusBadRequest, `send {"vendor": "Anyka", "model": "AK3918AV130", "evidence": "device tree: anyka,ak3918av130"}`)
+		return
+	}
+	id := r.PathValue("id")
+	st := a.Reports.Store()
+	by := fmt.Sprintf("%s (token %d)", m.ID, token.id)
+	switch err := st.SetChip(r.Context(), id, strings.TrimSpace(in.Vendor), strings.TrimSpace(in.Model), in.Evidence, by); {
+	case errors.Is(err, reports.ErrNotFound):
+		http.NotFound(w, r)
+		return
+	case err != nil:
+		a.refuse(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	vendor, model, corrected, err := st.EffectiveChip(r.Context(), id)
+	if err != nil {
+		a.fail(w, "the chip", err)
+		return
+	}
+	a.Log.Info("club: a report's chip corrected with a token", "report", id, "vendor", vendor, "model", model,
+		"member", m.ID, "token", token.id)
+	writeJSON(w, http.StatusOK, map[string]any{"id": id, "chip_vendor": vendor, "chip_model": model, "corrected": corrected})
 }
