@@ -51,7 +51,7 @@ socs:
 - family: GK710X
   model: GK7102CT
   version: null
-  status: neq
+  status: wip
   load_address: '0xC1000000'
   sdk: null
   kernel: null
@@ -64,7 +64,7 @@ socs:
 - family: GK710X
   model: GK7102CW
   version: null
-  status: neq
+  status: wip
   load_address: '0xC1000000'
   sdk: null
   kernel: null
@@ -223,7 +223,7 @@ socs:
 - family: GK7206V1
   model: GK7206V10
   version: null
-  status: neq
+  status: wip
   load_address: ''
   sdk: null
   kernel: null
@@ -236,7 +236,7 @@ socs:
 - family: GK7206V1
   model: GK7206V10B
   version: null
-  status: neq
+  status: wip
   load_address: ''
   sdk: null
   kernel: null
@@ -249,7 +249,7 @@ socs:
 - family: GK7206V1
   model: GK7206V11
   version: null
-  status: neq
+  status: wip
   load_address: ''
   sdk: null
   kernel: null
@@ -262,7 +262,7 @@ socs:
 - family: GK7206V1
   model: GK7206V11A
   version: null
-  status: neq
+  status: wip
   load_address: ''
   sdk: null
   kernel: null
@@ -275,7 +275,7 @@ socs:
 - family: GK7206V1
   model: GK7206V11AT
   version: null
-  status: neq
+  status: wip
   load_address: ''
   sdk: null
   kernel: null
@@ -288,7 +288,7 @@ socs:
 - family: GK7206V1
   model: GK7206V12A
   version: null
-  status: neq
+  status: wip
   load_address: ''
   sdk: null
   kernel: null

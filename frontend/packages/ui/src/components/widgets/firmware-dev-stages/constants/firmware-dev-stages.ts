@@ -25,9 +25,19 @@ export const firmwareDevStagesConstants:FirmwareDevStage[] = [
     p: 'Help wanted. We have the hardware, we have the SDK, the basic stuff is learned and done. But we are stuck. This is where we are looking for help from experienced embedded developers to overcome the obstacles and move on to the next stage.',
   },
   {
+    stage: 'TWIN',
+    h: 'TWIN',
+    p: 'Tested only in a digital twin. The image we publish boots in qemu-bench, our emulator of the SoC, but it has not yet run on a real camera. If you own one and have a serial console on it, you can be the first to try it and tell us what happened.',
+  },
+  {
     stage: 'WIP',
     h: 'WIP',
     p: 'Work in progress. We learned a lot about the platform hardware and code base, prepared the first public binary build, and are waiting for the first adopters to test it on their boards and provide feedback to help us move forward.',
+  },
+  {
+    stage: 'NOS',
+    h: 'NOS',
+    p: 'No streamer. Linux boots on real hardware and the drivers load, so the camera works as a small Linux computer, but the ISP tuning and the streamer are not done yet: there is no video stream.',
   },
   {
     stage: 'MVP',

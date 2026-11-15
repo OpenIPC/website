@@ -1,4 +1,4 @@
-# Anyka — 6 SoC(s).
+# Anyka — 8 SoC(s).
 #
 # Exported from the catalogue table (#161). This file is the source of
 # truth for the hardware pages: edit it in a pull request, not in the
@@ -12,7 +12,7 @@ socs:
 - family: AK3918EV300
   model: AK3916EV300
   version: ''
-  status: neq
+  status: nos
   load_address: ''
   sdk: ''
   kernel: ''
@@ -35,15 +35,41 @@ socs:
   urlname: ak3916ev301
   featured: false
   segment: null
-- family: AK3918EV200
-  model: AK3918EV200
+- family: AK3918AV100
+  model: AK3918AV100
   version: ''
-  status: hlp
-  load_address: '0x81808000'
+  status: twin
+  load_address: ''
   sdk: ''
   kernel: ''
   uboot_filename: ''
   linux_filename: ''
+  notes: 'AK3918AV100N/P and KM01N, 64 MB. OpenIPC''s image on the AnyCloud39AV100 SDK''s 4.4.282 kernel has booted only in qemu-bench, and is not published yet.'
+  urlname: ak3918av100
+  featured: false
+  segment: null
+- family: AK3918AV100
+  model: AK3918AV100X
+  version: ''
+  status: twin
+  load_address: ''
+  sdk: ''
+  kernel: ''
+  uboot_filename: ''
+  linux_filename: ''
+  notes: 'AK3918AV100X/XP and KM01D, 128 MB. OpenIPC''s image on the AnyCloud39AV100 SDK''s 4.4.282 kernel has booted only in qemu-bench, and is not published yet.'
+  urlname: ak3918av100x
+  featured: false
+  segment: null
+- family: AK3918EV200
+  model: AK3918EV200
+  version: ''
+  status: nos
+  load_address: '0x81808000'
+  sdk: ''
+  kernel: ''
+  uboot_filename: ''
+  linux_filename: openipc.ak3918ev200-nor-lite.tgz
   notes: ''
   urlname: ak3918ev200
   featured: false
@@ -51,7 +77,7 @@ socs:
 - family: AK3918EV300
   model: AK3918EV300
   version: ''
-  status: neq
+  status: nos
   load_address: ''
   sdk: ''
   kernel: ''
@@ -61,23 +87,23 @@ socs:
   urlname: ak3918ev300
   featured: false
   segment: null
-- family: AK3918EV300
+- family: AK3918AV100
   model: AK3918EV300L
   version: ''
-  status: neq
+  status: twin
   load_address: ''
   sdk: ''
   kernel: ''
   uboot_filename: ''
   linux_filename: ''
-  notes: 'AK3918EV300 with less memory (64 MB to U-Boot); ipctool names it, the package reads AK3918EV300'
+  notes: 'The ASPEN generation, a sibling of the AK3918AV100 rather than an AK3918EV300 with less memory; ipctool also names the AK3918EV300W this. Booted only in qemu-bench so far.'
   urlname: ak3918ev300l
   featured: false
   segment: null
 - family: null
   model: AK3918EV330
   version: ''
-  status: rnd
+  status: twin
   load_address: ''
   sdk: ''
   kernel: ''

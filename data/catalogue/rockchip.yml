@@ -12,7 +12,7 @@ socs:
 - family: RV11XX
   model: RV1109
   version: null
-  status: neq
+  status: wip
   load_address: ''
   sdk: null
   kernel: null
@@ -25,7 +25,7 @@ socs:
 - family: RV11XX
   model: RV1126
   version: null
-  status: rnd
+  status: wip
   load_address: ''
   sdk: null
   kernel: null

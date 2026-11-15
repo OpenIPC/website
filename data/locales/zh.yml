@@ -53,6 +53,8 @@ zh:
         unavailable_neq_html: "我们有 {name} 的厂商 SDK，但没有可供开发的板子——这是唯一的障碍。如果你有多余的，请到<a href=\"/zh/community\">聊天室</a>说一声：现有支持列表大多是这样来的。也可以<a href=\"/zh/donate\">捐助项目</a>，由我们去买板子。板子到手之后会经历什么，见<a href=\"/zh/supported-hardware/full-list#stages\">开发阶段</a>页面。"
         unavailable_rnd_html: "{name} 的工作还在研究阶段——我们正在读 SDK，弄清能做到什么。进展会发布在<a href=\"/zh/community\">聊天室</a>的固件频道。"
         unavailable_wip_html: "{name} 正在开发中。进展会发布在<a href=\"/zh/community\">聊天室</a>的固件频道。"
+        unavailable_twin_html: "{name} 可以在 qemu-bench（我们的模拟器）中启动，但还没有在真实摄像机上运行过，镜像也尚未发布。发布后本页会给出链接，下一步就是在能接上串口控制台的摄像机上测试它。进展会发布在<a href=\"/zh/community\">聊天室</a>的固件频道。"
+        unavailable_nos_html: "Linux 已能在真实的 {name} 摄像机上启动、驱动也能加载，但 ISP 调校和推流程序还没有完成，所以暂时没有视频流。进展会发布在<a href=\"/zh/community\">聊天室</a>的固件频道。"
         bootloader: OpenIPC 引导程序
         bundle: OpenIPC Linux ({name})
         camera_ip_address_title: 由小数点分隔的四个数字
@@ -81,6 +83,8 @@ zh:
         unavailable_neq: "不可用——没有可供开发的板子"
         unavailable_rnd: "不可用——研究中"
         unavailable_wip: "不可用——进行中"
+        unavailable_twin: "不可用——仅在模拟器中测试过"
+        unavailable_nos: "不可用——能启动，暂无视频"
         generate_guide: 生成安装指南
         community_title: "社区对 {chip} 的了解"
         community_intro: "摘自 {by} 在 OpenIPC Telegram 群组中的消息。每一条都链接到其出处消息。"

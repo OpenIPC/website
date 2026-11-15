@@ -12,7 +12,7 @@ socs:
 - family: GM8136
   model: GM8135
   version: ''
-  status: neq
+  status: wip
   load_address: '0x2000000'
   sdk: ''
   kernel: ''

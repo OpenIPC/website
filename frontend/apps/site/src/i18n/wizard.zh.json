@@ -59,7 +59,9 @@
         "unavailable_html": "{name} 目前还没有 OpenIPC 构建。",
         "unavailable_mvp_html": "{name} 有一个早期构建，但功能还不足以发布。进展会发布在<a href=\"/zh/community\">聊天室</a>的固件频道。",
         "unavailable_neq_html": "我们有 {name} 的厂商 SDK，但没有可供开发的板子——这是唯一的障碍。如果你有多余的，请到<a href=\"/zh/community\">聊天室</a>说一声：现有支持列表大多是这样来的。也可以<a href=\"/zh/donate\">捐助项目</a>，由我们去买板子。板子到手之后会经历什么，见<a href=\"/zh/supported-hardware/full-list#stages\">开发阶段</a>页面。",
+        "unavailable_nos_html": "Linux 已能在真实的 {name} 摄像机上启动、驱动也能加载，但 ISP 调校和推流程序还没有完成，所以暂时没有视频流。进展会发布在<a href=\"/zh/community\">聊天室</a>的固件频道。",
         "unavailable_rnd_html": "{name} 的工作还在研究阶段——我们正在读 SDK，弄清能做到什么。进展会发布在<a href=\"/zh/community\">聊天室</a>的固件频道。",
+        "unavailable_twin_html": "{name} 可以在 qemu-bench（我们的模拟器）中启动，但还没有在真实摄像机上运行过，镜像也尚未发布。发布后本页会给出链接，下一步就是在能接上串口控制台的摄像机上测试它。进展会发布在<a href=\"/zh/community\">聊天室</a>的固件频道。",
         "unavailable_wip_html": "{name} 正在开发中。进展会发布在<a href=\"/zh/community\">聊天室</a>的固件频道。"
       },
       "sigmastar_nand_is_weird": {

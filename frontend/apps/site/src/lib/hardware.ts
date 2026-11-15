@@ -16,7 +16,7 @@
  */
 import catalogue from '../data/catalogue.json';
 
-export type Status = 'done' | 'mvp' | 'wip' | 'hlp' | 'neq' | 'rnd';
+export type Status = 'done' | 'mvp' | 'nos' | 'wip' | 'twin' | 'hlp' | 'neq' | 'rnd';
 
 /** What a visitor can do with a chip. Soc#availability, in three states. */
 export type Availability = 'wizard' | 'firmware_only' | 'none';
@@ -90,7 +90,7 @@ export function socPath(vendor: Vendor, soc: Soc): string {
   return `/cameras/vendors/${vendor.urlname}/socs/${soc.urlname}`;
 }
 
-export const STATUSES: Status[] = ['neq', 'rnd', 'hlp', 'wip', 'mvp', 'done'];
+export const STATUSES: Status[] = ['neq', 'rnd', 'hlp', 'twin', 'wip', 'nos', 'mvp', 'done'];
 
 /**
  * Each stage in words: `Soc::STATUS`, English in every locale as the origin
@@ -101,7 +101,9 @@ export const STATUS_WORDS: Record<Status, string> = {
   neq: 'No equipment on hands',
   rnd: 'Research and development',
   hlp: 'Looking for help',
+  twin: 'Tested only in a digital twin',
   wip: 'Work in progress',
+  nos: 'No streamer',
   mvp: 'Minimum viable product',
   done: 'Done and done!',
 };
