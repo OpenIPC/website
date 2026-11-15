@@ -40,6 +40,11 @@ const reportsUsage = `usage: openipc reports
   sensor <id> <board model id> <part number> [--by who]
                                                 name the sensor of the report's unit on that board, over
                                                 the one ipctool found ("" goes back to that)
+  chip <id> <vendor> <model> --evidence what [--by who]
+                                                name the report's chip from what it shows (a flash dump's
+                                                device tree or boot header, a photo of the marking) over
+                                                the one it was sent with, which stays as sent; "" "" with
+                                                --evidence takes it back. Kept, with who and why
   photo <id> <position> blur|private|as_sent [--region x,y,w,h]...
                                                 what a photo publishes: a copy with the regions blurred
                                                 (fractions of the photo, upright), nothing (not the
@@ -99,7 +104,7 @@ func reportsCommand(ctx context.Context, cfg *config.Config, log *slog.Logger, a
 	fs.Var(&regions, "region", "with photo blur: x,y,w,h of a region to blur, as fractions of the photo (repeatable)")
 	newBoard := fs.Bool("new-board", false, "add the camera the report proposed to the catalogue, and link the report to it")
 	certainty := fs.String("certainty", reports.Confirmed, "how sure the link is: confirmed, probable or guess")
-	evidence := fs.String("evidence", "", "why the link is as sure as it is, shown beside one not confirmed")
+	evidence := fs.String("evidence", "", "why the link is as sure as it is, shown beside one not confirmed; with chip, what shows the chip")
 	var fix boardFix
 	fs.StringVar(&fix.maker, "maker", "", "with --new-board: the maker's name, for the proposal's")
 	fs.StringVar(&fix.marking, "marking", "", "with --new-board: the marking as printed, for the proposal's")
@@ -162,6 +167,9 @@ func reportsCommand(ctx context.Context, cfg *config.Config, log *slog.Logger, a
 			return err
 		}
 		_, facts, _ := reports.Parse(r.YAML)
+		if facts, err = st.WithChip(ctx, r.ID, facts); err != nil {
+			return err
+		}
 		devices, err := st.DeviceIDs(ctx, r.ID)
 		if err != nil {
 			return err
@@ -264,6 +272,17 @@ func reportsCommand(ctx context.Context, cfg *config.Config, log *slog.Logger, a
 		}
 		refreshReportUnits(ctx, cfg, log, pool)
 		log.Info("reports: sensor", "report", pos[0], "model", pos[1], "sensor", pos[2], "by", *by)
+		return nil
+	case "chip":
+		if err := need(3); err != nil {
+			return err
+		}
+		if err := st.SetChip(ctx, pos[0], pos[1], pos[2], *evidence, *by); err != nil {
+			return err
+		}
+		// A published report's boards show the chip as named.
+		refreshReportUnits(ctx, cfg, log, pool)
+		log.Info("reports: chip", "report", pos[0], "vendor", pos[1], "model", pos[2], "evidence", *evidence, "by", *by)
 		return nil
 	case "photo", "file":
 		if err := need(3); err != nil {

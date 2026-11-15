@@ -60,9 +60,9 @@ func (s *Store) Kin(ctx context.Context, ids []string) (map[string]*Kin, error) 
 	// whitespace made one space.
 	rows, err := s.DB.Query(ctx, `
 		WITH q AS (
-			SELECT r.id, r.received_at, r.client_hash, r.id_hashes, r.chip_vendor, r.chip_model, r.yaml <> '' AS has_yaml, r.yaml_sha256,
+			SELECT r.id, r.received_at, r.client_hash, r.id_hashes, c.chip_vendor, c.chip_model, r.yaml <> '' AS has_yaml, r.yaml_sha256,
 			  regexp_replace(btrim(r.note), '\s+', ' ', 'g') AS note
-			FROM reports r WHERE r.id = ANY($1)),
+			FROM reports r JOIN report_chip c ON c.report_id = r.id WHERE r.id = ANY($1)),
 		-- An identifier names one board only while every report carrying it
 		-- names one chip: an Anyka's chip.id is its family's ID register
 		-- (reports sent before IDHashes left it out still carry it), and a
@@ -72,7 +72,8 @@ func (s *Store) Kin(ctx context.Context, ids []string) (map[string]*Kin, error) 
 		camera AS (
 			SELECT DISTINCT q.id AS of, o.id FROM q CROSS JOIN LATERAL jsonb_each_text(q.id_hashes) h
 			  JOIN reports o ON o.id_hashes @> jsonb_build_object(h.key, h.value) AND o.id <> q.id
-			WHERE NOT (h.key = 'die_id' AND (report_anyka(q.chip_vendor, q.chip_model) OR report_anyka(o.chip_vendor, o.chip_model)))
+			  JOIN report_chip oc ON oc.report_id = o.id
+			WHERE NOT (h.key = 'die_id' AND (report_anyka(q.chip_vendor, q.chip_model) OR report_anyka(oc.chip_vendor, oc.chip_model)))
 			  AND report_identifier_one_chip(h.key, h.value)),
 		sender AS (
 			SELECT q.id AS of, o.id FROM q JOIN reports o ON o.client_hash = q.client_hash AND o.id <> q.id

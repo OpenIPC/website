@@ -463,6 +463,59 @@ func (s *Store) SetSensor(ctx context.Context, id, model, sensor string) error {
 	})
 }
 
+var chipName = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9 ._/+-]{0,99}$`)
+
+// SetChip is a maintainer naming a report's chip from what the report shows
+// -- a flash dump's device tree or boot header, a photo of the marking --
+// over the one it was sent with, which is not touched (migration 051). An
+// empty model takes the correction back. Evidence is required either way,
+// and every call is kept, with by.
+func (s *Store) SetChip(ctx context.Context, id, vendor, model, evidence, by string) error {
+	evidence = strings.Join(strings.Fields(evidence), " ")
+	switch {
+	case model == "" && vendor != "":
+		return errors.New("a chip vendor without a model")
+	case model != "" && (!chipName.MatchString(model) || (vendor != "" && !chipName.MatchString(vendor))):
+		return fmt.Errorf("chip %q %q is not a part number", vendor, model)
+	case evidence == "":
+		return errors.New("evidence: what shows the chip, e.g. \"device tree: anyka,ak3918av130\"")
+	case utf8.RuneCountInString(evidence) > 200:
+		return errors.New("evidence: at most 200 characters")
+	case strings.TrimSpace(by) == "":
+		return errors.New("by: who says so")
+	}
+	tag, err := s.DB.Exec(ctx, `
+		INSERT INTO report_chips (report_id, chip_vendor, chip_model, evidence, by_who)
+		SELECT id, $2, $3, $4, $5 FROM reports WHERE id = $1`, id, vendor, model, evidence, strings.TrimSpace(by))
+	if err == nil && tag.RowsAffected() == 0 {
+		return ErrNotFound
+	}
+	return err
+}
+
+// EffectiveChip is report id's chip as a maintainer named it (SetChip), and
+// whether one did: what a reader parsing the YAML afresh puts over the
+// chip ipctool sent.
+func (s *Store) EffectiveChip(ctx context.Context, id string) (vendor, model string, corrected bool, err error) {
+	err = s.DB.QueryRow(ctx, `SELECT chip_vendor, chip_model, corrected FROM report_chip WHERE report_id = $1`, id).
+		Scan(&vendor, &model, &corrected)
+	if errors.Is(err, pgx.ErrNoRows) {
+		err = ErrNotFound
+	}
+	return
+}
+
+// WithChip is f with report id's named chip over the one parsed, if a
+// maintainer named one: board guesses follow the correction.
+func (s *Store) WithChip(ctx context.Context, id string, f Facts) (Facts, error) {
+	vendor, model, corrected, err := s.EffectiveChip(ctx, id)
+	if err != nil || !corrected {
+		return f, err
+	}
+	f.ChipVendor, f.ChipModel = vendor, model
+	return f, nil
+}
+
 // ErrNoLink is SetCertainty's and SetSensor's answer for a report not linked
 // to the board.
 var ErrNoLink = errors.New("the report is not linked to that board")

@@ -26,7 +26,8 @@ type Dump struct {
 	ReceivedAt time.Time `json:"received_at"`
 	// Consent: private (maintainers only) or public (published with the
 	// report, after the backup check).
-	Consent     string `json:"consent"`
+	Consent string `json:"consent"`
+	// The chip as a maintainer named it (Store.SetChip), else as sent.
 	ChipVendor  string `json:"chip_vendor"`
 	ChipModel   string `json:"chip_model"`
 	Sensor      string `json:"sensor"`
@@ -43,8 +44,8 @@ func (s *Store) Dumps(ctx context.Context) ([]Dump, error) {
 		SELECT sha256, bytes, id, position, name, received_at, backup_consent,
 		       chip_vendor, chip_model, sensor, flash_size, board_vendor, board_model
 		FROM (SELECT DISTINCT ON (f.sha256) f.sha256, f.bytes, r.id, f.position, f.name, r.received_at, r.backup_consent,
-		             r.chip_vendor, r.chip_model, r.sensor, r.flash_size, r.board_vendor, r.board_model
-		      FROM report_files f JOIN reports r ON r.id = f.report_id
+		             c.chip_vendor, c.chip_model, r.sensor, r.flash_size, r.board_vendor, r.board_model
+		      FROM report_files f JOIN reports r ON r.id = f.report_id JOIN report_chip c ON c.report_id = r.id
 		      WHERE f.kind = 'backup'
 		        AND coalesce((SELECT decision FROM report_reviews rv WHERE rv.report_id = r.id ORDER BY rv.id DESC LIMIT 1), '') <> 'withdraw'
 		      ORDER BY f.sha256, r.received_at, r.id, f.position) d

@@ -114,11 +114,14 @@ func (s *Store) cameras(ctx context.Context, q dbQuerier, ids []string) (map[str
 		)
 		SELECT m.id, coalesce(m.member_id, ''), r.received_at, r.yaml <> '', coalesce(rc.joins, ''),
 		  coalesce((SELECT array_agg(DISTINCT x.key || ':' || x.value ORDER BY x.key || ':' || x.value) FROM (
-		      SELECT h.key, h.value, report_anyka(r.chip_vendor, r.chip_model) AS anyka FROM jsonb_each_text(r.id_hashes) h
+		      SELECT h.key, h.value, report_anyka(c.chip_vendor, c.chip_model) AS anyka
+		      FROM report_chip c, jsonb_each_text(r.id_hashes) h WHERE c.report_id = r.id
 		      UNION ALL
 		      SELECT split_part(k.key, ':', 1), split_part(k.key, ':', 2),
 		        report_anyka(split_part(k.chip, '/', 1), split_part(k.chip, '/', 2))
-		      FROM report_star_cameras k WHERE k.report_id = m.id) x
+		      FROM report_star_cameras k WHERE k.report_id = m.id
+		        -- only what the report no longer carries (taken down)
+		        AND NOT r.id_hashes @> jsonb_build_object(split_part(k.key, ':', 1), split_part(k.key, ':', 2))) x
 		    WHERE x.key = ANY($2) AND NOT (x.key = 'die_id' AND x.anyka)
 		      AND report_identifier_one_chip(x.key, x.value)), '{}')
 		FROM mine m JOIN reports r ON r.id = m.id
@@ -423,8 +426,8 @@ func (b *cameraBook) raises(id string) map[string]map[int]int {
 func (b *cameraBook) keep(ctx context.Context, q pgx.Tx, id string) error {
 	if _, err := q.Exec(ctx, `
 		INSERT INTO report_star_cameras (report_id, key, chip)
-		SELECT r.id, h.key || ':' || h.value, lower(r.chip_vendor) || '/' || lower(r.chip_model)
-		FROM reports r CROSS JOIN LATERAL jsonb_each_text(r.id_hashes) h
+		SELECT r.id, h.key || ':' || h.value, lower(c.chip_vendor) || '/' || lower(c.chip_model)
+		FROM reports r JOIN report_chip c ON c.report_id = r.id CROSS JOIN LATERAL jsonb_each_text(r.id_hashes) h
 		WHERE r.id = $1 AND h.key = ANY($2) AND h.value ~ '^[0-9a-f]+$'
 		ON CONFLICT DO NOTHING`, id, cameraKeys); err != nil {
 		return err

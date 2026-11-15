@@ -177,8 +177,8 @@ func (s *Store) memberReport(ctx context.Context, id string, book *cameraBook) (
 	m := &MemberReport{ID: id, Files: []MemberFile{}}
 	var yaml string
 	err := s.DB.QueryRow(ctx, `
-		SELECT r.received_at, r.note, r.yaml, trim(r.chip_vendor || ' ' || r.chip_model)
-		FROM reports r WHERE r.id = $1`, id).Scan(&m.ReceivedAt, &m.Note, &yaml, &m.Chip)
+		SELECT r.received_at, r.note, r.yaml, trim(c.chip_vendor || ' ' || c.chip_model)
+		FROM reports r JOIN report_chip c ON c.report_id = r.id WHERE r.id = $1`, id).Scan(&m.ReceivedAt, &m.Note, &yaml, &m.Chip)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, ErrNotFound
 	}
@@ -484,6 +484,9 @@ func (s *Store) Queue(ctx context.Context, state string) ([]Queued, error) {
 		var facts Facts
 		if r.YAML != "" {
 			_, facts, _ = Parse(r.YAML)
+		}
+		if facts, err = s.WithChip(ctx, l.ID, facts); err != nil {
+			return nil, err
 		}
 		// Without ipctool's output too: a version string in the note or a
 		// boot log names the board.
