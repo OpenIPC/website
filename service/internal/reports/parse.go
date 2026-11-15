@@ -608,6 +608,11 @@ var secretKeys = []*regexp.Regexp{
 	// A Tuya camera's key to its UUID, as its U-Boot environment holds it
 	// beside the UUID (AUTHKEY=, r-6gvwnqed).
 	regexp.MustCompile(`(?i)\bauthkey["']?\s*[:=]\s*["']?([A-Za-z0-9]{16,64})\b`),
+	// A Tange Cloud camera's key, the second half of /config/tange_sn.txt:
+	// "<SN>,<key>" alone on its line, no name to either (r-7zfidjfk). The
+	// key is 32 letters and digits there; a line of exactly this shape is
+	// no log's.
+	regexp.MustCompile(`(?m)^[A-Z0-9]{8,20},([A-Za-z0-9]{24,64})[ \t]*\r?$`),
 }
 
 // deviceForms are the cloud ID of makers whose IDs are no Xiongmai serial, so
@@ -636,6 +641,10 @@ var deviceForms = []*regexp.Regexp{
 	// digit: "serial8250" and "serial console" are the kernel's. A suffix
 	// after a hyphen or an underscore is the serial's too, and goes with it.
 	regexp.MustCompile(`(?i)\b(?:dot_?)?serial(?:[ _]?num(?:ber)?|[ _]?no)?["']?(?:\s*[:=]\s*|[ \t]+)["']?([A-Za-z0-9]{10,32}(?:[_-][A-Za-z0-9]+)*)\b`),
+	// A Tange Cloud camera's serial, the first half of /config/tange_sn.txt
+	// (its key, the second, is in secretKeys). Its logs name it ("Get
+	// sn:", "uuid=") and cloudKeys has those; the file names nothing.
+	regexp.MustCompile(`(?m)^([A-Z0-9]{8,20}),[A-Za-z0-9]{24,64}[ \t]*\r?$`),
 }
 
 // apName is the access point a camera opens for pairing, named after its

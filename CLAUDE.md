@@ -161,7 +161,8 @@ restores the image but never the schema, so keep migrations additive.
   ID a text names itself (a Xiongmai serial, a UBIA gUID, a Hikvision serial
   whole or as its last nine characters, a TRASSIR's serial and licence, a
   Reolink's Uid and key, a Dahua's BSN and ID, a TP-Link's device and
-  hardware IDs, a Tuya AUTHKEY, any serial a text names as one), and
+  hardware IDs, a Tuya AUTHKEY, a Tange camera's serial and key as its
+  tange_sn.txt holds them, any serial a text names as one), and
   secrets a text names taken out with only their kind left (a Wi-Fi SSID
   and password, a Gwell camera's P2P keys and passwords, a cloud's
   temporary credentials; `openipc reports

@@ -559,8 +559,14 @@ func (s *backupScan) node(off int64) error {
 			return nil
 		}
 		if compr == jffs2None {
-			// Read as raw bytes already; only its joins with the
-			// fragments beside it, which a node header cuts, are not.
+			// Read as raw bytes already, but run into the node header in
+			// front of it, whose CRC can be printable: read the file's
+			// bytes alone too, so a form that is a whole line of its own
+			// (a Tange camera's tange_sn.txt) still starts a line. Its
+			// joins with the fragments beside it are read as well.
+			s.nodeAt, s.nodeIn = off, "jffs2"
+			s.inflated.feed(data, 0)
+			s.inflated.end()
 			s.joinEdges(e.Uint32(h[12:]), e.Uint32(h[16:]), e.Uint32(h[44:]), data, off)
 			return nil
 		}

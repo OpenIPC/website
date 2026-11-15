@@ -653,3 +653,28 @@ func TestALongerColonRunIsNoMAC(t *testing.T) {
 		}
 	}
 }
+
+// /config/tange_sn.txt, a Tange Cloud camera's serial and key, "<SN>,<key>"
+// on a line of its own with neither named, as r-7zfidjfk's flash held it
+// (made-up values). Its logs' forms were already read.
+func TestATangeSerialAndKeyFileIsRedacted(t *testing.T) {
+	const sn, key = "1A2B3CDEF45G", "aB1cD2eF3gH4iJ5kL6mN7oP8qR9sT0uV"
+	for _, text := range []string{sn + "," + key, sn + "," + key + "\r\n", "# cat /config/tange_sn.txt\n" + sn + "," + key + "\n#"} {
+		got := Redact(text, Facts{}, "k")
+		for _, gone := range []string{sn, key} {
+			if strings.Contains(got, gone) {
+				t.Errorf("%s survived:\n%s", gone, got)
+			}
+		}
+	}
+	// A list a log prints, or a pair inside a line, names no camera.
+	for _, line := range []string{
+		"CONFIG_CMDLINE,console=ttyS1",
+		"ABCDEFGH1234,short",
+		"x 1A2B3CDEF45G," + key,
+	} {
+		if got := Redact(line, Facts{}, "k"); got != line {
+			t.Errorf("%q became %q", line, got)
+		}
+	}
+}

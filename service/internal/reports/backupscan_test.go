@@ -526,3 +526,31 @@ func TestTheWholeScanReadsWhatIsCompressedOutsideTheFactorysImages(t *testing.T)
 		t.Errorf("inside a uImage: %v %v", f, u)
 	}
 }
+
+// A Tange Cloud camera keeps its serial and key in /config/tange_sn.txt on
+// a JFFS2, uncompressed or not: the backup check finds both, so the dump
+// is kept private and the maintainers' tools are not sent it.
+func TestTheBackupCheckFindsATangeSerialFile(t *testing.T) {
+	const line = "1A2B3CDEF45G,aB1cD2eF3gH4iJ5kL6mN7oP8qR9sT0uV"
+	e := binary.LittleEndian
+	for _, compr := range []byte{jffs2None, jffs2Zlib} {
+		// On the camera the node header's CRC, right before the file's
+		// bytes, is printable, so a raw read runs it into the line: pick
+		// an inode number that makes it so here too.
+		ino := uint32(9)
+		for ; ; ino++ {
+			if c := inodeNode(e, ino, []byte(line), compr)[67]; c > 0x20 && c < 0x7f {
+				break
+			}
+		}
+		part := append(append(noise(4096, 21), direntNode(e, ino, "tange_sn.txt")...),
+			inodeNode(e, ino, []byte(line), compr)...)
+		fs := scan(t, append(part, bytes.Repeat([]byte{0xff}, 4096)...))
+		if k := Kinds(fs); !slices.Equal(k, []string{"cloud_secret", "device_id"}) {
+			t.Errorf("compr %d: %v", compr, k)
+		}
+		if j, _ := json.Marshal(fs); bytes.Contains(j, []byte("1A2B3CDEF45G")) {
+			t.Errorf("the finding carries the value: %s", j)
+		}
+	}
+}
