@@ -10,6 +10,7 @@ import (
 	"net/http/httptest"
 	"strconv"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 )
@@ -177,5 +178,42 @@ func TestATokenStopsWorking(t *testing.T) {
 	}
 	if code := use(long, "203.0.113.9"); code != 200 {
 		t.Errorf("not expired: %d", code)
+	}
+}
+
+// Every request made with a token is written down: the list, and a dump
+// that is not there. Ten tokens at once at most, however many are asked
+// for together.
+func TestEveryTokenRequestIsWrittenDownAndTokensAreCapped(t *testing.T) {
+	e := newEnv(t)
+	ctx := context.Background()
+	maint := e.maintainer(t)
+	_, out := maint.mint(t, map[string]any{"name": "first"})
+	token := out["token"].(string)
+	e.withToken(t, token, "203.0.113.9", "/api/v1/maint/dumps")
+	e.withToken(t, token, "203.0.113.9", "/api/v1/maint/dumps/"+strings.Repeat("a", 64))
+	e.withToken(t, token, "203.0.113.9", "/api/v1/maint/dumps/not-a-digest")
+	var outcomes []string
+	rows, _ := e.pool.Query(ctx, `SELECT outcome || ':' || coalesce(sha256, '-') FROM dump_access ORDER BY id`)
+	for rows.Next() {
+		var o string
+		_ = rows.Scan(&o)
+		outcomes = append(outcomes, o)
+	}
+	rows.Close()
+	want := []string{"listed:-", "not_found:" + strings.Repeat("a", 64), "not_found:-"}
+	if strings.Join(outcomes, " ") != strings.Join(want, " ") {
+		t.Errorf("dump_access: %v, want %v", outcomes, want)
+	}
+
+	var wg sync.WaitGroup
+	for i := 0; i < 15; i++ {
+		wg.Add(1)
+		go func() { defer wg.Done(); maint.mint(t, map[string]any{"name": "many"}) }()
+	}
+	wg.Wait()
+	var live int
+	if err := e.pool.QueryRow(ctx, `SELECT count(*) FROM club_tokens WHERE revoked_at IS NULL`).Scan(&live); err != nil || live != maxTokens {
+		t.Errorf("%d live tokens, %v", live, err)
 	}
 }

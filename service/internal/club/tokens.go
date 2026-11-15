@@ -1,6 +1,7 @@
 package club
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"net"
@@ -118,27 +119,38 @@ func (a *API) mintToken(w http.ResponseWriter, r *http.Request) {
 		s := p.String()
 		cidr = &s
 	}
-	var live int
-	if err := a.DB.QueryRow(r.Context(), `SELECT count(*) FROM club_tokens WHERE member_id = $1 AND revoked_at IS NULL AND expires_at > $2`,
-		m.ID, a.now()).Scan(&live); err != nil {
-		a.fail(w, "the tokens", err)
-		return
-	}
-	if live >= maxTokens {
-		a.refuse(w, http.StatusConflict, "revoke a token first: "+strconv.Itoa(maxTokens)+" at once at most")
-		return
-	}
 	value := tokenPrefix + randomString(32)
 	now := a.now()
 	t := Token{Name: in.Name, Scope: "dumps:read", CreatedAt: now, ExpiresAt: now.Add(time.Duration(in.Days) * 24 * time.Hour)}
 	if cidr != nil {
 		t.AllowedCIDR = *cidr
 	}
-	if err := a.DB.QueryRow(r.Context(), `
-		INSERT INTO club_tokens (member_id, token_sha256, name, scope, allowed_cidr, created_at, expires_at)
-		VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id`,
-		m.ID, sha(value), t.Name, t.Scope, cidr, t.CreatedAt, t.ExpiresAt).Scan(&t.ID); err != nil {
+	full := false
+	err := pgx.BeginFunc(r.Context(), a.DB, func(tx pgx.Tx) error {
+		// The member's row, locked: two mints at once count one after the other.
+		if _, err := tx.Exec(r.Context(), `SELECT 1 FROM club_members WHERE id = $1 FOR UPDATE`, m.ID); err != nil {
+			return err
+		}
+		var live int
+		if err := tx.QueryRow(r.Context(), `SELECT count(*) FROM club_tokens WHERE member_id = $1 AND revoked_at IS NULL AND expires_at > $2`,
+			m.ID, now).Scan(&live); err != nil {
+			return err
+		}
+		if live >= maxTokens {
+			full = true
+			return nil
+		}
+		return tx.QueryRow(r.Context(), `
+			INSERT INTO club_tokens (member_id, token_sha256, name, scope, allowed_cidr, created_at, expires_at)
+			VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id`,
+			m.ID, sha(value), t.Name, t.Scope, cidr, t.CreatedAt, t.ExpiresAt).Scan(&t.ID)
+	})
+	if err != nil {
 		a.fail(w, "the token", err)
+		return
+	}
+	if full {
+		a.refuse(w, http.StatusConflict, "revoke a token first: "+strconv.Itoa(maxTokens)+" at once at most")
 		return
 	}
 	a.Log.Info("club: token minted", "member", m.ID, "token", t.ID, "name", t.Name, "allowed_cidr", t.AllowedCIDR)
@@ -237,14 +249,44 @@ func (a *API) bearer(w http.ResponseWriter, r *http.Request) (*Member, int64, bo
 	return m, id, true
 }
 
+// audit writes down one request made with a token (dump_access). A
+// request that cannot be written down is not answered.
+func (a *API) audit(r *http.Request, m *Member, token int64, sum, outcome string, reasons []string) error {
+	var ip, dump *string
+	if s := httpx.ClientIP(r); net.ParseIP(s) != nil {
+		ip = &s
+	}
+	if hexSHA.MatchString(sum) {
+		dump = &sum
+	}
+	if reasons == nil {
+		reasons = []string{}
+	}
+	_, err := a.DB.Exec(context.WithoutCancel(r.Context()), `
+		INSERT INTO dump_access (token_id, member_id, sha256, ip, outcome, reasons, at) VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+		token, m.ID, dump, ip, outcome, reasons, a.now())
+	return err
+}
+
+var hexSHA = regexp.MustCompile(`^[0-9a-f]{64}$`)
+
 // dumps is GET /api/v1/maint/dumps: every flash dump owners sent and did
 // not withdraw, oldest first (reports.Store.Dumps). Whether one is sent is
 // decided when it is asked for.
 func (a *API) dumps(w http.ResponseWriter, r *http.Request) {
-	if _, _, ok := a.bearer(w, r); !ok {
+	m, token, ok := a.bearer(w, r)
+	if !ok {
 		return
 	}
 	list, err := a.Reports.Store().Dumps(r.Context())
+	outcome := "listed"
+	if err != nil {
+		outcome = "failed"
+	}
+	if aerr := a.audit(r, m, token, "", outcome, nil); aerr != nil {
+		a.fail(w, "the request's record", aerr)
+		return
+	}
 	if err != nil {
 		a.fail(w, "the dumps", err)
 		return
@@ -266,22 +308,22 @@ func (a *API) dump(w http.ResponseWriter, r *http.Request) {
 	outcome, reasons := "served", []string{}
 	switch {
 	case errors.Is(err, reports.ErrNotFound):
-		http.NotFound(w, r)
-		return
+		outcome = "not_found"
 	case errors.As(err, &withheld):
 		outcome, reasons = "withheld", withheld.Reasons
 	case err != nil:
-		a.fail(w, "the dump", err)
+		outcome = "failed"
+	}
+	if aerr := a.audit(r, m, token, sum, outcome, reasons); aerr != nil {
+		a.fail(w, "the dump's record", aerr)
 		return
 	}
-	var ip *string
-	if s := httpx.ClientIP(r); net.ParseIP(s) != nil {
-		ip = &s
-	}
-	if _, err := a.DB.Exec(r.Context(), `
-		INSERT INTO dump_access (token_id, member_id, sha256, ip, outcome, reasons, at) VALUES ($1, $2, $3, $4, $5, $6, $7)`,
-		token, m.ID, sum, ip, outcome, reasons, a.now()); err != nil {
-		a.fail(w, "the dump's record", err)
+	switch outcome {
+	case "not_found":
+		http.NotFound(w, r)
+		return
+	case "failed":
+		a.fail(w, "the dump", err)
 		return
 	}
 	a.Log.Info("club: dump asked for with a token", "sha256", sum, "member", m.ID, "token", token, "outcome", outcome, "reasons", reasons)

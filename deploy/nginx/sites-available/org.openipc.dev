@@ -432,7 +432,7 @@ server {
 
     # The maintainers' tools reading the flash dumps owners sent, with a
     # token a maintainer minted in /club (service/internal/club/tokens.go):
-    # no cookie, nothing cached, every dump asked for written down by the web
+    # no cookie, nothing cached, every request written down by the web
     # role. A dump is a few megabytes, sent by nginx from /report-files/.
     location ^~ /api/v1/maint/ {
         # The staging password is not the gate here: the token is, and it
@@ -443,7 +443,10 @@ server {
         proxy_read_timeout 120;
         proxy_pass http://127.0.0.1:3012;
         proxy_set_header Host $host;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        # The client as nginx knows it (a mirror's reader, by set_real_ip_from),
+        # never a chain the client wrote: a token pinned to a network is
+        # checked against this address.
+        proxy_set_header X-Forwarded-For $remote_addr;
         proxy_set_header X-Request-Id $request_id;
         add_header Strict-Transport-Security max-age=15768000;
         add_header X-Served-By go always;

@@ -190,8 +190,11 @@ restores the image but never the schema, so keep migrations additive.
   dumps with a token made in `/club` (`club_tokens`, migration 050; Bearer,
   at `/api/v1/maint/dumps`, never a cookie). A dump is sent only when
   `reports.ScanBackupWhole` read all of it and found nothing of its owner's,
-  rescanned on every request; any other dump is withheld with the kinds
-  found. Every request is a row in append-only `dump_access`.
+  rescanned on every request: JFFS2 with LZO/LZMA or damaged nodes, UBIFS,
+  and compressed streams outside the factory's images (squashfs, cramfs,
+  uImage, FIT, zImage) other than gzip and bzip2, which it inflates, are
+  unread. Any other dump is withheld with the kinds found. Every request
+  is a row in append-only `dump_access`.
   `tools/dump-mirror` is the puller.
 - `internal/club` -- **the OpenIPC Club**: signing in with Telegram (the bot
   takes Start with a code the asking browser shows, then tells the member

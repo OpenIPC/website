@@ -22,18 +22,20 @@ CREATE TABLE club_tokens (
 );
 CREATE INDEX club_tokens_by_member ON club_tokens (member_id, created_at);
 
--- Every dump asked for with a token: served, or withheld because the backup
--- scan found something of its owner's in it or could not read all of it.
+-- Every request made with a token: the list, and each dump asked for --
+-- served, withheld because the backup scan found something of its owner's
+-- in it or could not read all of it, not there, or failed on our side.
 -- Append-only, and unlike the reports with no way to stand the guard down:
--- it is how the promise to the dump's sender is shown to have been kept.
+-- it is how the promise to the dumps' senders is shown to have been kept.
 CREATE TABLE dump_access (
     id        bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     at        timestamptz NOT NULL DEFAULT now(),
     token_id  bigint NOT NULL,
     member_id text NOT NULL,
-    sha256    text NOT NULL CHECK (sha256 ~ '^[0-9a-f]{64}$'),
+    -- the dump asked for; NULL for the list, or an address that names none
+    sha256    text CHECK (sha256 ~ '^[0-9a-f]{64}$'),
     ip        inet,
-    outcome   text NOT NULL CHECK (outcome IN ('served', 'withheld')),
+    outcome   text NOT NULL CHECK (outcome IN ('listed', 'served', 'withheld', 'not_found', 'failed')),
     -- for withheld: the kinds found and what was not read, never a value
     reasons   text[] NOT NULL DEFAULT '{}'
 );
