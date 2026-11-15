@@ -1,4 +1,4 @@
-# SigmaStar — 35 SoC(s).
+# SigmaStar — 36 SoC(s).
 #
 # Exported from the catalogue table (#161). This file is the source of
 # truth for the hardware pages: edit it in a pull request, not in the
@@ -489,6 +489,19 @@ socs:
   linux_filename: ''
   notes: Infinity6 (SSC32X), SDK name - Macaron
   urlname: ssc325d
+  featured: false
+  segment: null
+- family: INFINITY6
+  model: SSC325DE
+  version: ''
+  status: neq
+  load_address: '0x21000000'
+  sdk: ''
+  kernel: ''
+  uboot_filename: ''
+  linux_filename: ''
+  notes: 'Infinity6 (SSC32X) with 128 MB of DDR in the package; OpenIPC builds it (nor and nand lite, a NAND U-Boot), untested by the team. The Dahua IPC-HDW2230TP-AS boots it from SPI NAND'
+  urlname: ssc325de
   featured: false
   segment: null
 - family: INFINITY5

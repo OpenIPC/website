@@ -605,6 +605,9 @@ var secretKeys = []*regexp.Regexp{
 	// shorter than the keys above.
 	regexp.MustCompile(`<Uidkey>([A-Za-z0-9_-]{4,64})</Uidkey>`),
 	regexp.MustCompile(`\bSp_init\[Uidkey\]\s*=\s*\[([A-Za-z0-9_-]{4,64})\]`),
+	// A Tuya camera's key to its UUID, as its U-Boot environment holds it
+	// beside the UUID (AUTHKEY=, r-6gvwnqed).
+	regexp.MustCompile(`(?i)\bauthkey["']?\s*[:=]\s*["']?([A-Za-z0-9]{16,64})\b`),
 }
 
 // deviceForms are the cloud ID of makers whose IDs are no Xiongmai serial, so
@@ -618,6 +621,21 @@ var deviceForms = []*regexp.Regexp{
 	regexp.MustCompile(`--device_id\s+([A-Za-z0-9][A-Za-z0-9_-]{5,63})`),
 	regexp.MustCompile(`<Uid>([A-Za-z0-9_-]{6,64})</Uid>`),
 	regexp.MustCompile(`\bSp_init\[Uid\]\s*=\s*\[([A-Za-z0-9_-]{6,64})\]`),
+	// A Dahua's serials in its U-Boot environment, a line each: the board's
+	// (BSN=) and the camera's (ID=), which its P2P cloud knows it by
+	// (r-6gvwnqed). Only as a whole line: a log prints "ID=" for much else.
+	// A board serial as short as eight, as the backup check reads it.
+	regexp.MustCompile(`(?m)^BSN=([A-Za-z0-9]{8,32})[ \t]*\r?$`),
+	regexp.MustCompile(`(?m)^ID=([A-Za-z0-9]{10,32})[ \t]*\r?$`),
+	// A TP-Link's cloud identity: its device ID (40 hex digits) and hardware
+	// ID (32), as its identity block and what is read out of it name them
+	// (deviceId, dev_id, hwId; r-zia9bn65).
+	regexp.MustCompile(`(?i)\b(?:dev(?:ice)?_?id|hw_?id)["']?\s*[:=]\s*["']?([0-9a-f]{32,40})\b`),
+	// A serial a text names as one: "serial 2000...", "dot_serial_num:
+	// \"2000...\"", "Serial number: ...". Ten characters at least, with a
+	// digit: "serial8250" and "serial console" are the kernel's. A suffix
+	// after a hyphen or an underscore is the serial's too, and goes with it.
+	regexp.MustCompile(`(?i)\b(?:dot_?)?serial(?:[ _]?num(?:ber)?|[ _]?no)?["']?(?:\s*[:=]\s*|[ \t]+)["']?([A-Za-z0-9]{10,32}(?:[_-][A-Za-z0-9]+)*)\b`),
 }
 
 // apName is the access point a camera opens for pairing, named after its

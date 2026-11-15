@@ -1976,6 +1976,47 @@
           }
         },
         {
+          "model": "SSC325DE",
+          "family": "INFINITY6",
+          "version": "",
+          "urlname": "ssc325de",
+          "status": "neq",
+          "load_address": "0x21000000",
+          "featured": false,
+          "segment": null,
+          "community_notes": {
+            "by": "Tino Darkness",
+            "points": [
+              {
+                "text": "(Infinity6 family) In u-boot, md.b 0x3fe0 0x20 (or md.b 0x7fe0 0x20) reads the actual tag with the real SoC family from the SoC (isptool reads the same tag from Linux); MVX1##I6gf74c9b5CMN_ROM######XVM indicates an I6, while the MVX4##I6b0...IPL_ tag in the flash dump comes from the SDK.",
+                "sources": [
+                  "https://t.me/c/1166652144/125612"
+                ]
+              },
+              {
+                "text": "(Infinity6 family) I6 (Macaron SDK) and I6B0 (Ispahan SDK) are quite similar, so I6B0 binaries should work on I6 in most cases.",
+                "sources": [
+                  "https://t.me/c/1166652144/125612"
+                ]
+              },
+              {
+                "text": "(Infinity6 family) The Infinity6 SDK codename is Macaron (demo code dir hoth).",
+                "sources": [
+                  "https://t.me/c/1809358416/83075",
+                  "https://t.me/c/1166652144/75057"
+                ]
+              },
+              {
+                "text": "(Infinity6 family) SigmaStar chips can boot from SPI NOR/NAND, SLC NAND, UART, eMMC, SDIO 3.0 (SD card) and USB, at least on Mercury5, so Tino infers Infinity6 can too. However, he does not know whether SD boot works on I6 and it may be impractical; he has only seen I6 chips boot from NOR, NAND and eMMC.",
+                "sources": [
+                  "https://t.me/c/1166652144/22195",
+                  "https://t.me/c/1166652144/22193"
+                ]
+              }
+            ]
+          }
+        },
+        {
           "model": "SSC326D",
           "family": "INFINITY5",
           "version": null,

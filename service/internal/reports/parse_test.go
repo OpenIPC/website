@@ -340,6 +340,67 @@ func TestATrassirAndAReolinkIdentifiersAreRedacted(t *testing.T) {
 	}
 }
 
+// What a Dahua's U-Boot environment (with a Tuya UUID and key) and a TP-Link's
+// identity block, read out by an agent, say of the camera, in the shapes
+// r-6gvwnqed and r-zia9bn65 carried, with made-up values.
+func TestADahuaATuyaAndATPLinkIdentifiersAreRedacted(t *testing.T) {
+	const bsn, id, authkey = "1A23B45CDE67890", "1A2345BCDEFG01H", "Ab1Cd2Ef3Gh4Ij5Kl6Mn7Op8Qr9St0Uv"
+	const serial, devID, hwID = "123456789012345", "00112233445566778899AABBCCDDEEFF00112233", "0123456789ABCDEF0123456789ABCDEF"
+	for _, c := range []struct{ line, gone string }{
+		{"BSN=" + bsn, bsn},
+		{"BSN=1A23B45C", "1A23B45C"},
+		{"Serial number: " + serial + "-XYZ", "XYZ"},
+		{"serial_no=" + serial + "_rev2", "rev2"},
+		{"ID=" + id + "\r", id},
+		{"AUTHKEY=" + authkey, authkey},
+		{`authKey: "` + authkey + `"`, authkey},
+		{`  dot_serial_num: "` + serial + `"`, serial},
+		{"- MAC <mac:1>, serial " + serial + ", focalLength 4", serial},
+		{"Serial number: " + serial, serial},
+		{`  dev_id: "` + devID + `"`, devID},
+		{`"deviceId":"` + devID + `"`, devID},
+		{`  hw_id: "` + hwID + `"`, hwID},
+		{`"hwId": "` + hwID + `"`, hwID},
+	} {
+		if got := Redact(c.line, Facts{}, "k"); strings.Contains(got, c.gone) {
+			t.Errorf("%s stayed: %s", c.gone, got)
+		}
+	}
+	// The environment whole: each line goes, and the model it names stays.
+	env := strings.Join([]string{
+		"UUID=tuya0123456789abcdef", "AUTHKEY=" + authkey, "BSN=" + bsn,
+		"HWID=IPC-HDW2230TP-AS:01:02:05:77:3B:00:01:10:01:00:04:320:00:00:00:00:00:01:00:00:80",
+		"devalias=DH-IPC-HDW2230TP-AS-0280B", "ID=" + id,
+	}, "\n")
+	got := Redact(env, Facts{}, "k")
+	for _, gone := range []string{"tuya0123456789abcdef", authkey, bsn, id} {
+		if strings.Contains(got, gone) {
+			t.Errorf("%s survived:\n%s", gone, got)
+		}
+	}
+	for _, kept := range []string{"HWID=IPC-HDW2230TP-AS:01:02", "devalias=DH-IPC-HDW2230TP-AS-0280B"} {
+		if !strings.Contains(got, kept) {
+			t.Errorf("%s was taken out:\n%s", kept, got)
+		}
+	}
+	// None of these names a camera.
+	for _, line := range []string{
+		"Serial: 8250/16550 driver, 4 ports, IRQ sharing disabled",
+		"serial 8250-compatible UART",
+		"serial8250.0: ttyS0 at MMIO 0x1f221000 (irq = 38, base_baud = 10800000) is a 16550A",
+		"serial console enabled on ttyS000",
+		"usb 1-1: SerialNumber: 0",
+		"ID=0", "Product ID=0x8179",
+		"hw_id = 0x12",
+		"dev_id: 3",
+		"PCI: dev_id=10ec8168",
+	} {
+		if got := Redact(line, Facts{}, "k"); got != line {
+			t.Errorf("%q became %q", line, got)
+		}
+	}
+}
+
 // ipctool's cloudId is often the sixteen digits alone; the log's longer
 // spelling of the same serial is the same identifier, one placeholder,
 // nothing of it left beside the mark.
