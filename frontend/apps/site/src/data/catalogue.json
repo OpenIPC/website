@@ -57,8 +57,8 @@
           "family": "AK3918EV300",
           "version": "",
           "urlname": "ak3916ev300",
-          "status": "nos",
-          "load_address": "",
+          "status": "wip",
+          "load_address": "0x82000000",
           "featured": false,
           "segment": null
         },
@@ -77,8 +77,8 @@
           "family": "AK3918AV100",
           "version": "",
           "urlname": "ak3918av100",
-          "status": "twin",
-          "load_address": "",
+          "status": "wip",
+          "load_address": "0x82000000",
           "featured": false,
           "segment": null
         },
@@ -87,8 +87,8 @@
           "family": "AK3918AV100",
           "version": "",
           "urlname": "ak3918av100x",
-          "status": "twin",
-          "load_address": "",
+          "status": "wip",
+          "load_address": "0x82000000",
           "featured": false,
           "segment": null
         },
@@ -97,8 +97,8 @@
           "family": "AK3918EV200",
           "version": "",
           "urlname": "ak3918ev200",
-          "status": "nos",
-          "load_address": "0x81808000",
+          "status": "done",
+          "load_address": "0x82000000",
           "featured": false,
           "segment": null
         },
@@ -107,8 +107,8 @@
           "family": "AK3918EV300",
           "version": "",
           "urlname": "ak3918ev300",
-          "status": "nos",
-          "load_address": "",
+          "status": "wip",
+          "load_address": "0x82000000",
           "featured": false,
           "segment": null
         },
@@ -117,8 +117,8 @@
           "family": "AK3918AV100",
           "version": "",
           "urlname": "ak3918ev300l",
-          "status": "twin",
-          "load_address": "",
+          "status": "wip",
+          "load_address": "0x82000000",
           "featured": false,
           "segment": null
         },
@@ -127,8 +127,8 @@
           "family": null,
           "version": "",
           "urlname": "ak3918ev330",
-          "status": "twin",
-          "load_address": "",
+          "status": "wip",
+          "load_address": "0x82000000",
           "featured": false,
           "segment": null
         }

@@ -58,9 +58,10 @@ func TestAvailabilityWithoutIndex(t *testing.T) {
 	cat := loadCatalogue(t)
 	for urlname, want := range map[string]string{
 		"v831":        "firmware_only", // a firmware file, no bootloader
-		"ak3918ev200": "firmware_only",
+		"ak3918av100": "firmware_only",
 		"hi3516ev300": "wizard", // both
-		"ak3918av100": "none",   // neither
+		"ak3918ev200": "wizard",
+		"ssc323":      "none", // neither
 	} {
 		soc := cat.SoC(urlname)
 		if soc == nil {
