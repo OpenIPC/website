@@ -25,6 +25,14 @@ any of those is **withheld**. So is a dump the scan cannot read all of:
   or deflated, cut short, or fails its CRC. gzip, bzip2, xz and LZMA streams,
   and unencrypted stored or deflated zip entries, are inflated and read.
 
+When what the scan found can be taken out -- a Wi-Fi password, a cloud ID, a
+password hash, in plain text or in a JFFS2 file -- the site sends a **redacted
+copy** instead: each value overwritten with as many `X`s, everything else where
+it was. The mirror checks it against the sha256 the site names
+(`X-Dump-Redacted`), saves it as `<report>-<position>-<sha12>.redacted.bin`, and
+`index.jsonl` says `redacted_sha256` and `redacted_kinds`. A U-Boot environment a
+value was taken out of fails its CRC, so U-Boot starts from its defaults.
+
 A withheld dump is answered 409 with the kinds of what is in it, never the
 values. The mirror remembers it in `state.json` and asks again after
 `--retry-days`, because the scan learns to read more.

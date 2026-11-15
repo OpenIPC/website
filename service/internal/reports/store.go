@@ -635,6 +635,22 @@ func (s *Store) Takedown(ctx context.Context, id, by, note string) ([]string, er
 		if err := rows.Err(); err != nil {
 			return err
 		}
+		// A redacted copy of a dump (redact_dump.go) is the owner's too:
+		// it goes with the dump, unless another report sent the same bytes.
+		for _, sum := range append([]string{}, sums...) {
+			var red string
+			err := tx.QueryRow(ctx, `
+				DELETE FROM report_dump_redactions WHERE sha256 = $1
+				  AND NOT EXISTS (SELECT 1 FROM report_files WHERE sha256 = $1)
+				RETURNING redacted_sha256`, sum).Scan(&red)
+			if errors.Is(err, pgx.ErrNoRows) {
+				continue
+			}
+			if err != nil {
+				return err
+			}
+			sums = append(sums, red)
+		}
 		if _, err := tx.Exec(ctx, `
 			UPDATE reports SET yaml = '', yaml_public = '', yaml_sha256 = repeat('0', 64), note = '', note_public = '', id_hashes = '{}',
 			  chip_vendor = '', chip_model = '', sensor = '', flash_id = '', flash_size = '',

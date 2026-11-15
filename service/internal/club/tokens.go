@@ -331,7 +331,7 @@ func (a *API) dump(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	sum := r.PathValue("sha256")
-	err := a.Reports.Store().CheckDump(r.Context(), sum)
+	served, redacted, err := a.Reports.Store().CheckDump(r.Context(), sum)
 	var withheld reports.ErrDumpWithheld
 	outcome, reasons := "served", []string{}
 	switch {
@@ -341,6 +341,9 @@ func (a *API) dump(w http.ResponseWriter, r *http.Request) {
 		outcome, reasons = "withheld", withheld.Reasons
 	case err != nil:
 		outcome = "failed"
+	case served != sum:
+		// the redacted copy, the kinds taken out as the reasons
+		outcome, reasons = "redacted", redacted
 	}
 	if aerr := a.audit(r, m, token, sum, outcome, reasons); aerr != nil {
 		a.fail(w, "the dump's record", aerr)
@@ -360,7 +363,7 @@ func (a *API) dump(w http.ResponseWriter, r *http.Request) {
 			"withheld": reasons})
 		return
 	}
-	a.Reports.ServeDump(w, sum)
+	a.Reports.ServeDump(w, sum, served, redacted)
 }
 
 // correctChip is POST /api/v1/maint/reports/{id}/chip {"vendor", "model",
