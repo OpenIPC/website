@@ -6,6 +6,8 @@ for your tools") and fetches each dump not yet here. The site sends a dump
 only when its backup scan read all of it and found nothing of its owner's
 (service/internal/reports/dumps.go); one it withholds is remembered with why
 and asked for again after --retry-days, as the scan learns to read more.
+A dump kept here is asked for again at the same interval, and deleted if
+the site now withholds it or no longer lists it.
 Every request is recorded on the site (dump_access).
 
     dump-mirror sync [--site URL] [--dest DIR] [--retry-days N]
@@ -110,6 +112,18 @@ def save_state(dest, state):
     replace(os.path.join(dest, "state.json"), lambda f: json.dump(state, f, indent=1, sort_keys=True))
 
 
+def forget(dest, state, s):
+    """Drop dump s from here: its copy, if one is left, and its state."""
+    gone = state["have"].pop(s, None)
+    state["withheld"].pop(s, None)
+    if gone:
+        try:
+            os.unlink(os.path.join(dest, gone["path"]))
+        except FileNotFoundError:
+            pass
+    return gone
+
+
 def fetch(site, tok, d, path):
     """Fetch dump d into path, checking its sha256; None, or the reasons it was withheld."""
     try:
@@ -164,7 +178,38 @@ def sync(args):
             if rel != have["path"]:
                 os.makedirs(os.path.join(args.dest, os.path.dirname(rel)), mode=0o700, exist_ok=True)
                 os.replace(os.path.join(args.dest, have["path"]), os.path.join(args.dest, rel))
-            state["have"][s] = dict(d, path=rel, fetched_at=have.get("fetched_at"))
+            state["have"][s] = have = dict(d, path=rel, fetched_at=have.get("fetched_at"),
+                                           checked_at=have.get("checked_at") or have.get("fetched_at"))
+            # Asked for again once the retry interval has passed: a rule
+            # the scan learnt since may withhold it now, and then the copy
+            # here goes too.
+            last = have.get("checked_at")
+            if last and now - dt.datetime.fromisoformat(last) < dt.timedelta(days=args.retry_days):
+                continue
+            try:
+                reasons = fetch(args.site, tok, d, os.path.join(args.dest, rel))
+            except urllib.error.HTTPError as e:
+                if e.code == 404:
+                    # withdrawn since the listing: as one no longer listed
+                    forget(args.dest, state, s)
+                    print(f"{d['report']}: no longer listed; the copy here is deleted", file=sys.stderr)
+                    save_state(args.dest, state)
+                    continue
+                print(f"{s}: {e}", file=sys.stderr)
+                failed += 1
+                continue
+            except (urllib.error.URLError, OSError, RuntimeError, ValueError) as e:
+                print(f"{s}: {e}", file=sys.stderr)
+                failed += 1
+                continue
+            if reasons:
+                forget(args.dest, state, s)
+                state["withheld"][s] = {"at": now.isoformat(), "reasons": reasons, "report": d["report"]}
+                print(f"{d['report']}: now withheld ({', '.join(reasons)}); the copy here is deleted", file=sys.stderr)
+                held += 1
+            else:
+                have["checked_at"] = now.isoformat()
+            save_state(args.dest, state)
             continue
         w = state["withheld"].get(s)
         if w and now - dt.datetime.fromisoformat(w["at"]) < dt.timedelta(days=args.retry_days):
@@ -179,6 +224,13 @@ def sync(args):
         os.makedirs(os.path.join(args.dest, chip), mode=0o700, exist_ok=True)
         try:
             reasons = fetch(args.site, tok, d, os.path.join(args.dest, rel))
+        except urllib.error.HTTPError as e:
+            if e.code == 404:
+                forget(args.dest, state, s)  # withdrawn since the listing
+                continue
+            print(f"{s}: {e}", file=sys.stderr)
+            failed += 1
+            continue
         except (urllib.error.URLError, OSError, RuntimeError, ValueError) as e:
             print(f"{s}: {e}", file=sys.stderr)
             failed += 1
@@ -188,10 +240,18 @@ def sync(args):
             held += 1
         else:
             state["withheld"].pop(s, None)
-            state["have"][s] = dict(d, path=rel, fetched_at=now.isoformat())
+            state["have"][s] = dict(d, path=rel, fetched_at=now.isoformat(), checked_at=now.isoformat())
             got += 1
         save_state(args.dest, state)
 
+    # A dump the site no longer lists -- its report withdrawn or taken down --
+    # is not kept here either.
+    listed = {d.get("sha256") for d in dumps}
+    for s in [s for s in state["have"] if s not in listed]:
+        gone = forget(args.dest, state, s)
+        print(f"{gone.get('report', s)}: no longer listed; the copy here is deleted", file=sys.stderr)
+    for s in [s for s in state["withheld"] if s not in listed]:
+        del state["withheld"][s]
     save_state(args.dest, state)
     # A chip folder holds only what was kept: none for dumps withheld.
     for entry in os.scandir(args.dest):

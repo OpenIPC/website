@@ -17,14 +17,22 @@ dump: its report, chip, sensor, flash size, board and when it was received.
 The site sends a dump only when its backup scan
 (`service/internal/reports/backupscan.go`) read all of it and found nothing of
 its owner's: no Wi-Fi password, no cloud key or ID, no private key. A dump with
-any of those is **withheld**. So is one the scan cannot read all of: JFFS2
-compressed with LZO, LZMA or rubin, or any UBIFS, a
-compressed stream outside the firmware's own images that is not gzip or bzip2
-(xz, LZMA, zstd, zip), or JFFS2 nodes that are damaged. A withheld dump is answered 409
-with the kinds of what is in it, never the values. The mirror remembers it in
-`state.json` and asks again after `--retry-days`, because the scan learns to read
-more. Every dump asked for is recorded on the site in `dump_access`, which is
-append-only.
+any of those is **withheld**. So is a dump the scan cannot read all of:
+- a JFFS2 compressed with LZO, LZMA or rubin, or whose nodes are damaged
+- any UBIFS
+- outside the firmware's own images, a zstd, lz4 or 7z stream; an xz, LZMA or
+  gzip stream cut short; a zip entry that is encrypted, packed other than stored
+  or deflated, cut short, or fails its CRC. gzip, bzip2, xz and LZMA streams,
+  and unencrypted stored or deflated zip entries, are inflated and read.
+
+A withheld dump is answered 409 with the kinds of what is in it, never the
+values. The mirror remembers it in `state.json` and asks again after
+`--retry-days`, because the scan learns to read more.
+
+A dump kept here is asked for again at the same interval. It is deleted from
+here if the site now withholds it (a rule added since) or no longer lists it
+(its report withdrawn). Every dump asked for is recorded on the site in
+`dump_access`, which is append-only.
 
 The token is sent only to an https site, and a redirect is refused rather
 than followed. Two syncs never run at once.
