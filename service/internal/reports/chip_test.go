@@ -98,3 +98,71 @@ func TestAReportsChipAsNamed(t *testing.T) {
 		t.Errorf("the history: %d rows, %v", n, err)
 	}
 }
+
+// A named chip reaches what is worked out afresh from the YAML (the board
+// guesses), counts once with a camera's stars paid under the chip as sent,
+// and goes from sight with the report when it is taken down.
+func TestANamedChipGuessesStarsAndTakedown(t *testing.T) {
+	e := newEnv(t)
+	ctx := context.Background()
+	st := &Store{DB: e.pool}
+	yaml := fixture(t, "xiongmai-50h20l-readme.yml")
+	rec, out := e.post(t, upload{
+		fields: map[string]string{"channel": "agent", "tool": "test"},
+		files:  map[string][]byte{"backup": backupOf(yaml, bytes.Repeat([]byte{0xff}, 8<<10))},
+	}, "203.0.113.42")
+	if rec.Code != 201 {
+		t.Fatal(rec.Body)
+	}
+	id := out["id"].(string)
+
+	// Stars paid under the chip as sent: a camera row for one identifier.
+	var key, value, sent string
+	if err := e.pool.QueryRow(ctx, `
+		SELECT h.key, h.value, lower(r.chip_vendor) || '/' || lower(r.chip_model)
+		FROM reports r CROSS JOIN LATERAL jsonb_each_text(r.id_hashes) h
+		WHERE r.id = $1 AND h.value ~ '^[0-9a-f]+$' LIMIT 1`, id).Scan(&key, &value, &sent); err != nil {
+		t.Fatalf("no identifier to pay under: %v", err)
+	}
+	if _, err := e.pool.Exec(ctx, `INSERT INTO report_star_cameras (report_id, key, chip) VALUES ($1, $2, $3)`,
+		id, key+":"+value, sent); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := st.SetChip(ctx, id, "Anyka", "AK3918AV130", "device tree: anyka,ak3918av130", "test"); err != nil {
+		t.Fatal(err)
+	}
+	_, parsed, _ := Parse(yaml)
+	f, err := st.WithChip(ctx, id, parsed)
+	if err != nil || f.ChipVendor != "Anyka" || f.ChipModel != "AK3918AV130" {
+		t.Errorf("the guesses' facts: %q %q, %v", f.ChipVendor, f.ChipModel, err)
+	}
+	var one bool
+	if err := e.pool.QueryRow(ctx, `SELECT report_identifier_one_chip($1, $2)`, key, value).Scan(&one); err != nil || !one {
+		t.Errorf("a camera paid under the chip as sent is two after the correction: %v %v", one, err)
+	}
+
+	if _, err := st.Takedown(ctx, id, "test", "owner asked"); err != nil {
+		t.Fatal(err)
+	}
+	all, err := st.List(ctx, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, l := range all {
+		if l.ID == id && l.Chip != "" {
+			t.Errorf("taken down, the queue still shows %q", l.Chip)
+		}
+	}
+	if _, _, corrected, err := st.EffectiveChip(ctx, id); err != nil || corrected {
+		t.Errorf("taken down: corrected %v, %v", corrected, err)
+	}
+	var n int
+	if err := e.pool.QueryRow(ctx, `SELECT count(*) FROM report_chips WHERE report_id = $1`, id).Scan(&n); err != nil || n != 1 {
+		t.Errorf("the correction's history: %d, %v", n, err)
+	}
+	// Taken down, the paid row speaks for the camera again.
+	if err := e.pool.QueryRow(ctx, `SELECT report_identifier_one_chip($1, $2)`, key, value).Scan(&one); err != nil || !one {
+		t.Errorf("taken down: %v %v", one, err)
+	}
+}

@@ -167,6 +167,9 @@ func reportsCommand(ctx context.Context, cfg *config.Config, log *slog.Logger, a
 			return err
 		}
 		_, facts, _ := reports.Parse(r.YAML)
+		if facts, err = st.WithChip(ctx, r.ID, facts); err != nil {
+			return err
+		}
 		devices, err := st.DeviceIDs(ctx, r.ID)
 		if err != nil {
 			return err

@@ -119,7 +119,9 @@ func (s *Store) cameras(ctx context.Context, q dbQuerier, ids []string) (map[str
 		      UNION ALL
 		      SELECT split_part(k.key, ':', 1), split_part(k.key, ':', 2),
 		        report_anyka(split_part(k.chip, '/', 1), split_part(k.chip, '/', 2))
-		      FROM report_star_cameras k WHERE k.report_id = m.id) x
+		      FROM report_star_cameras k WHERE k.report_id = m.id
+		        -- only what the report no longer carries (taken down)
+		        AND NOT r.id_hashes @> jsonb_build_object(split_part(k.key, ':', 1), split_part(k.key, ':', 2))) x
 		    WHERE x.key = ANY($2) AND NOT (x.key = 'die_id' AND x.anyka)
 		      AND report_identifier_one_chip(x.key, x.value)), '{}')
 		FROM mine m JOIN reports r ON r.id = m.id

@@ -24,20 +24,29 @@ CREATE TRIGGER report_chips_guard BEFORE UPDATE OR DELETE ON report_chips
 CREATE TRIGGER report_chips_no_truncate BEFORE TRUNCATE ON report_chips
     FOR EACH STATEMENT EXECUTE FUNCTION reports_guard();
 
--- Each report's chip: the latest correction's, else the one it was sent with.
+-- Each report's chip: the latest correction's, else the one it was sent
+-- with; none for a report withdrawn, whose own chip Takedown blanked (the
+-- corrections stay, as history).
 CREATE VIEW report_chip AS
 SELECT r.id AS report_id,
-       CASE WHEN c.chip_model <> '' THEN c.chip_vendor ELSE r.chip_vendor END AS chip_vendor,
-       CASE WHEN c.chip_model <> '' THEN c.chip_model ELSE r.chip_model END AS chip_model,
-       coalesce(c.chip_model <> '', false) AS corrected
+       CASE WHEN w.withdrawn THEN '' WHEN c.chip_model <> '' THEN c.chip_vendor ELSE r.chip_vendor END AS chip_vendor,
+       CASE WHEN w.withdrawn THEN '' WHEN c.chip_model <> '' THEN c.chip_model ELSE r.chip_model END AS chip_model,
+       NOT w.withdrawn AND coalesce(c.chip_model <> '', false) AS corrected
 FROM reports r
 LEFT JOIN LATERAL (
     SELECT chip_vendor, chip_model FROM report_chips
     WHERE report_id = r.id ORDER BY id DESC LIMIT 1
-) c ON true;
+) c ON true
+CROSS JOIN LATERAL (
+    SELECT coalesce((SELECT decision = 'withdraw' FROM report_reviews
+                     WHERE report_id = r.id ORDER BY id DESC LIMIT 1), false) AS withdrawn
+) w;
 
 -- Migration 040's rule, over the chips as corrected: an identifier is one
--- camera only while every report carrying it names one chip.
+-- camera only while every report carrying it names one chip. A paid
+-- camera's row speaks for its report only once the report no longer
+-- carries the identifier (taken down): while it does, the report's chip as
+-- corrected is the one, not the chip the stars were paid under.
 CREATE OR REPLACE FUNCTION report_identifier_one_chip(k text, v text) RETURNS boolean
     LANGUAGE sql STABLE AS $$
     SELECT count(DISTINCT chip) <= 1 FROM (
@@ -45,6 +54,7 @@ CREATE OR REPLACE FUNCTION report_identifier_one_chip(k text, v text) RETURNS bo
         FROM reports r JOIN report_chip c ON c.report_id = r.id
         WHERE r.id_hashes @> jsonb_build_object(k, v)
         UNION ALL
-        SELECT chip FROM report_star_cameras WHERE key = k || ':' || v
+        SELECT sc.chip FROM report_star_cameras sc JOIN reports r ON r.id = sc.report_id
+        WHERE sc.key = k || ':' || v AND NOT r.id_hashes @> jsonb_build_object(k, v)
     ) carriers
 $$;

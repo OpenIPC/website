@@ -493,6 +493,29 @@ func (s *Store) SetChip(ctx context.Context, id, vendor, model, evidence, by str
 	return err
 }
 
+// EffectiveChip is report id's chip as a maintainer named it (SetChip), and
+// whether one did: what a reader parsing the YAML afresh puts over the
+// chip ipctool sent.
+func (s *Store) EffectiveChip(ctx context.Context, id string) (vendor, model string, corrected bool, err error) {
+	err = s.DB.QueryRow(ctx, `SELECT chip_vendor, chip_model, corrected FROM report_chip WHERE report_id = $1`, id).
+		Scan(&vendor, &model, &corrected)
+	if errors.Is(err, pgx.ErrNoRows) {
+		err = ErrNotFound
+	}
+	return
+}
+
+// WithChip is f with report id's named chip over the one parsed, if a
+// maintainer named one: board guesses follow the correction.
+func (s *Store) WithChip(ctx context.Context, id string, f Facts) (Facts, error) {
+	vendor, model, corrected, err := s.EffectiveChip(ctx, id)
+	if err != nil || !corrected {
+		return f, err
+	}
+	f.ChipVendor, f.ChipModel = vendor, model
+	return f, nil
+}
+
 // ErrNoLink is SetCertainty's and SetSensor's answer for a report not linked
 // to the board.
 var ErrNoLink = errors.New("the report is not linked to that board")

@@ -485,6 +485,9 @@ func (s *Store) Queue(ctx context.Context, state string) ([]Queued, error) {
 		if r.YAML != "" {
 			_, facts, _ = Parse(r.YAML)
 		}
+		if facts, err = s.WithChip(ctx, l.ID, facts); err != nil {
+			return nil, err
+		}
 		// Without ipctool's output too: a version string in the note or a
 		// boot log names the board.
 		if id, err := IdentifyDevices(ctx, s.DB, facts, devices); err == nil && len(id.Matches) > 0 {
