@@ -51,16 +51,16 @@ func TestAvailabilityAddress(t *testing.T) {
 	}
 }
 
-// Without an index, a SoC that names firmware but no bootloader is
-// firmware_only, never wizard: the wizard cannot assemble an image without the
-// same index, and answers 503.
+// Without an index, nothing is wizard: the wizard answers 503 without the
+// same index, so the feed may offer firmware it assumes published, never a
+// guide. A bootloader the catalogue names changes nothing here.
 func TestAvailabilityWithoutIndex(t *testing.T) {
 	cat := loadCatalogue(t)
 	for urlname, want := range map[string]string{
 		"v831":        "firmware_only", // a firmware file, no bootloader
 		"ak3918av100": "firmware_only",
-		"hi3516ev300": "wizard", // both
-		"ak3918ev200": "wizard",
+		"hi3516ev300": "firmware_only", // both
+		"ak3918ev200": "firmware_only",
 		"ssc323":      "none", // neither
 	} {
 		soc := cat.SoC(urlname)

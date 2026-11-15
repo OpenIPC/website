@@ -21,18 +21,16 @@ import (
 func Availability(soc *catalogue.SoC, idx *Index) string {
 	if idx == nil {
 		// No index at all: a SoC naming a firmware file is assumed
-		// published, and so is a bootloader it names. One it does not name
-		// cannot be assumed: V831 and the Anyka chips name a firmware file
-		// and no bootloader, and calling them `wizard` here offered an
-		// installation guide that the wizard, without the same index, then
-		// refused with a 503.
-		if soc.LinuxFilename == "" {
-			return "none"
+		// published, so its firmware is still worth linking. It is never
+		// `wizard`, whatever bootloader it names: the wizard builds every
+		// document from the same index and answers 503 without one, so a
+		// guide offered here would be refused when it was followed. First
+		// V831 and the Anyka chips (no bootloader), then the Anyka chips
+		// again once they named theirs, showed the gap one SoC at a time.
+		if soc.LinuxFilename != "" {
+			return "firmware_only"
 		}
-		if soc.Bootloader("nor") != "" || soc.Bootloader("nand") != "" {
-			return "wizard"
-		}
-		return "firmware_only"
+		return "none"
 	}
 	nand := BoardFor(soc, idx, "nand")
 	if len(NORReleases(soc, idx)) == 0 && len(idx.Releases(nand, "nand")) == 0 {
