@@ -72,6 +72,9 @@ func before(what string, within int) func([]byte, []int) bool {
 var textPatterns = func() []textPattern {
 	var ps []textPattern
 	for _, f := range identifierForms {
+		if f.re == tangeSerial || f.re == tangeKey {
+			continue // a whole line: a fragment's end would pass for one
+		}
 		ps = append(ps, textPattern{kind: f.name, re: f.re, group: f.group, ok: func(text []byte, m []int) bool {
 			return plausibleIdentifier(f.name, string(bytes.ReplaceAll(text[m[2*f.group]:m[2*f.group+1]], []byte{0}, nil)))
 		}})
@@ -481,6 +484,9 @@ const (
 // jffs2CRC is the kernel's crc32(0, ...): no inversion before or after.
 func jffs2CRC(b []byte) uint32 { return ^crc32.Update(^uint32(0), crc32.IEEETable, b) }
 
+// tangeFile holds a Tange Cloud camera's serial and key (/config).
+const tangeFile = "tange_sn.txt"
+
 // certificateName is a Gwell camera's device certificate and key.
 var certificateName = regexp.MustCompile(`^Certificate(?:_[A-Za-z0-9_-]+)?\.bin$`)
 
@@ -530,6 +536,12 @@ func (s *backupScan) node(off int64) error {
 		}
 		if certificateName.Match(name) {
 			s.add("device_certificate", off, "jffs2")
+		}
+		// A Tange Cloud camera's serial and key, "<SN>,<key>" with neither
+		// named (parse.go tangeSerial): known by the file's name.
+		if string(name) == tangeFile {
+			s.add("device_id", off, "jffs2")
+			s.add("cloud_secret", off, "jffs2")
 		}
 	case jffs2Inode:
 		csize, dsize, compr := e.Uint32(h[48:]), e.Uint32(h[52:]), h[56]
