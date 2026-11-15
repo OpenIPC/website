@@ -50,7 +50,9 @@
         "unavailable_hlp": "Not available — looking for a developer",
         "unavailable_mvp": "Not available — early build",
         "unavailable_neq": "Not available — no board to develop on",
+        "unavailable_nos": "Not available — boots, no video yet",
         "unavailable_rnd": "Not available — in research",
+        "unavailable_twin": "Not available — tested only in the emulator",
         "unavailable_wip": "Not available — in progress"
       }
     }
@@ -904,13 +906,17 @@
       "mvp_info": "A minimal viable product. The basic system is built, the platform can produce video, at least on the main channel, but due to a lack of human resources, development is delayed or halted. A financial infusion could push the development to the final stage.",
       "neq_alt": "Image: stage NEQ",
       "neq_info_html": "No Equipment. We have an SDK for the platform, but we don't have specific hardware to continue development, you can donate it to our R&D guys (especially old boards that passed <abbr title=\"End-Of-Life\">EOL</abbr> and can not longer be bought).",
+      "nos_alt": "Image: stage NOS",
+      "nos_info": "No streamer. Linux boots on real hardware and the drivers load, so the camera already works as a small Linux computer, but the ISP tuning and the streamer are not done: there is no video stream yet. This is where image-quality and encoder work happens.",
       "paragraph1": "After we acquire an SDK for a new SoC, we add the SoC to the table of supported hardware. We assign either NEQ (No Equipment) status, if we do not have particular hardware modules, or HLP (Help Needed) status, if we have the hardware but are looking for a developer who would lead the development for that SoC. This is considered an official start of development.",
       "paragraph2": "There is no reason to have SoC in the table without having its SDK.",
-      "paragraph3": "As work on the SoC progresses, its status changes, gradually. First to RND, then to WIP, then further to MVP, and, finally, to DONE.",
+      "paragraph3": "As work on the SoC progresses, its status changes, gradually. First to RND, then to TWIN once our image boots in the emulator, to WIP once it is published for testers, to NOS once it boots on a real camera, then to MVP, and, finally, to DONE.",
       "rnd_alt": "Image: stage R&D",
       "rnd_info": "The Research and Development stage, when we already have the platform SDK and maybe even the hardware boards, but we are starting to fiddle with the platform, studying its specifics and features. There is still a lot of work ahead.",
       "subtitle": "Typical development lifecycle",
       "title": "Stages of Firmware development",
+      "twin_alt": "Image: stage TWIN",
+      "twin_info": "Tested only in a digital twin. The image we publish boots in qemu-bench, our emulator of the SoC, but it has not yet run on a real camera. If you own one and can reach its serial console, you can be the first to try it and tell us what happened.",
       "wip_alt": "Image: stage WIP",
       "wip_info": "Work in progress. We learned a lot about the platform hardware and code base, prepared the first public binary build, and are waiting for the first adopters to test it on their boards and provide feedback to help us move forward."
     },

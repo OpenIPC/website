@@ -1,6 +1,6 @@
 ---
 /**
- * The six firmware stages, beside the catalogue (#162).
+ * The eight firmware stages, beside the catalogue (#162; TWIN and NOS added later).
  *
  * The stages list, as the catalogue shows it. The icons are in
  * src/assets/stages (#304).
@@ -21,7 +21,7 @@ const s = (key: string) => t(`pages.stages_of_firmware_development.${key}`);
 
 /**
  * `neq` is the only stage whose sentence carries markup, and the ERB names
- * `neq_info_html` against five plain `_info` keys. Asking for the _html form
+ * `neq_info_html` against seven plain `_info` keys. Asking for the _html form
  * with a fallback keeps that asymmetry in one place instead of a conditional
  * in the loop.
  */
@@ -31,7 +31,7 @@ const info = (status: string) => {
 };
 
 const LABELS: Record<string, string> = {
-  neq: 'NEQ', rnd: 'R&D', hlp: 'HLP', wip: 'WIP', mvp: 'MVP', done: 'DONE',
+  neq: 'NEQ', rnd: 'R&D', hlp: 'HLP', twin: 'TWIN', wip: 'WIP', nos: 'NOS', mvp: 'MVP', done: 'DONE',
 };
 
 function icon(status: string): ImageMetadata {

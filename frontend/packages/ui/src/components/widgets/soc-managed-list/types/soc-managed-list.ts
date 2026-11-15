@@ -3,7 +3,7 @@ export type SoCItem = {
   group: string,
   model: string,
   address: null | string,
-  stage: 'NEQ' | 'RND' | 'HLP' | 'WIP' | 'MVP' | 'DONE',
+  stage: 'NEQ' | 'RND' | 'HLP' | 'TWIN' | 'WIP' | 'NOS' | 'MVP' | 'DONE',
   bootloader: string,
   firmware: string,
   featured: boolean,
