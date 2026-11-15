@@ -12,12 +12,12 @@ socs:
 - family: V83X
   model: V831
   version: null
-  status: rnd
+  status: wip
   load_address: ''
   sdk: null
   kernel: null
   uboot_filename: ''
-  linux_filename: ''
+  linux_filename: openipc.v83x-nor-lite.tgz
   notes: ''
   urlname: v831
   featured: false

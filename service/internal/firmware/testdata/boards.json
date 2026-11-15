@@ -3,10 +3,10 @@
     "urlname": "v831",
     "vendor": "Allwinner",
     "model": "V831",
-    "board": "v831",
+    "board": "v83x",
     "uboot": "",
-    "nor_lite": "openipc.v831-nor-lite.tgz",
-    "nand_lite": "openipc.v831-nand-lite.tgz"
+    "nor_lite": "openipc.v83x-nor-lite.tgz",
+    "nand_lite": "openipc.v83x-nand-lite.tgz"
   },
   {
     "urlname": "s2l",
@@ -21,10 +21,10 @@
     "urlname": "s3l",
     "vendor": "Ambarella",
     "model": "S3L",
-    "board": "ambarella-s3l",
+    "board": "s3l",
     "uboot": "",
-    "nor_lite": "openipc.ambarella-s3l-nor-lite.tgz",
-    "nand_lite": "openipc.ambarella-s3l-nand-lite.tgz"
+    "nor_lite": "openipc.s3l-nor-lite.tgz",
+    "nand_lite": "openipc.s3l-nand-lite.tgz"
   },
   {
     "urlname": "ak3916ev300",
@@ -43,6 +43,24 @@
     "uboot": "",
     "nor_lite": "openipc.ak3918ev200-nor-lite.tgz",
     "nand_lite": "openipc.ak3918ev200-nand-lite.tgz"
+  },
+  {
+    "urlname": "ak3918av100",
+    "vendor": "Anyka",
+    "model": "AK3918AV100",
+    "board": "ak3918av100",
+    "uboot": "",
+    "nor_lite": "openipc.ak3918av100-nor-lite.tgz",
+    "nand_lite": "openipc.ak3918av100-nand-lite.tgz"
+  },
+  {
+    "urlname": "ak3918av100x",
+    "vendor": "Anyka",
+    "model": "AK3918AV100X",
+    "board": "ak3918av100x",
+    "uboot": "",
+    "nor_lite": "openipc.ak3918av100x-nor-lite.tgz",
+    "nand_lite": "openipc.ak3918av100x-nand-lite.tgz"
   },
   {
     "urlname": "ak3918ev200",

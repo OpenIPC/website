@@ -395,7 +395,7 @@ socs:
 - family: HI3536CV100
   model: HI3536CV100
   version: ''
-  status: rnd
+  status: twin
   load_address: '0x82000000'
   sdk: ''
   kernel: ''

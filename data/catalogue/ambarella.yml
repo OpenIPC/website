@@ -25,12 +25,12 @@ socs:
 - family: S3L
   model: S3L
   version: ''
-  status: wip
+  status: mvp
   load_address: ''
   sdk: ''
   kernel: ''
   uboot_filename: ''
-  linux_filename: openipc.ambarella-s3l-nor-lite.tgz
+  linux_filename: openipc.s3l-nor-ultimate.tgz
   notes: ''
   urlname: s3l
   featured: false

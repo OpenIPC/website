@@ -64,7 +64,7 @@ socs:
 - family: NT9856X
   model: NT98566
   version: ''
-  status: wip
+  status: mvp
   load_address: '0x03100000'
   sdk: ''
   kernel: ''

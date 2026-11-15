@@ -11,7 +11,7 @@
           "family": "V83X",
           "version": null,
           "urlname": "v831",
-          "status": "rnd",
+          "status": "wip",
           "load_address": "",
           "featured": false,
           "segment": null
@@ -39,7 +39,7 @@
           "family": "S3L",
           "version": "",
           "urlname": "s3l",
-          "status": "wip",
+          "status": "mvp",
           "load_address": "",
           "featured": false,
           "segment": null
@@ -57,7 +57,7 @@
           "family": "AK3918EV300",
           "version": "",
           "urlname": "ak3916ev300",
-          "status": "neq",
+          "status": "nos",
           "load_address": "",
           "featured": false,
           "segment": null
@@ -73,11 +73,31 @@
           "segment": null
         },
         {
+          "model": "AK3918AV100",
+          "family": "AK3918AV100",
+          "version": "",
+          "urlname": "ak3918av100",
+          "status": "twin",
+          "load_address": "",
+          "featured": false,
+          "segment": null
+        },
+        {
+          "model": "AK3918AV100X",
+          "family": "AK3918AV100",
+          "version": "",
+          "urlname": "ak3918av100x",
+          "status": "twin",
+          "load_address": "",
+          "featured": false,
+          "segment": null
+        },
+        {
           "model": "AK3918EV200",
           "family": "AK3918EV200",
           "version": "",
           "urlname": "ak3918ev200",
-          "status": "hlp",
+          "status": "nos",
           "load_address": "0x81808000",
           "featured": false,
           "segment": null
@@ -87,17 +107,17 @@
           "family": "AK3918EV300",
           "version": "",
           "urlname": "ak3918ev300",
-          "status": "neq",
+          "status": "nos",
           "load_address": "",
           "featured": false,
           "segment": null
         },
         {
           "model": "AK3918EV300L",
-          "family": "AK3918EV300",
+          "family": "AK3918AV100",
           "version": "",
           "urlname": "ak3918ev300l",
-          "status": "neq",
+          "status": "twin",
           "load_address": "",
           "featured": false,
           "segment": null
@@ -107,7 +127,7 @@
           "family": null,
           "version": "",
           "urlname": "ak3918ev330",
-          "status": "rnd",
+          "status": "twin",
           "load_address": "",
           "featured": false,
           "segment": null
@@ -135,7 +155,7 @@
           "family": null,
           "version": "",
           "urlname": "fh8632v100",
-          "status": "neq",
+          "status": "twin",
           "load_address": "",
           "featured": false,
           "segment": null
@@ -155,7 +175,7 @@
           "family": "FH8833V100",
           "version": "",
           "urlname": "fh8833v100",
-          "status": "neq",
+          "status": "twin",
           "load_address": "",
           "featured": false,
           "segment": null
@@ -185,7 +205,7 @@
           "family": "FH8852V200",
           "version": "",
           "urlname": "fh8852v210",
-          "status": "neq",
+          "status": "wip",
           "load_address": "",
           "featured": false,
           "segment": null
@@ -195,7 +215,7 @@
           "family": "FH8852V100",
           "version": "",
           "urlname": "fh8856v100",
-          "status": "neq",
+          "status": "wip",
           "load_address": "",
           "featured": false,
           "segment": null
@@ -215,7 +235,7 @@
           "family": "FH8852V200",
           "version": "",
           "urlname": "fh8856v210",
-          "status": "neq",
+          "status": "wip",
           "load_address": "",
           "featured": false,
           "segment": null
@@ -225,7 +245,7 @@
           "family": "FH8852V200",
           "version": "",
           "urlname": "fh8858v200",
-          "status": "neq",
+          "status": "wip",
           "load_address": "",
           "featured": false,
           "segment": null
@@ -235,7 +255,7 @@
           "family": "FH8852V200",
           "version": "",
           "urlname": "fh8858v210",
-          "status": "neq",
+          "status": "wip",
           "load_address": "",
           "featured": false,
           "segment": null
@@ -283,7 +303,7 @@
           "family": "GK710X",
           "version": null,
           "urlname": "gk7102ct",
-          "status": "neq",
+          "status": "wip",
           "load_address": "0xC1000000",
           "featured": false,
           "segment": "cctv"
@@ -293,7 +313,7 @@
           "family": "GK710X",
           "version": null,
           "urlname": "gk7102cw",
-          "status": "neq",
+          "status": "wip",
           "load_address": "0xC1000000",
           "featured": false,
           "segment": "cctv"
@@ -403,7 +423,7 @@
           "family": "GK7206V1",
           "version": null,
           "urlname": "gk7206v10",
-          "status": "neq",
+          "status": "wip",
           "load_address": "",
           "featured": false,
           "segment": "cctv"
@@ -413,7 +433,7 @@
           "family": "GK7206V1",
           "version": null,
           "urlname": "gk7206v10b",
-          "status": "neq",
+          "status": "wip",
           "load_address": "",
           "featured": false,
           "segment": "cctv"
@@ -423,7 +443,7 @@
           "family": "GK7206V1",
           "version": null,
           "urlname": "gk7206v11",
-          "status": "neq",
+          "status": "wip",
           "load_address": "",
           "featured": false,
           "segment": "cctv"
@@ -433,7 +453,7 @@
           "family": "GK7206V1",
           "version": null,
           "urlname": "gk7206v11a",
-          "status": "neq",
+          "status": "wip",
           "load_address": "",
           "featured": false,
           "segment": "cctv"
@@ -443,7 +463,7 @@
           "family": "GK7206V1",
           "version": null,
           "urlname": "gk7206v11at",
-          "status": "neq",
+          "status": "wip",
           "load_address": "",
           "featured": false,
           "segment": "cctv"
@@ -453,7 +473,7 @@
           "family": "GK7206V1",
           "version": null,
           "urlname": "gk7206v12a",
-          "status": "neq",
+          "status": "wip",
           "load_address": "",
           "featured": false,
           "segment": "cctv"
@@ -481,7 +501,7 @@
           "family": "GM8136",
           "version": "",
           "urlname": "gm8135",
-          "status": "neq",
+          "status": "wip",
           "load_address": "0x2000000",
           "featured": false,
           "segment": null
@@ -779,7 +799,7 @@
           "family": "HI3536CV100",
           "version": "",
           "urlname": "hi3536cv100",
-          "status": "rnd",
+          "status": "twin",
           "load_address": "0x82000000",
           "featured": false,
           "segment": "cctv"
@@ -957,7 +977,7 @@
           "family": "T40",
           "version": null,
           "urlname": "t40nn",
-          "status": "rnd",
+          "status": "wip",
           "load_address": "0x80600000",
           "featured": false,
           "segment": "consumer"
@@ -1163,7 +1183,7 @@
           "family": "NT9856X",
           "version": "",
           "urlname": "nt98566",
-          "status": "wip",
+          "status": "mvp",
           "load_address": "0x03100000",
           "featured": false,
           "segment": null
@@ -1191,7 +1211,7 @@
           "family": "RV11XX",
           "version": null,
           "urlname": "rv1109",
-          "status": "neq",
+          "status": "wip",
           "load_address": "",
           "featured": false,
           "segment": null
@@ -1201,7 +1221,7 @@
           "family": "RV11XX",
           "version": null,
           "urlname": "rv1126",
-          "status": "rnd",
+          "status": "wip",
           "load_address": "",
           "featured": false,
           "segment": null
@@ -5841,7 +5861,7 @@
           "family": "XM510",
           "version": "",
           "urlname": "xm510",
-          "status": "mvp",
+          "status": "done",
           "load_address": "0x80007FC0",
           "featured": false,
           "segment": null
@@ -5851,7 +5871,7 @@
           "family": "XM530",
           "version": "",
           "urlname": "xm530",
-          "status": "mvp",
+          "status": "done",
           "load_address": "0x81000000",
           "featured": false,
           "segment": null
@@ -5861,7 +5881,7 @@
           "family": "XM550",
           "version": "",
           "urlname": "xm550",
-          "status": "mvp",
+          "status": "done",
           "load_address": "0x81000000",
           "featured": false,
           "segment": null

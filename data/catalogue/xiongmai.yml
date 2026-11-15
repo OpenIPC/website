@@ -12,7 +12,7 @@ socs:
 - family: XM510
   model: XM510
   version: ''
-  status: mvp
+  status: done
   load_address: '0x80007FC0'
   sdk: ''
   kernel: ''
@@ -25,7 +25,7 @@ socs:
 - family: XM530
   model: XM530
   version: ''
-  status: mvp
+  status: done
   load_address: '0x81000000'
   sdk: ''
   kernel: ''
@@ -38,7 +38,7 @@ socs:
 - family: XM550
   model: XM550
   version: ''
-  status: mvp
+  status: done
   load_address: '0x81000000'
   sdk: ''
   kernel: ''

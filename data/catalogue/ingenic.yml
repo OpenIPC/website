@@ -209,7 +209,7 @@ socs:
 - family: T40
   model: T40NN
   version: null
-  status: rnd
+  status: wip
   load_address: '0x80600000'
   sdk: null
   kernel: null
