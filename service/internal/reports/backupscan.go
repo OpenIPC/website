@@ -158,8 +158,12 @@ const (
 	// maxNodeData bounds a JFFS2 node's data, compressed and not: the
 	// kernel writes a page (4 KB) a node.
 	maxNodeData = 64 << 10
-	// maxFindings: enough to say what a dump holds.
-	maxFindings = 100
+	// maxPerKind: findings kept of one kind, enough to say where it is. A
+	// dump with a value repeated in every node of a JFFS2 would otherwise
+	// fill a cap on them all before a later secret of another kind was
+	// read, and a review that published the dump over the first kind would
+	// leave it public. The scan reads the whole dump, whatever it found.
+	maxPerKind = 8
 	// sshKeyRead: how far a binary key is read to tell private from public.
 	sshKeyRead = 2048
 )
@@ -275,6 +279,7 @@ type backupScan struct {
 	r        io.ReaderAt
 	found    []Finding
 	seen     map[findingKey]bool
+	perKind  map[string]int
 	hdr      [68]byte
 	nodeBuf  []byte
 	out      []byte
@@ -340,14 +345,13 @@ func (e *edgeMap) put(k edgeKey, v edge) {
 
 func (s *backupScan) add(kind string, off int64, in string) {
 	k := findingKey{kind, off}
-	if s.seen[k] || len(s.found) >= maxFindings {
+	if s.seen[k] || s.perKind[kind] >= maxPerKind {
 		return
 	}
 	s.seen[k] = true
+	s.perKind[kind]++
 	s.found = append(s.found, Finding{Kind: kind, Offset: off, In: in})
 }
-
-func (s *backupScan) full() bool { return len(s.found) >= maxFindings }
 
 // text reads one run for textPatterns; at is the run's offset, or the
 // node's when in is a node's.
@@ -432,12 +436,12 @@ func ScanBackupWhole(r io.ReaderAt, size int64) (found []Finding, unread []strin
 var ubifsMagic = []byte{0x31, 0x18, 0x10, 0x06}
 
 func scanBackup(r io.ReaderAt, size int64, whole bool) (*backupScan, error) {
-	s := &backupScan{r: r, seen: map[findingKey]bool{}, unread: map[string]bool{}, whole: whole,
+	s := &backupScan{r: r, seen: map[findingKey]bool{}, perKind: map[string]int{}, unread: map[string]bool{}, whole: whole,
 		nodeBuf: make([]byte, maxNodeData), out: make([]byte, maxNodeData), sshBuf: make([]byte, sshKeyRead)}
 	s.inflated.emit = func(run []byte, _ int64) { s.text(run, s.nodeAt, s.nodeIn) }
 	raw := runner{emit: func(run []byte, at int64) { s.text(run, at, "raw") }}
 	buf := make([]byte, scanChunk+scanTail)
-	for at := int64(0); at < size && !s.full(); at += scanChunk {
+	for at := int64(0); at < size; at += scanChunk {
 		n, err := r.ReadAt(buf[:min(int64(scanChunk+scanTail), size-at)], at)
 		if err != nil && !(errors.Is(err, io.EOF) && n > 0) {
 			return nil, err
@@ -494,7 +498,7 @@ var certificateName = regexp.MustCompile(`^Certificate(?:_[A-Za-z0-9_-]+)?\.bin$
 // at, in either byte order.
 func (s *backupScan) nodes(b []byte, own int, at int64) error {
 	for _, magic := range [][]byte{{0x85, 0x19}, {0x19, 0x85}} {
-		for i := 0; i < own && !s.full(); {
+		for i := 0; i < own; {
 			j := bytes.Index(b[i:], magic)
 			if j < 0 || i+j >= own {
 				break
