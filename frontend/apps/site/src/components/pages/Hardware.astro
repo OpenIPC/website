@@ -346,5 +346,14 @@ const here = p(view === 'featured' ? '/supported-hardware/featured'
         .replace('{count}', String(count))
         .replace('{total}', badge.dataset.total);
     }
+
+    // The "none of them can be installed" alert was decided from the build's
+    // availability. Left alone it outlived the build that made it true: the
+    // Anyka page kept saying there was no build while its rows, corrected
+    // above, offered five.
+    for (const alert of document.querySelectorAll('[data-empty-vendor]')) {
+      const socs = catalogue[alert.dataset.emptyVendor] || [];
+      if (socs.some((urlname) => (live.socs[urlname] || 'none') !== 'none')) alert.remove();
+    }
   })();
 </script>
