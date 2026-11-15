@@ -515,6 +515,12 @@ server {
         add_header Strict-Transport-Security max-age=15768000;
         add_header X-Served-By go always;
         add_header X-Content-Type-Options nosniff always;
+        # A redacted copy of a flash dump (service/internal/reports/
+        # redact_dump.go): the web role names its sha256 and the kinds taken
+        # out, which an X-Accel-Redirect would drop with the other upstream
+        # headers. Empty, and so not sent, for every other file.
+        add_header X-Dump-Redacted $upstream_http_x_dump_redacted always;
+        add_header X-Dump-Redacted-Kinds $upstream_http_x_dump_redacted_kinds always;
         add_header X-Robots-Tag "noindex, nofollow, noarchive" always;
     }
 

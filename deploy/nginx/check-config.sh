@@ -119,6 +119,8 @@ cat > /etc/nginx/conf.d/zz-stub-upstream.conf <<'STUB'
 server { listen 127.0.0.1:3002;
   location ^~ /api/v1/reports/r-test/files/ {
     add_header X-Accel-Redirect /report-files/sha256/ab/abcd;
+    add_header X-Dump-Redacted 0123abcd;
+    add_header X-Dump-Redacted-Kinds wifi_psk;
     return 200 "";
   }
   location / { return 200 "GO-WEB-PROD\n"; } }
@@ -700,6 +702,17 @@ redirects_to openipc.org /ipctool https://github.com/OpenIPC/ipctool/
 expect /api/v1/reports/r-x          200 go     hsts
 expect /api/v1/reports/r-test/files/1 200 go   hsts
 grep -q REPORT-FILE /tmp/b || { echo "  a report's file did not reach /report-files/"; fail=1; }
+# A redacted dump's sha256 and kinds are the web role's headers; nginx drops
+# them on the internal redirect unless /report-files/ adds them back, and
+# dump-mirror refuses a copy it cannot check.
+curl -sS -o /dev/null -D /tmp/rh -k --max-time 5 --resolve "openipc.org:443:127.0.0.1" \
+  "https://openipc.org/api/v1/reports/r-test/files/1" 2>/dev/null
+if grep -qi '^X-Dump-Redacted: 0123abcd' /tmp/rh && grep -qi '^X-Dump-Redacted-Kinds: wifi_psk' /tmp/rh; then
+  printf '  %-32s %-5s (X-Dump-Redacted headers kept)\n' /api/v1/reports/r-test/files/1 ok
+else
+  printf '  %-32s MISMATCH: X-Dump-Redacted headers lost on the internal redirect\n' /api/v1/reports/r-test/files/1
+  fail=1
+fi
 got=$(curl -sS -o /tmp/rf -w '%{http_code}' -k --max-time 5 --resolve "openipc.org:443:127.0.0.1" \
   "https://openipc.org/report-files/sha256/ab/abcd" 2>/dev/null)
 if [ "$got" = 404 ] && ! grep -q REPORT-FILE /tmp/rf; then
