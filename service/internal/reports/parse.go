@@ -624,15 +624,18 @@ var deviceForms = []*regexp.Regexp{
 	// A Dahua's serials in its U-Boot environment, a line each: the board's
 	// (BSN=) and the camera's (ID=), which its P2P cloud knows it by
 	// (r-6gvwnqed). Only as a whole line: a log prints "ID=" for much else.
-	regexp.MustCompile(`(?m)^(?:BSN|ID)=([A-Za-z0-9]{10,32})[ \t]*\r?$`),
+	// A board serial as short as eight, as the backup check reads it.
+	regexp.MustCompile(`(?m)^BSN=([A-Za-z0-9]{8,32})[ \t]*\r?$`),
+	regexp.MustCompile(`(?m)^ID=([A-Za-z0-9]{10,32})[ \t]*\r?$`),
 	// A TP-Link's cloud identity: its device ID (40 hex digits) and hardware
 	// ID (32), as its identity block and what is read out of it name them
 	// (deviceId, dev_id, hwId; r-zia9bn65).
 	regexp.MustCompile(`(?i)\b(?:dev(?:ice)?_?id|hw_?id)["']?\s*[:=]\s*["']?([0-9a-f]{32,40})\b`),
 	// A serial a text names as one: "serial 2000...", "dot_serial_num:
 	// \"2000...\"", "Serial number: ...". Ten characters at least, with a
-	// digit: "serial8250" and "serial console" are the kernel's.
-	regexp.MustCompile(`(?i)\b(?:dot_?)?serial(?:[ _]?num(?:ber)?|[ _]?no)?["']?(?:\s*[:=]\s*|[ \t]+)["']?([A-Za-z0-9]{10,32})\b`),
+	// digit: "serial8250" and "serial console" are the kernel's. A suffix
+	// after a hyphen or an underscore is the serial's too, and goes with it.
+	regexp.MustCompile(`(?i)\b(?:dot_?)?serial(?:[ _]?num(?:ber)?|[ _]?no)?["']?(?:\s*[:=]\s*|[ \t]+)["']?([A-Za-z0-9]{10,32}(?:[_-][A-Za-z0-9]+)*)\b`),
 }
 
 // apName is the access point a camera opens for pairing, named after its

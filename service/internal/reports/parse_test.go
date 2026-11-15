@@ -348,6 +348,9 @@ func TestADahuaATuyaAndATPLinkIdentifiersAreRedacted(t *testing.T) {
 	const serial, devID, hwID = "123456789012345", "00112233445566778899AABBCCDDEEFF00112233", "0123456789ABCDEF0123456789ABCDEF"
 	for _, c := range []struct{ line, gone string }{
 		{"BSN=" + bsn, bsn},
+		{"BSN=1A23B45C", "1A23B45C"},
+		{"Serial number: " + serial + "-XYZ", "XYZ"},
+		{"serial_no=" + serial + "_rev2", "rev2"},
 		{"ID=" + id + "\r", id},
 		{"AUTHKEY=" + authkey, authkey},
 		{`authKey: "` + authkey + `"`, authkey},
@@ -383,6 +386,7 @@ func TestADahuaATuyaAndATPLinkIdentifiersAreRedacted(t *testing.T) {
 	// None of these names a camera.
 	for _, line := range []string{
 		"Serial: 8250/16550 driver, 4 ports, IRQ sharing disabled",
+		"serial 8250-compatible UART",
 		"serial8250.0: ttyS0 at MMIO 0x1f221000 (irq = 38, base_baud = 10800000) is a 16550A",
 		"serial console enabled on ttyS000",
 		"usb 1-1: SerialNumber: 0",
