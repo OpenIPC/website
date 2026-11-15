@@ -153,8 +153,13 @@ def sync(args):
         if w and now - dt.datetime.fromisoformat(w["at"]) < dt.timedelta(days=args.retry_days):
             continue
         chip = safe(d.get("chip_model"))
-        os.makedirs(os.path.join(args.dest, chip), mode=0o700, exist_ok=True)
         rel = os.path.join(chip, f"{d['report']}-{d['position']}-{s[:12]}.bin")
+        root = os.path.realpath(args.dest)
+        if os.path.commonpath([root, os.path.realpath(os.path.join(root, rel))]) != root:
+            print(f"{s}: {rel} would land outside {root}", file=sys.stderr)
+            failed += 1
+            continue
+        os.makedirs(os.path.join(args.dest, chip), mode=0o700, exist_ok=True)
         try:
             reasons = fetch(args.site, tok, d, os.path.join(args.dest, rel))
         except (urllib.error.URLError, OSError, RuntimeError, ValueError) as e:
