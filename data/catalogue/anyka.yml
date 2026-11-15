@@ -12,11 +12,11 @@ socs:
 - family: AK3918EV300
   model: AK3916EV300
   version: ''
-  status: nos
-  load_address: ''
+  status: wip
+  load_address: '0x82000000'
   sdk: ''
   kernel: ''
-  uboot_filename: ''
+  uboot_filename: u-boot-ak3918ev300-nor.bin
   linux_filename: openipc.ak3916ev300-nor-lite.tgz
   notes: ''
   urlname: ak3916ev300
@@ -38,37 +38,37 @@ socs:
 - family: AK3918AV100
   model: AK3918AV100
   version: ''
-  status: twin
-  load_address: ''
+  status: wip
+  load_address: '0x82000000'
   sdk: ''
   kernel: ''
   uboot_filename: ''
-  linux_filename: ''
-  notes: 'AK3918AV100N/P and KM01N, 64 MB. OpenIPC''s image on the AnyCloud39AV100 SDK''s 4.4.282 kernel has booted only in qemu-bench, and is not published yet.'
+  linux_filename: openipc.ak3918av100-nor-lite.tgz
+  notes: 'AK3918AV100N/P and KM01N, 64 MB, on the AnyCloud39AV100 SDK''s 4.4.282 kernel.'
   urlname: ak3918av100
   featured: false
   segment: null
 - family: AK3918AV100
   model: AK3918AV100X
   version: ''
-  status: twin
-  load_address: ''
+  status: wip
+  load_address: '0x82000000'
   sdk: ''
   kernel: ''
   uboot_filename: ''
-  linux_filename: ''
-  notes: 'AK3918AV100X/XP and KM01D, 128 MB. OpenIPC''s image on the AnyCloud39AV100 SDK''s 4.4.282 kernel has booted only in qemu-bench, and is not published yet.'
+  linux_filename: openipc.ak3918av100x-nor-lite.tgz
+  notes: 'AK3918AV100X/XP and KM01D, 128 MB, on the AnyCloud39AV100 SDK''s 4.4.282 kernel.'
   urlname: ak3918av100x
   featured: false
   segment: null
 - family: AK3918EV200
   model: AK3918EV200
   version: ''
-  status: nos
-  load_address: '0x81808000'
+  status: done
+  load_address: '0x82000000'
   sdk: ''
   kernel: ''
-  uboot_filename: ''
+  uboot_filename: u-boot-ak3918ev200-nor.bin
   linux_filename: openipc.ak3918ev200-nor-lite.tgz
   notes: ''
   urlname: ak3918ev200
@@ -77,11 +77,11 @@ socs:
 - family: AK3918EV300
   model: AK3918EV300
   version: ''
-  status: nos
-  load_address: ''
+  status: wip
+  load_address: '0x82000000'
   sdk: ''
   kernel: ''
-  uboot_filename: ''
+  uboot_filename: u-boot-ak3918ev300-nor.bin
   linux_filename: openipc.ak3918ev300-nor-lite.tgz
   notes: ''
   urlname: ak3918ev300
@@ -90,24 +90,24 @@ socs:
 - family: AK3918AV100
   model: AK3918EV300L
   version: ''
-  status: twin
-  load_address: ''
+  status: wip
+  load_address: '0x82000000'
   sdk: ''
   kernel: ''
   uboot_filename: ''
-  linux_filename: ''
-  notes: 'The ASPEN generation, a sibling of the AK3918AV100 rather than an AK3918EV300 with less memory; ipctool also names the AK3918EV300W this. Booted only in qemu-bench so far.'
+  linux_filename: openipc.ak3918ev300l-nor-lite.tgz
+  notes: 'The ASPEN generation, a sibling of the AK3918AV100 rather than an AK3918EV300 with less memory; ipctool also names the AK3918EV300W this.'
   urlname: ak3918ev300l
   featured: false
   segment: null
 - family: null
   model: AK3918EV330
   version: ''
-  status: twin
-  load_address: ''
+  status: wip
+  load_address: '0x82000000'
   sdk: ''
   kernel: ''
-  uboot_filename: ''
+  uboot_filename: u-boot-ak3918ev330-nor.bin
   linux_filename: openipc.ak3918ev330-nor-lite.tgz
   notes: ''
   urlname: ak3918ev330

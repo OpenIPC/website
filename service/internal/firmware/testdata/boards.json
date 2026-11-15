@@ -31,7 +31,7 @@
     "vendor": "Anyka",
     "model": "AK3916EV300",
     "board": "ak3916ev300",
-    "uboot": "",
+    "uboot": "u-boot-ak3918ev300-nor.bin",
     "nor_lite": "openipc.ak3916ev300-nor-lite.tgz",
     "nand_lite": "openipc.ak3916ev300-nand-lite.tgz"
   },
@@ -67,7 +67,7 @@
     "vendor": "Anyka",
     "model": "AK3918EV200",
     "board": "ak3918ev200",
-    "uboot": "",
+    "uboot": "u-boot-ak3918ev200-nor.bin",
     "nor_lite": "openipc.ak3918ev200-nor-lite.tgz",
     "nand_lite": "openipc.ak3918ev200-nand-lite.tgz"
   },
@@ -76,7 +76,7 @@
     "vendor": "Anyka",
     "model": "AK3918EV300",
     "board": "ak3918ev300",
-    "uboot": "",
+    "uboot": "u-boot-ak3918ev300-nor.bin",
     "nor_lite": "openipc.ak3918ev300-nor-lite.tgz",
     "nand_lite": "openipc.ak3918ev300-nand-lite.tgz"
   },
@@ -94,7 +94,7 @@
     "vendor": "Anyka",
     "model": "AK3918EV330",
     "board": "ak3918ev330",
-    "uboot": "",
+    "uboot": "u-boot-ak3918ev330-nor.bin",
     "nor_lite": "openipc.ak3918ev330-nor-lite.tgz",
     "nand_lite": "openipc.ak3918ev330-nand-lite.tgz"
   },

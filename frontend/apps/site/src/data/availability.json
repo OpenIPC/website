@@ -1,14 +1,14 @@
 {
   "generated_at": null,
   "socs": {
-    "ak3916ev300": "firmware_only",
+    "ak3916ev300": "wizard",
     "ak3916ev301": "firmware_only",
     "ak3918av100": "none",
     "ak3918av100x": "none",
-    "ak3918ev200": "firmware_only",
-    "ak3918ev300": "firmware_only",
+    "ak3918ev200": "wizard",
+    "ak3918ev300": "wizard",
     "ak3918ev300l": "none",
-    "ak3918ev330": "firmware_only",
+    "ak3918ev330": "wizard",
     "dm365": "none",
     "fh8626v100": "firmware_only",
     "fh8632v100": "firmware_only",
