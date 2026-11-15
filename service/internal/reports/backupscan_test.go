@@ -631,3 +631,61 @@ func TestTheWholeScanReadsXZLZMAAndZip(t *testing.T) {
 		t.Errorf("an encrypted zip entry: %v", u)
 	}
 }
+
+// What the stream readers refuse to count as read: an LZMA stream cut after
+// it has given real output, a zip entry cut by the end of the dump or whose
+// CRC does not match. A stored entry whose size is in the descriptor after
+// it is read to that descriptor.
+func TestTheWholeScanKnowsAStreamCutShort(t *testing.T) {
+	whole := func(dump []byte) ([]string, []string) {
+		t.Helper()
+		f, u, err := ScanBackupWhole(bytes.NewReader(dump), int64(len(dump)))
+		if err != nil {
+			t.Fatal(err)
+		}
+		return Kinds(f), u
+	}
+	// LZMA of a long text, cut in the middle, then the dump going on.
+	// varied, as a log is: a stream that compresses to almost nothing
+	// fails before it gives anything, as noise does
+	text := noise(100<<10, 50)
+	for i, c := range text {
+		text[i] = "abcdefghij klmnop\nqrstuvwxyz"[int(c)%28]
+	}
+	var lz bytes.Buffer
+	lw, _ := lzma.NewWriter(&lz)
+	lw.Write(text)
+	lw.Close()
+	cut := lz.Bytes()[:lz.Len()/2]
+	if _, u := whole(append(append(noise(4096, 51), cut...), noise(8192, 52)...)); !slices.Equal(u, []string{UnreadCompressed}) {
+		t.Errorf("an LZMA stream cut short: %v", u)
+	}
+
+	// A stored entry with its sizes in a data descriptor.
+	var zb bytes.Buffer
+	zw := zip.NewWriter(&zb)
+	f, _ := zw.CreateHeader(&zip.FileHeader{Name: "wpa_supplicant.conf", Method: zip.Store})
+	f.Write([]byte(wpaConf))
+	zw.Close()
+	if zb.Bytes()[6]&8 == 0 {
+		t.Fatal("the writer put no descriptor")
+	}
+	if k, u := whole(append(noise(4096, 53), zb.Bytes()...)); !slices.Equal(k, []string{"wifi_psk"}) || len(u) != 0 {
+		t.Errorf("a stored entry with a descriptor: %v %v", k, u)
+	}
+
+	// A deflated entry, whole and then with its CRC wrong, and one cut.
+	var db bytes.Buffer
+	zw = zip.NewWriter(&db)
+	f, _ = zw.CreateRaw(&zip.FileHeader{Name: "a.txt", Method: zip.Store, CRC32: 0xDEADBEEF,
+		CompressedSize64: 12, UncompressedSize64: 12})
+	f.Write([]byte("hello, world"))
+	zw.Close()
+	if _, u := whole(append(noise(4096, 54), db.Bytes()...)); !slices.Equal(u, []string{UnreadCompressed}) {
+		t.Errorf("an entry whose CRC does not match: %v", u)
+	}
+	entry := db.Bytes()[:30+5+6] // header, name, half the data: the dump ends
+	if _, u := whole(append(noise(4096, 55), entry...)); !slices.Equal(u, []string{UnreadCompressed}) {
+		t.Errorf("an entry cut by the dump's end: %v", u)
+	}
+}

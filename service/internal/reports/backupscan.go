@@ -276,7 +276,11 @@ type findingKey struct {
 }
 
 type backupScan struct {
-	r        io.ReaderAt
+	r    io.ReaderAt
+	size int64
+	// decoded: what the whole-dump scan has inflated so far, across every
+	// stream (backupstreams.go maxDecoded)
+	decoded  int64
 	found    []Finding
 	seen     map[findingKey]bool
 	perKind  map[string]int
@@ -436,7 +440,7 @@ func ScanBackupWhole(r io.ReaderAt, size int64) (found []Finding, unread []strin
 var ubifsMagic = []byte{0x31, 0x18, 0x10, 0x06}
 
 func scanBackup(r io.ReaderAt, size int64, whole bool) (*backupScan, error) {
-	s := &backupScan{r: r, seen: map[findingKey]bool{}, perKind: map[string]int{}, unread: map[string]bool{}, whole: whole,
+	s := &backupScan{r: r, size: size, seen: map[findingKey]bool{}, perKind: map[string]int{}, unread: map[string]bool{}, whole: whole,
 		nodeBuf: make([]byte, maxNodeData), out: make([]byte, maxNodeData), sshBuf: make([]byte, sshKeyRead)}
 	s.inflated.emit = func(run []byte, _ int64) { s.text(run, s.nodeAt, s.nodeIn) }
 	raw := runner{emit: func(run []byte, at int64) { s.text(run, at, "raw") }}

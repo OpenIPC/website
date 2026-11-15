@@ -8,6 +8,7 @@ import (
 	"compress/gzip"
 	"encoding/binary"
 	"errors"
+	"hash"
 	"hash/crc32"
 	"io"
 	"math/bits"
@@ -26,9 +27,16 @@ import (
 // the scan cannot read.
 
 // maxStream bounds what one stream outside the factory's images is
-// inflated to; a longer one is not read to its end. A vendor's ELF packed
-// with xz runs to a few megabytes.
-const maxStream = 64 << 20
+// inflated to, and maxDecoded what all of a dump's are; past either, the
+// rest is not read. A vendor's ELF packed with xz runs to a few megabytes.
+// lzmaGuess: an LZMA candidate failing within this much input was a
+// false header (the census of the site's dumps: 187 of 207 do not decode
+// at all), one failing later a real stream that was cut.
+const (
+	maxStream  = 64 << 20
+	maxDecoded = 512 << 20
+	lzmaGuess  = 4 << 10
+)
 
 // extent is where a factory image lies in the dump, [from, to).
 type extent struct{ from, to int64 }
@@ -168,6 +176,7 @@ func lzmaAlone(w []byte) bool {
 func (s *backupScan) stream(off int64, kind string) {
 	src := bufio.NewReader(io.NewSectionReader(s.r, off, 1<<62))
 	var zr io.Reader
+	var consumed *countingReader
 	switch kind {
 	case "gzip":
 		g, err := gzip.NewReader(src)
@@ -185,7 +194,8 @@ func (s *backupScan) stream(off int64, kind string) {
 		}
 		zr = x
 	case "lzma":
-		l, err := lzma.NewReader(src)
+		consumed = &countingReader{r: src}
+		l, err := lzma.NewReader(consumed)
 		if err != nil {
 			return
 		}
@@ -203,13 +213,21 @@ func (s *backupScan) stream(off int64, kind string) {
 	in := kind
 	r := runner{emit: func(run []byte, _ int64) { s.text(run, off, in) }}
 	buf := make([]byte, 64<<10)
-	var total int
+	var total int64
 	for {
 		n, err := zr.Read(buf)
 		if n > 0 {
-			total += n
+			total += int64(n)
+			s.decoded += int64(n)
 			r.feed(buf[:n], 0)
 			s.sshKeys(buf[:n], n, func(i int) []byte { return buf[i:n] }, off, in)
+		}
+		// Past either bound the rest is not read, whatever the reader says
+		// next.
+		if total > maxStream || s.decoded > maxDecoded {
+			r.end()
+			s.unread[UnreadCompressed] = true
+			return
 		}
 		// An xz read whole, with the dump going on after it: the reader
 		// says so (ulikunitz/xz does not export the error) after the last
@@ -221,47 +239,139 @@ func (s *backupScan) stream(off int64, kind string) {
 		if err != nil {
 			r.end()
 			// An LZMA header is three bytes and a guess, found inside
-			// other compressed data too, and garbage decodes a little
-			// before it fails: only one that decodes to its end is a
-			// stream. Every other kind's magic is its own.
-			if total > 0 && kind != "lzma" {
+			// other compressed data too, and garbage fails within a few
+			// bytes of it. The decoder fills its dictionary before it
+			// gives anything, so a real stream cut short fails having
+			// given nothing too, but having read all it had: one that
+			// fails within lzmaGuess bytes of input was noise, one that
+			// fails later a stream, cut or damaged. Every other kind's
+			// magic is its own.
+			if kind == "lzma" {
+				if consumed.n >= lzmaGuess {
+					s.unread[UnreadCompressed] = true
+				}
+			} else if total > 0 {
 				s.unread[UnreadCompressed] = true
 			}
-			return
-		}
-		if total > maxStream {
-			r.end()
-			s.unread[UnreadCompressed] = true
 			return
 		}
 	}
 }
 
-// zipEntry is the zip local file at off: its data, stored or inflated, and
-// true; nil and true for an entry that cannot be read (encrypted, another
-// method, a stored one whose size is in a trailing descriptor); false for
-// a header that is not one.
+// zipEntry is the zip local file at off: its data, stored or inflated and
+// checked against its CRC, and true; nil and true for an entry that cannot
+// be read (encrypted, another method, cut short); false for bytes that are
+// no entry's header.
 func (s *backupScan) zipEntry(off int64) (io.Reader, bool) {
 	var h [30]byte
 	if n, _ := s.r.ReadAt(h[:], off); n < len(h) {
 		return nil, false
 	}
+	version := binary.LittleEndian.Uint16(h[4:])
 	flags := binary.LittleEndian.Uint16(h[6:])
 	method := binary.LittleEndian.Uint16(h[8:])
+	crc := binary.LittleEndian.Uint32(h[14:])
 	csize := int64(binary.LittleEndian.Uint32(h[18:]))
 	nlen := int64(binary.LittleEndian.Uint16(h[26:]))
 	xlen := int64(binary.LittleEndian.Uint16(h[28:]))
-	if nlen == 0 || nlen > 1024 || method > 99 {
+	// What a zip writer puts there: a version up to 6.3, a method the
+	// format names. Anything else is four bytes that happen to read PK34.
+	switch method {
+	case 0, 1, 6, 8, 9, 12, 14, 19, 93, 95, 98, 99:
+	default:
 		return nil, false
 	}
-	data := io.NewSectionReader(s.r, off+30+nlen+xlen, 1<<62)
-	switch {
-	case flags&1 != 0:
-		return nil, true
-	case method == 0 && flags&8 == 0:
-		return io.LimitReader(data, csize), true
-	case method == 8:
-		return flate.NewReader(bufio.NewReader(data)), true
+	if version&0xFF > 63 || nlen == 0 {
+		return nil, false
 	}
-	return nil, true
+	start := off + 30 + nlen + xlen
+	if flags&1 != 0 || (method != 0 && method != 8) || start > s.size {
+		return nil, true
+	}
+	if flags&8 != 0 {
+		// Sizes and CRC in a descriptor after the data: for a stored entry
+		// the descriptor is the only way to its end.
+		if method == 0 {
+			var ok bool
+			if csize, crc, ok = s.zipDescriptor(start); !ok {
+				return nil, true
+			}
+		} else {
+			csize, crc = -1, 0
+		}
+	}
+	if csize >= 0 && start+csize > s.size {
+		return nil, true // cut short by the end of the dump
+	}
+	var data io.Reader = io.NewSectionReader(s.r, start, 1<<62)
+	if csize >= 0 {
+		data = io.NewSectionReader(s.r, start, csize)
+	}
+	var rd io.Reader
+	if method == 0 {
+		rd = data
+	} else {
+		rd = flate.NewReader(bufio.NewReader(data))
+	}
+	if csize < 0 {
+		return rd, true // a deflated entry ends itself; its CRC is after it
+	}
+	return &crcReader{r: rd, want: crc, h: crc32.NewIEEE()}, true
+}
+
+// zipDescriptor finds the data descriptor ending a stored entry whose data
+// starts at start: the first "PK\x07\x08" whose size is its distance.
+func (s *backupScan) zipDescriptor(start int64) (size int64, crc uint32, ok bool) {
+	buf := make([]byte, 64<<10)
+	for at := start; at < s.size && at-start < maxStream; at += int64(len(buf)) - 16 {
+		n, _ := s.r.ReadAt(buf, at)
+		if n < 16 {
+			return 0, 0, false
+		}
+		for i := 0; i+16 <= n; i++ {
+			if bytes.Equal(buf[i:i+4], []byte{'P', 'K', 7, 8}) &&
+				int64(binary.LittleEndian.Uint32(buf[i+8:])) == at+int64(i)-start {
+				return at + int64(i) - start, binary.LittleEndian.Uint32(buf[i+4:]), true
+			}
+		}
+	}
+	return 0, 0, false
+}
+
+// crcReader is r, failing at its end if what it gave does not hash to want:
+// an entry cut short, or misread, is not one read.
+type crcReader struct {
+	r    io.Reader
+	want uint32
+	h    hash.Hash32
+}
+
+func (c *crcReader) Read(p []byte) (int, error) {
+	n, err := c.r.Read(p)
+	c.h.Write(p[:n])
+	if errors.Is(err, io.EOF) && c.h.Sum32() != c.want {
+		return n, errors.New("zip: the entry's CRC does not match")
+	}
+	return n, err
+}
+
+// countingReader is r, counting the bytes taken from it: how far an LZMA
+// candidate got before it failed.
+type countingReader struct {
+	r *bufio.Reader
+	n int64
+}
+
+func (c *countingReader) Read(p []byte) (int, error) {
+	n, err := c.r.Read(p)
+	c.n += int64(n)
+	return n, err
+}
+
+func (c *countingReader) ReadByte() (byte, error) {
+	b, err := c.r.ReadByte()
+	if err == nil {
+		c.n++
+	}
+	return b, err
 }
