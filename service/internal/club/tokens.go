@@ -394,8 +394,11 @@ func (a *API) correctChip(w http.ResponseWriter, r *http.Request) {
 	case errors.Is(err, reports.ErrNotFound):
 		http.NotFound(w, r)
 		return
+	case errors.Is(err, reports.ErrBadChip):
+		a.refuse(w, http.StatusBadRequest, strings.TrimPrefix(err.Error(), reports.ErrBadChip.Error()+": "))
+		return
 	case err != nil:
-		a.refuse(w, http.StatusBadRequest, err.Error())
+		a.fail(w, "the chip", err)
 		return
 	}
 	vendor, model, corrected, err := st.EffectiveChip(r.Context(), id)

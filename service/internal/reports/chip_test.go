@@ -60,8 +60,8 @@ func TestAReportsChipAsNamed(t *testing.T) {
 		{"Anyka", "", "device tree", "test"},                   // a vendor alone
 		{"Anyka", "AK3918AV130", "device tree", " "},           // nobody
 	} {
-		if err := st.SetChip(ctx, id, bad.vendor, bad.model, bad.evidence, bad.by); err == nil {
-			t.Errorf("%+v taken", bad)
+		if err := st.SetChip(ctx, id, bad.vendor, bad.model, bad.evidence, bad.by); !errors.Is(err, ErrBadChip) {
+			t.Errorf("%+v: %v, want ErrBadChip", bad, err)
 		}
 	}
 	if err := st.SetChip(ctx, "r-00000000", "Anyka", "AK3918AV130", "device tree", "test"); !errors.Is(err, ErrNotFound) {
