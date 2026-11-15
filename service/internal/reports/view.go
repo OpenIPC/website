@@ -80,8 +80,8 @@ func (s *Store) Public(ctx context.Context, id string) (*View, error) {
 	var hashes []byte
 	err := s.DB.QueryRow(ctx, `
 		SELECT received_at, channel, backup_consent, tool, note_public, yaml_public,
-		  chip_vendor, chip_model, sensor, flash_id, flash_size, board_vendor, board_model, main_app, id_hashes
-		FROM reports WHERE id = $1`, id).Scan(&v.ReceivedAt, &v.Channel, &v.Consent, &v.Tool, &v.Note, &v.YAML,
+		  c.chip_vendor, c.chip_model, sensor, flash_id, flash_size, board_vendor, board_model, main_app, id_hashes
+		FROM reports r JOIN report_chip c ON c.report_id = r.id WHERE r.id = $1`, id).Scan(&v.ReceivedAt, &v.Channel, &v.Consent, &v.Tool, &v.Note, &v.YAML,
 		&f.ChipVendor, &f.ChipModel, &f.Sensor, &f.FlashID, &f.FlashSize, &f.BoardVendor, &f.BoardModel, &f.MainApp, &hashes)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, ErrNotFound
@@ -281,7 +281,8 @@ func (s *Store) List(ctx context.Context, state string) ([]Listed, error) {
 		SELECT r.id, r.received_at, r.channel,
 		  coalesce((SELECT CASE decision WHEN 'publish' THEN 'published' WHEN 'reject' THEN 'rejected' WHEN 'withdraw' THEN 'withdrawn' WHEN 'ask' THEN 'asked' ELSE 'pending' END
 		            FROM report_reviews rv WHERE rv.report_id = r.id ORDER BY rv.id DESC LIMIT 1), 'pending'),
-		  trim(r.chip_vendor || ' ' || r.chip_model), r.sensor, trim(r.board_vendor || ' ' || r.board_model),
+		  (SELECT trim(c.chip_vendor || ' ' || c.chip_model) FROM report_chip c WHERE c.report_id = r.id),
+		  r.sensor, trim(r.board_vendor || ' ' || r.board_model),
 		  (SELECT count(*) FROM report_files f WHERE f.report_id = r.id)::int, r.backup_consent,
 		  coalesce((SELECT array_agg(model_id ORDER BY model_id) FROM report_models rm WHERE rm.report_id = r.id), '{}')
 		FROM reports r ORDER BY r.received_at DESC`)
