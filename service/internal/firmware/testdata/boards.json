@@ -1091,6 +1091,15 @@
     "nand_lite": "openipc.ssc325d-nand-lite.tgz"
   },
   {
+    "urlname": "ssc325de",
+    "vendor": "SigmaStar",
+    "model": "SSC325DE",
+    "board": "ssc325de",
+    "uboot": "",
+    "nor_lite": "openipc.ssc325de-nor-lite.tgz",
+    "nand_lite": "openipc.ssc325de-nand-lite.tgz"
+  },
+  {
     "urlname": "ssc326d",
     "vendor": "SigmaStar",
     "model": "SSC326D",
