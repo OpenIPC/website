@@ -99,6 +99,9 @@ func (a *API) Handlers() map[string]http.Handler {
 		"POST /api/v1/club/review/{id}":                         a.post(a.decide),
 		"POST /api/v1/club/review/{id}/files/{position}":        a.post(a.reviewPhoto),
 	}
+	for k, v := range a.tokenHandlers() {
+		h[k] = v
+	}
 	if a.Wall != nil {
 		for k, v := range a.wallHandlers() {
 			h[k] = v

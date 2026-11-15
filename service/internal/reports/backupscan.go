@@ -283,6 +283,8 @@ type backupScan struct {
 	// edges: the ends of the JFFS2 nodes read so far, for a secret that
 	// one fragment of a file starts and the next ends (joinEdges).
 	tails, heads edgeMap
+	// unread: what of the dump the scan could not read (Unread).
+	unread map[string]bool
 }
 
 // edgeLen is how much of a node's data either end of it keeps for the
@@ -383,7 +385,44 @@ func (s *backupScan) sshKeys(b []byte, own int, more func(i int) []byte, at int6
 // publish, holding a chunk and a JFFS2 node's data at a time, never the
 // dump.
 func ScanBackup(r io.ReaderAt, size int64) ([]Finding, error) {
-	s := &backupScan{r: r, seen: map[findingKey]bool{},
+	s, err := scanBackup(r, size)
+	if err != nil {
+		return nil, err
+	}
+	return s.found, nil
+}
+
+// What of a dump the scan cannot read, so cannot say holds nothing of its
+// owner's: a JFFS2 node compressed with LZO, LZMA or rubin, and a UBIFS
+// node, which may be compressed and is not read at all.
+const (
+	UnreadJFFS2 = "jffs2_compression"
+	UnreadUBIFS = "ubifs"
+)
+
+// ScanBackupWhole is ScanBackup, and what of the dump it could not read
+// (UnreadJFFS2, UnreadUBIFS), sorted. A dump is known to hold nothing of
+// its owner's only when both are empty. The backup check does not ask:
+// a dump its sender published is kept private over what is found, never
+// over what was not read.
+func ScanBackupWhole(r io.ReaderAt, size int64) (found []Finding, unread []string, err error) {
+	s, err := scanBackup(r, size)
+	if err != nil {
+		return nil, nil, err
+	}
+	for k := range s.unread {
+		unread = append(unread, k)
+	}
+	slices.Sort(unread)
+	return s.found, unread, nil
+}
+
+// ubifsMagic is a UBIFS node's first four bytes (UBIFS_NODE_MAGIC, little
+// endian), at an eight-byte boundary as every node starts.
+var ubifsMagic = []byte{0x31, 0x18, 0x10, 0x06}
+
+func scanBackup(r io.ReaderAt, size int64) (*backupScan, error) {
+	s := &backupScan{r: r, seen: map[findingKey]bool{}, unread: map[string]bool{},
 		nodeBuf: make([]byte, maxNodeData), out: make([]byte, maxNodeData), sshBuf: make([]byte, sshKeyRead)}
 	s.inflated.emit = func(run []byte, _ int64) { s.text(run, s.nodeAt, s.nodeIn) }
 	raw := runner{emit: func(run []byte, at int64) { s.text(run, at, "raw") }}
@@ -402,9 +441,17 @@ func ScanBackup(r io.ReaderAt, size int64) ([]Finding, error) {
 		if err := s.nodes(b, own, at); err != nil {
 			return nil, err
 		}
+		if !s.unread[UnreadUBIFS] {
+			for i := 0; i+len(ubifsMagic) <= own; i += 8 {
+				if bytes.Equal(b[i:i+len(ubifsMagic)], ubifsMagic) {
+					s.unread[UnreadUBIFS] = true
+					break
+				}
+			}
+		}
 	}
 	raw.end()
-	return s.found, nil
+	return s, nil
 }
 
 // JFFS2's node types (include/uapi/linux/jffs2.h), without the accurate
@@ -415,6 +462,7 @@ const (
 	jffs2Accur  = 0x2000
 
 	jffs2None  = 0
+	jffs2Zero  = 1
 	jffs2Rtime = 2
 	jffs2Zlib  = 6
 )
@@ -478,7 +526,10 @@ func (s *backupScan) node(off int64) error {
 			return nil
 		}
 		if compr != jffs2Zlib && compr != jffs2Rtime && compr != jffs2None {
-			return nil // zeroes, or LZO and LZMA
+			if compr != jffs2Zero {
+				s.unread[UnreadJFFS2] = true // LZO, LZMA, rubin
+			}
+			return nil
 		}
 		data := s.nodeBuf[:csize]
 		if n, _ := s.r.ReadAt(data, off+68); n < len(data) || e.Uint32(h[60:]) != jffs2CRC(data) {

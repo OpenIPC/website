@@ -414,3 +414,32 @@ func sumOf(t *testing.T, e *env, id string, pos int) string {
 	}
 	return sum
 }
+
+// A dump is known to hold nothing of its owner's only when the scan read
+// all of it: a JFFS2 node compressed with LZO or LZMA, or any UBIFS, is
+// what it cannot read, and says so. Zeroes and nodes it reads are not.
+func TestTheBackupScanSaysWhatItCouldNotRead(t *testing.T) {
+	whole := func(dump []byte) []string {
+		t.Helper()
+		found, unread, err := ScanBackupWhole(bytes.NewReader(dump), int64(len(dump)))
+		if err != nil || len(found) != 0 {
+			t.Fatalf("%v %v", found, err)
+		}
+		return unread
+	}
+	e := binary.LittleEndian
+	read := append(append(noise(4096, 3), inodeNode(e, 7, []byte("nothing of anyone's here\n"), jffs2Zlib)...),
+		inodeNode(e, 8, bytes.Repeat([]byte{0}, 64), jffs2Zero)...)
+	if u := whole(read); len(u) != 0 {
+		t.Errorf("zlib and zero nodes: %v", u)
+	}
+	const lzo = 7
+	if u := whole(append(noise(4096, 4), inodeNode(e, 9, []byte("compressed with lzo, unread"), lzo)...)); !slices.Equal(u, []string{UnreadJFFS2}) {
+		t.Errorf("an LZO node: %v", u)
+	}
+	ubifs := append(noise(4096, 5), 0x31, 0x18, 0x10, 0x06)
+	ubifs = append(ubifs, noise(4092, 6)...)
+	if u := whole(ubifs); !slices.Equal(u, []string{UnreadUBIFS}) {
+		t.Errorf("UBIFS: %v", u)
+	}
+}

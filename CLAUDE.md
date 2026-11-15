@@ -186,6 +186,13 @@ restores the image but never the schema, so keep migrations additive.
   the public copy drops EXIF (a phone's GPS), XMP, text chunks and a JPEG's
   trailer, losslessly, keeping only the orientation (`reports.StripPhoto`);
   a photo it cannot walk is refused at upload.
+  A maintainer's own tools (agents, analysis on their machine) read the
+  dumps with a token made in `/club` (`club_tokens`, migration 050; Bearer,
+  at `/api/v1/maint/dumps`, never a cookie). A dump is sent only when
+  `reports.ScanBackupWhole` read all of it and found nothing of its owner's,
+  rescanned on every request; any other dump is withheld with the kinds
+  found. Every request is a row in append-only `dump_access`.
+  `tools/dump-mirror` is the puller.
 - `internal/club` -- **the OpenIPC Club**: signing in with Telegram (the bot
   takes Start with a code the asking browser shows, then tells the member
   what happened to what they sent), GitHub (a member of `CLUB_MAINTAINER_ORG`
