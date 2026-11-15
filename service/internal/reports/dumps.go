@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 	"net/http"
-	"os"
+	"slices"
 	"strings"
 	"time"
 
@@ -98,25 +98,21 @@ func (s *Store) CheckDump(ctx context.Context, sum string) (served string, redac
 	if s.Files == nil {
 		return "", nil, errors.New("reports: no file store to read the dump from")
 	}
-	f, err := os.Open(s.Files.path(sum))
+	scan, err := s.Files.scanWhole(sum)
 	if err != nil {
 		return "", nil, err
 	}
-	defer f.Close()
-	st, err := f.Stat()
-	if err != nil {
-		return "", nil, err
+	var unread []string
+	for k := range scan.unread {
+		unread = append(unread, k)
 	}
-	found, unread, err := ScanBackupWhole(f, st.Size())
-	if err != nil {
-		return "", nil, err
-	}
-	reasons := append(Kinds(found), unread...)
+	slices.Sort(unread)
+	reasons := append(Kinds(scan.found), unread...)
 	if len(reasons) == 0 {
 		return sum, nil, nil
 	}
 	if len(unread) == 0 {
-		red, kinds, err := s.redactedCopy(ctx, sum)
+		red, kinds, err := s.redactedCopy(ctx, sum, scan)
 		if err == nil {
 			return red, kinds, nil
 		}

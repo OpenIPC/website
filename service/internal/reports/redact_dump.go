@@ -2,6 +2,7 @@ package reports
 
 import (
 	"bytes"
+	"compress/flate"
 	"compress/zlib"
 	"context"
 	"crypto/sha256"
@@ -14,6 +15,7 @@ import (
 	"os"
 	"path/filepath"
 	"slices"
+	"sync"
 
 	"github.com/jackc/pgx/v5"
 )
@@ -43,10 +45,15 @@ const maxSpans = 100000
 // ErrNotRedactable is a dump whose findings no redaction can take out.
 var ErrNotRedactable = errors.New("reports: the dump holds what a redaction cannot take out")
 
-// redactable is the scan of the dump at path, if a redaction can take out
-// all it found: findings, every one with a span, nothing unread.
-func redactable(path string) (*backupScan, error) {
-	f, err := os.Open(path)
+// redactable: a redaction can take out all scan s found -- findings,
+// every one with a span, nothing unread.
+func redactable(s *backupScan) bool {
+	return len(s.unread) == 0 && !s.unredactable && len(s.spans) > 0 && len(s.spans) <= maxSpans
+}
+
+// scanWhole is the whole-dump scan of a stored file.
+func (s *Files) scanWhole(sum string) (*backupScan, error) {
+	f, err := os.Open(s.path(sum))
 	if err != nil {
 		return nil, err
 	}
@@ -55,25 +62,28 @@ func redactable(path string) (*backupScan, error) {
 	if err != nil {
 		return nil, err
 	}
-	s, err := scanBackup(f, st.Size(), true)
-	if err != nil {
-		return nil, err
-	}
-	if len(s.unread) > 0 || s.unredactable || len(s.spans) == 0 || len(s.spans) > maxSpans {
-		return nil, ErrNotRedactable
-	}
-	return s, nil
+	return scanBackup(f, st.Size(), true)
 }
 
+// notRedactable remembers, for the life of the process, the dumps a
+// redaction could not make clean: the rules change only with a deploy.
+var notRedactable sync.Map
+
 // RedactDump makes the redacted copy of dump sum and stores it, returning
-// its sum and the kinds it took out; ErrNotRedactable when it cannot.
-func (s *Files) RedactDump(sum string) (string, []string, error) {
+// its sum and the kinds it took out; ErrNotRedactable when it cannot. scan
+// is the dump's whole scan if the caller has it, else nil.
+func (s *Files) RedactDump(sum string, scan *backupScan) (string, []string, error) {
 	if !hexSum.MatchString(sum) {
 		return "", nil, ErrNotFound
 	}
-	scan, err := redactable(s.path(sum))
-	if err != nil {
-		return "", nil, err
+	if scan == nil {
+		var err error
+		if scan, err = s.scanWhole(sum); err != nil {
+			return "", nil, err
+		}
+	}
+	if !redactable(scan) {
+		return "", nil, ErrNotRedactable
 	}
 	dir := filepath.Join(s.Root, ".incoming")
 	if err := os.MkdirAll(dir, 0o755); err != nil {
@@ -138,6 +148,13 @@ func applySpans(f *os.File, size int64, spans []span) error {
 			byNode[sp.node] = append(byNode[sp.node], sp)
 		}
 	}
+	// The uncompressed JFFS2 nodes a value is in whose data CRC holds as
+	// sent: theirs is made again after, or the kernel drops the node; a
+	// node already torn stays torn.
+	plain, err := plainNodes(f, raw)
+	if err != nil {
+		return err
+	}
 	for _, sp := range raw {
 		if sp.start < 0 || sp.end > size || sp.end <= sp.start {
 			return fmt.Errorf("%w: a span outside the dump", ErrNotRedactable)
@@ -146,10 +163,20 @@ func applySpans(f *os.File, size int64, spans []span) error {
 			return err
 		}
 	}
-	// An uncompressed JFFS2 node a value was overwritten in: its data CRC
-	// again, or the kernel drops the node.
-	if err := fixPlainNodes(f, size, raw); err != nil {
-		return err
+	for off, e := range plain {
+		h, _, ok := jffs2Node(f, off)
+		if !ok {
+			continue
+		}
+		data := make([]byte, e.Uint32(h[48:]))
+		if _, err := f.ReadAt(data, off+68); err != nil {
+			return err
+		}
+		var c [4]byte
+		e.PutUint32(c[:], jffs2CRC(data))
+		if _, err := f.WriteAt(c[:], off+60); err != nil {
+			return err
+		}
 	}
 	nodes := make([]int64, 0, len(byNode))
 	for off := range byNode {
@@ -195,11 +222,14 @@ func redactNode(f *os.File, off int64, spans []span) error {
 		return err
 	}
 	var out []byte
+	raw := false // the kernel's deflate without zlib's header, as the scan reads it too
 	switch compr {
 	case jffs2Zlib:
-		zr, err := zlib.NewReader(bytes.NewReader(data))
-		if err != nil {
-			return fmt.Errorf("%w: node at %d: %v", ErrNotRedactable, off, err)
+		var zr io.Reader
+		if z, err := zlib.NewReader(bytes.NewReader(data)); err == nil {
+			zr = z
+		} else {
+			zr, raw = flate.NewReader(bytes.NewReader(data)), true
 		}
 		out = make([]byte, dsize)
 		if _, err := io.ReadFull(zr, out); err != nil {
@@ -222,9 +252,15 @@ func redactNode(f *os.File, off int64, spans []span) error {
 	var packed []byte
 	if compr == jffs2Zlib {
 		var b bytes.Buffer
-		zw, _ := zlib.NewWriterLevel(&b, zlib.BestCompression)
-		zw.Write(out)
-		zw.Close()
+		if raw {
+			fw, _ := flate.NewWriter(&b, flate.BestCompression)
+			fw.Write(out)
+			fw.Close()
+		} else {
+			zw, _ := zlib.NewWriterLevel(&b, zlib.BestCompression)
+			zw.Write(out)
+			zw.Close()
+		}
 		packed = b.Bytes()
 	} else {
 		packed = rtimeCompress(out, int(csize))
@@ -244,10 +280,10 @@ func redactNode(f *os.File, off int64, spans []span) error {
 	return err
 }
 
-// fixPlainNodes makes again the data CRC of every uncompressed JFFS2 inode
-// node a raw span falls in.
-func fixPlainNodes(f *os.File, size int64, raw []span) error {
-	done := map[int64]bool{}
+// plainNodes is the uncompressed JFFS2 inode nodes a raw span falls in
+// whose data CRC holds, with their byte order.
+func plainNodes(f *os.File, raw []span) (map[int64]binary.ByteOrder, error) {
+	nodes := map[int64]binary.ByteOrder{}
 	magics := [][]byte{{0x85, 0x19}, {0x19, 0x85}}
 	for _, sp := range raw {
 		// A node's data is at most maxNodeData behind its header.
@@ -268,23 +304,17 @@ func fixPlainNodes(f *os.File, size int64, raw []span) error {
 			if h[56] != jffs2None || sp.start < off+68 || sp.start >= off+68+csize {
 				continue
 			}
-			if done[off] {
-				break
-			}
-			done[off] = true
 			data := make([]byte, csize)
 			if _, err := f.ReadAt(data, off+68); err != nil {
-				return err
+				return nil, err
 			}
-			var c [4]byte
-			e.PutUint32(c[:], jffs2CRC(data))
-			if _, err := f.WriteAt(c[:], off+60); err != nil {
-				return err
+			if e.Uint32(h[60:]) == jffs2CRC(data) {
+				nodes[off] = e
 			}
 			break
 		}
 	}
-	return nil
+	return nodes, nil
 }
 
 // rtimeCompress is JFFS2's rtime (fs/jffs2/compr_rtime.c) of in into at
@@ -314,29 +344,95 @@ func rtimeCompress(in []byte, limit int) []byte {
 }
 
 // redactedCopy is the redacted copy of dump sum, made earlier or now, if
-// it still scans clean; the kinds it took out.
-func (s *Store) redactedCopy(ctx context.Context, sum string) (string, []string, error) {
-	var red string
+// it still scans clean; the kinds it took out. scan is the dump's own.
+func (s *Store) redactedCopy(ctx context.Context, sum string, scan *backupScan) (string, []string, error) {
+	if !redactable(scan) {
+		return "", nil, ErrNotRedactable
+	}
+	if _, failed := notRedactable.Load(sum); failed {
+		return "", nil, ErrNotRedactable
+	}
+	var old string
 	var kinds []string
 	err := s.DB.QueryRow(ctx, `SELECT redacted_sha256, kinds FROM report_dump_redactions WHERE sha256 = $1`, sum).
-		Scan(&red, &kinds)
+		Scan(&old, &kinds)
 	if err == nil {
-		if ok, _ := s.Files.Has(red); ok && s.Files.scanClean(red) {
-			return red, kinds, nil
+		if ok, _ := s.Files.Has(old); ok && s.Files.scanClean(old) {
+			return old, kinds, nil
 		}
 	} else if !errors.Is(err, pgx.ErrNoRows) {
 		return "", nil, err
 	}
 	// None yet, or one a rule learnt since finds something in: again,
 	// from the dump as sent.
-	red, kinds, err = s.Files.RedactDump(sum)
+	red, kinds, err := s.Files.RedactDump(sum, scan)
+	if errors.Is(err, ErrNotRedactable) {
+		notRedactable.Store(sum, true)
+	}
 	if err != nil {
 		return "", nil, err
 	}
-	_, err = s.DB.Exec(ctx, `
-		INSERT INTO report_dump_redactions (sha256, redacted_sha256, kinds) VALUES ($1, $2, $3)
-		ON CONFLICT (sha256) DO UPDATE SET redacted_sha256 = $2, kinds = $3, made_at = now()`, sum, red, kinds)
-	return red, kinds, err
+	// Published under the dump's file lock, as a takedown or an edit drops
+	// it: only while a report still holds the dump. A copy made in vain,
+	// or one replaced, goes when nothing names it.
+	var orphans []string
+	err = pgx.BeginFunc(ctx, s.DB, func(tx pgx.Tx) error {
+		if _, err := tx.Exec(ctx, lockFileEx, sum); err != nil {
+			return err
+		}
+		var held bool
+		if err := tx.QueryRow(ctx, `SELECT EXISTS (SELECT 1 FROM report_files WHERE sha256 = $1 AND kind = 'backup')`, sum).
+			Scan(&held); err != nil {
+			return err
+		}
+		if !held {
+			orphans = append(orphans, red)
+			return ErrNotFound
+		}
+		if _, err := tx.Exec(ctx, `
+			INSERT INTO report_dump_redactions (sha256, redacted_sha256, kinds) VALUES ($1, $2, $3)
+			ON CONFLICT (sha256) DO UPDATE SET redacted_sha256 = $2, kinds = $3, made_at = now()`, sum, red, kinds); err != nil {
+			return err
+		}
+		if old != "" && old != red {
+			orphans = append(orphans, old)
+		}
+		return nil
+	})
+	for _, o := range orphans {
+		if _, rerr := s.RemoveUnreferenced(ctx, s.Files, o); rerr != nil && err == nil {
+			err = rerr
+		}
+	}
+	if err != nil {
+		return "", nil, err
+	}
+	return red, kinds, nil
+}
+
+// dropRedactions removes, in tx, the redacted copies of the dumps among
+// sums no report holds any more -- a takedown, an owner's edit -- and
+// returns their sums, to be removed with the rest.
+func dropRedactions(ctx context.Context, tx pgx.Tx, sums []string) ([]string, error) {
+	var out []string
+	for _, sum := range sums {
+		if _, err := tx.Exec(ctx, lockFileEx, sum); err != nil {
+			return nil, err
+		}
+		var red string
+		err := tx.QueryRow(ctx, `
+			DELETE FROM report_dump_redactions WHERE sha256 = $1
+			  AND NOT EXISTS (SELECT 1 FROM report_files WHERE sha256 = $1)
+			RETURNING redacted_sha256`, sum).Scan(&red)
+		if errors.Is(err, pgx.ErrNoRows) {
+			continue
+		}
+		if err != nil {
+			return nil, err
+		}
+		out = append(out, red)
+	}
+	return out, nil
 }
 
 // scanClean: the stored file sum reads whole and holds nothing.

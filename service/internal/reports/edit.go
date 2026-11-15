@@ -273,6 +273,12 @@ func (s *Store) Edit(ctx context.Context, id, member, by string, c Change, noteP
 			}
 			out.Status, out.Rereview = "pending", true
 		}
+		// A dump taken out takes its redacted copy with it.
+		reds, err := dropRedactions(ctx, tx, gone)
+		if err != nil {
+			return err
+		}
+		gone = append(gone, reds...)
 		for _, sum := range gone {
 			var used bool
 			if err := tx.QueryRow(ctx, `SELECT EXISTS (SELECT 1 FROM report_files WHERE sha256 = $1 OR public_sha256 = $1)`, sum).Scan(&used); err != nil {

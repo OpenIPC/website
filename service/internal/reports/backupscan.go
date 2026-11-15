@@ -372,6 +372,9 @@ func (s *backupScan) text(run []byte, at int64, in string) {
 			if p.ok != nil && !p.ok(run, m) {
 				continue
 			}
+			if redactedValue(p, run, m) {
+				continue
+			}
 			off := at
 			if in == "raw" {
 				off += int64(m[0])
@@ -380,6 +383,31 @@ func (s *backupScan) text(run []byte, at int64, in string) {
 			s.spanOf(p, run, m, at, in)
 		}
 	}
+}
+
+// redactedValue: the value of match m is all redaction filler ('X', inside
+// its quotes if quoted) -- a value RedactDump took out, no value at all.
+func redactedValue(p textPattern, run []byte, m []int) bool {
+	vs, ve := valueOf(p, m)
+	v := bytes.Trim(run[vs:ve], "\"'")
+	if p.kind == "wifi_psk" && p.group == 0 {
+		v = bytes.Trim(bytes.TrimPrefix(v, []byte("psk=")), "\"")
+	}
+	return len(v) > 0 && len(bytes.Trim(v, "X")) == 0
+}
+
+// valueOf is where the value of match m of p lies in its run.
+func valueOf(p textPattern, m []int) (int, int) {
+	g := p.group
+	if vs, ve := m[2*g], m[2*g+1]; vs >= 0 {
+		// a psk="..." setting: the passphrase inside its quotes, so the
+		// setting keeps its form
+		if p.kind == "wifi_psk" && g == 0 && len(m) >= 4 && m[2] >= 0 {
+			vs, ve = m[2], m[3]
+		}
+		return vs, ve
+	}
+	return m[0], m[1]
 }
 
 // span is where one value found lies: in the dump (node < 0), or at
@@ -392,10 +420,9 @@ type span struct {
 // spanOf keeps where the value of match m of p in run lies, for RedactDump.
 // A PEM key is the whole block, not the banner the pattern stops after.
 func (s *backupScan) spanOf(p textPattern, run []byte, m []int, at int64, in string) {
-	g := p.group
-	vs, ve := m[2*g], m[2*g+1]
-	if vs < 0 {
-		vs, ve = m[0], m[1]
+	vs, ve := valueOf(p, m)
+	if p.kind == "wifi_psk" && ve-vs >= 2 && run[vs] == '"' && run[ve-1] == '"' {
+		vs, ve = vs+1, ve-1 // the passphrase, not its quotes
 	}
 	if p.kind == "private_key" {
 		end := bytes.Index(run[m[0]:], []byte("-----END "))
