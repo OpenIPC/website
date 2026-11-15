@@ -112,6 +112,18 @@ def save_state(dest, state):
     replace(os.path.join(dest, "state.json"), lambda f: json.dump(state, f, indent=1, sort_keys=True))
 
 
+def forget(dest, state, s):
+    """Drop dump s from here: its copy, if one is left, and its state."""
+    gone = state["have"].pop(s, None)
+    state["withheld"].pop(s, None)
+    if gone:
+        try:
+            os.unlink(os.path.join(dest, gone["path"]))
+        except FileNotFoundError:
+            pass
+    return gone
+
+
 def fetch(site, tok, d, path):
     """Fetch dump d into path, checking its sha256; None, or the reasons it was withheld."""
     try:
@@ -176,13 +188,22 @@ def sync(args):
                 continue
             try:
                 reasons = fetch(args.site, tok, d, os.path.join(args.dest, rel))
+            except urllib.error.HTTPError as e:
+                if e.code == 404:
+                    # withdrawn since the listing: as one no longer listed
+                    forget(args.dest, state, s)
+                    print(f"{d['report']}: no longer listed; the copy here is deleted", file=sys.stderr)
+                    save_state(args.dest, state)
+                    continue
+                print(f"{s}: {e}", file=sys.stderr)
+                failed += 1
+                continue
             except (urllib.error.URLError, OSError, RuntimeError, ValueError) as e:
                 print(f"{s}: {e}", file=sys.stderr)
                 failed += 1
                 continue
             if reasons:
-                os.unlink(os.path.join(args.dest, rel))
-                del state["have"][s]
+                forget(args.dest, state, s)
                 state["withheld"][s] = {"at": now.isoformat(), "reasons": reasons, "report": d["report"]}
                 print(f"{d['report']}: now withheld ({', '.join(reasons)}); the copy here is deleted", file=sys.stderr)
                 held += 1
@@ -203,6 +224,13 @@ def sync(args):
         os.makedirs(os.path.join(args.dest, chip), mode=0o700, exist_ok=True)
         try:
             reasons = fetch(args.site, tok, d, os.path.join(args.dest, rel))
+        except urllib.error.HTTPError as e:
+            if e.code == 404:
+                forget(args.dest, state, s)  # withdrawn since the listing
+                continue
+            print(f"{s}: {e}", file=sys.stderr)
+            failed += 1
+            continue
         except (urllib.error.URLError, OSError, RuntimeError, ValueError) as e:
             print(f"{s}: {e}", file=sys.stderr)
             failed += 1
@@ -220,11 +248,7 @@ def sync(args):
     # is not kept here either.
     listed = {d.get("sha256") for d in dumps}
     for s in [s for s in state["have"] if s not in listed]:
-        gone = state["have"].pop(s)
-        try:
-            os.unlink(os.path.join(args.dest, gone["path"]))
-        except FileNotFoundError:
-            pass
+        gone = forget(args.dest, state, s)
         print(f"{gone.get('report', s)}: no longer listed; the copy here is deleted", file=sys.stderr)
     for s in [s for s in state["withheld"] if s not in listed]:
         del state["withheld"][s]

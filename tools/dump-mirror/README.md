@@ -20,9 +20,10 @@ its owner's: no Wi-Fi password, no cloud key or ID, no private key. A dump with
 any of those is **withheld**. So is a dump the scan cannot read all of:
 - a JFFS2 compressed with LZO, LZMA or rubin, or whose nodes are damaged
 - any UBIFS
-- outside the firmware's own images, a zstd, lz4 or 7z stream, or an xz, zip or
-  LZMA stream cut short. gzip, bzip2, xz, LZMA and zip entries are inflated and
-  read.
+- outside the firmware's own images, a zstd, lz4 or 7z stream; an xz, LZMA or
+  gzip stream cut short; a zip entry that is encrypted, packed other than stored
+  or deflated, cut short, or fails its CRC. gzip, bzip2, xz and LZMA streams,
+  and unencrypted stored or deflated zip entries, are inflated and read.
 
 A withheld dump is answered 409 with the kinds of what is in it, never the
 values. The mirror remembers it in `state.json` and asks again after
