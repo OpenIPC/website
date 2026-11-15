@@ -50,3 +50,24 @@ func TestAvailabilityAddress(t *testing.T) {
 		t.Errorf("body %.120s", rec.Body.String())
 	}
 }
+
+// Without an index, a SoC that names firmware but no bootloader is
+// firmware_only, never wizard: the wizard cannot assemble an image without the
+// same index, and answers 503.
+func TestAvailabilityWithoutIndex(t *testing.T) {
+	cat := loadCatalogue(t)
+	for urlname, want := range map[string]string{
+		"v831":        "firmware_only", // a firmware file, no bootloader
+		"ak3918ev200": "firmware_only",
+		"hi3516ev300": "wizard", // both
+		"ak3918av100": "none",   // neither
+	} {
+		soc := cat.SoC(urlname)
+		if soc == nil {
+			t.Fatalf("%s: not in the catalogue", urlname)
+		}
+		if got := Availability(soc, nil); got != want {
+			t.Errorf("%s: %q without an index, want %q", urlname, got, want)
+		}
+	}
+}

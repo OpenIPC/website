@@ -111,10 +111,10 @@
     "urlname": "fh8632v100",
     "vendor": "Fullhan",
     "model": "FH8632V100",
-    "board": "fh8632v100",
+    "board": "fh8833v100",
     "uboot": "",
-    "nor_lite": "openipc.fh8632v100-nor-lite.tgz",
-    "nand_lite": "openipc.fh8632v100-nand-lite.tgz"
+    "nor_lite": "openipc.fh8833v100-nor-lite.tgz",
+    "nand_lite": "openipc.fh8833v100-nand-lite.tgz"
   },
   {
     "urlname": "fh8652v100",

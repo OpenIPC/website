@@ -11,7 +11,7 @@
     "ak3918ev330": "firmware_only",
     "dm365": "none",
     "fh8626v100": "firmware_only",
-    "fh8632v100": "none",
+    "fh8632v100": "firmware_only",
     "fh8652v100": "none",
     "fh8833v100": "firmware_only",
     "fh8852v100": "firmware_only",

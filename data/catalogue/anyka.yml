@@ -44,7 +44,7 @@ socs:
   kernel: ''
   uboot_filename: ''
   linux_filename: ''
-  notes: 'AK3918AV100N/P and KM01N, 64 MB. The AnyCloud39AV100 SDK''s own 4.4.282 kernel; booted only in qemu-bench so far.'
+  notes: 'AK3918AV100N/P and KM01N, 64 MB. OpenIPC''s image on the AnyCloud39AV100 SDK''s 4.4.282 kernel has booted only in qemu-bench, and is not published yet.'
   urlname: ak3918av100
   featured: false
   segment: null
@@ -57,7 +57,7 @@ socs:
   kernel: ''
   uboot_filename: ''
   linux_filename: ''
-  notes: 'AK3918AV100X/XP and KM01D, 128 MB. The AnyCloud39AV100 SDK''s own 4.4.282 kernel; booted only in qemu-bench so far.'
+  notes: 'AK3918AV100X/XP and KM01D, 128 MB. OpenIPC''s image on the AnyCloud39AV100 SDK''s 4.4.282 kernel has booted only in qemu-bench, and is not published yet.'
   urlname: ak3918av100x
   featured: false
   segment: null

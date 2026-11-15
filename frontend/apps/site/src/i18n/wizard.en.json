@@ -61,7 +61,7 @@
         "unavailable_neq_html": "We have the vendor SDK for {name} but no board to develop on, and that is the only thing in the way. If you have one to spare, say so in <a href=\"/community\">the chat</a> — a donated board is how most of the supported list got here. <a href=\"/donate\">A donation</a> buys one just as well. What happens once a board arrives is on the <a href=\"/supported-hardware/full-list#stages\">development stages</a> page.",
         "unavailable_nos_html": "Linux boots on a real {name} camera and its drivers load, but the ISP tuning and the streamer are not done, so there is no video stream yet. Progress shows up in the firmware channel in <a href=\"/community\">the chat</a>.",
         "unavailable_rnd_html": "Work on {name} is at the research stage — we are reading the SDK and finding out what is possible. Progress shows up in the firmware channel in <a href=\"/community\">the chat</a>.",
-        "unavailable_twin_html": "{name} boots in qemu-bench, our emulator, from the image we publish, but it has not run on a real camera yet. If you have one with a serial console, testing it is the next step: say so in <a href=\"/community\">the chat</a>.",
+        "unavailable_twin_html": "{name} boots in qemu-bench, our emulator, but has not run on a real camera, and its image is not published yet. Once it is, this page links it, and testing it on a camera with a serial console is the next step. Progress shows up in the firmware channel in <a href=\"/community\">the chat</a>.",
         "unavailable_wip_html": "{name} is being worked on now. Progress shows up in the firmware channel in <a href=\"/community\">the chat</a>."
       },
       "sigmastar_nand_is_weird": {

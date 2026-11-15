@@ -30,7 +30,7 @@ socs:
   sdk: ''
   kernel: ''
   uboot_filename: ''
-  linux_filename: ''
+  linux_filename: openipc.fh8833v100-nor-lite.tgz
   notes: ''
   urlname: fh8632v100
   featured: false
