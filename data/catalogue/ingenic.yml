@@ -239,7 +239,7 @@ socs:
   load_address: '0x80600000'
   sdk: null
   kernel: null
-  uboot_filename: u-boot-t41a-universal.bin
+  uboot_filename: u-boot-t41a-nor.bin
   linux_filename: openipc.t41-nor-lite.tgz
   notes: ''
   urlname: t41a
@@ -252,7 +252,7 @@ socs:
   load_address: '0x80600000'
   sdk: null
   kernel: null
-  uboot_filename: u-boot-t41l-universal.bin
+  uboot_filename: u-boot-t41l-nor.bin
   linux_filename: openipc.t41-nor-lite.tgz
   notes: ''
   urlname: t41l
@@ -278,7 +278,7 @@ socs:
   load_address: '0x80600000'
   sdk: null
   kernel: null
-  uboot_filename: u-boot-t41lq-universal.bin
+  uboot_filename: u-boot-t41lq-nor.bin
   linux_filename: openipc.t41-nor-lite.tgz
   notes: ''
   urlname: t41lq
@@ -291,7 +291,7 @@ socs:
   load_address: '0x80600000'
   sdk: null
   kernel: null
-  uboot_filename: u-boot-t41n-universal.bin
+  uboot_filename: u-boot-t41n-nor.bin
   linux_filename: openipc.t41-nor-lite.tgz
   notes: ''
   urlname: t41n
@@ -304,7 +304,7 @@ socs:
   load_address: '0x80600000'
   sdk: null
   kernel: null
-  uboot_filename: u-boot-t41nq-universal.bin
+  uboot_filename: u-boot-t41nq-nor.bin
   linux_filename: openipc.t41-nor-lite.tgz
   notes: ''
   urlname: t41nq
@@ -317,7 +317,7 @@ socs:
   load_address: '0x80600000'
   sdk: null
   kernel: null
-  uboot_filename: u-boot-t41xq-universal.bin
+  uboot_filename: u-boot-t41xq-nor.bin
   linux_filename: openipc.t41-nor-lite.tgz
   notes: ''
   urlname: t41xq
@@ -356,7 +356,7 @@ socs:
   load_address: '0x80600000'
   sdk: null
   kernel: null
-  uboot_filename: u-boot-t41zx-universal.bin
+  uboot_filename: u-boot-t41zx-nor.bin
   linux_filename: openipc.t41-nor-lite.tgz
   notes: ''
   urlname: t41zx

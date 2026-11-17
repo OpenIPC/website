@@ -861,7 +861,7 @@
     "vendor": "Ingenic",
     "model": "T41A",
     "board": "t41",
-    "uboot": "u-boot-t41a-universal.bin",
+    "uboot": "u-boot-t41a-nor.bin",
     "nor_lite": "openipc.t41-nor-lite.tgz",
     "nand_lite": "openipc.t41-nand-lite.tgz"
   },
@@ -870,7 +870,7 @@
     "vendor": "Ingenic",
     "model": "T41L",
     "board": "t41",
-    "uboot": "u-boot-t41l-universal.bin",
+    "uboot": "u-boot-t41l-nor.bin",
     "nor_lite": "openipc.t41-nor-lite.tgz",
     "nand_lite": "openipc.t41-nand-lite.tgz"
   },
@@ -888,7 +888,7 @@
     "vendor": "Ingenic",
     "model": "T41LQ",
     "board": "t41",
-    "uboot": "u-boot-t41lq-universal.bin",
+    "uboot": "u-boot-t41lq-nor.bin",
     "nor_lite": "openipc.t41-nor-lite.tgz",
     "nand_lite": "openipc.t41-nand-lite.tgz"
   },
@@ -897,7 +897,7 @@
     "vendor": "Ingenic",
     "model": "T41N",
     "board": "t41",
-    "uboot": "u-boot-t41n-universal.bin",
+    "uboot": "u-boot-t41n-nor.bin",
     "nor_lite": "openipc.t41-nor-lite.tgz",
     "nand_lite": "openipc.t41-nand-lite.tgz"
   },
@@ -906,7 +906,7 @@
     "vendor": "Ingenic",
     "model": "T41NQ",
     "board": "t41",
-    "uboot": "u-boot-t41nq-universal.bin",
+    "uboot": "u-boot-t41nq-nor.bin",
     "nor_lite": "openipc.t41-nor-lite.tgz",
     "nand_lite": "openipc.t41-nand-lite.tgz"
   },
@@ -915,7 +915,7 @@
     "vendor": "Ingenic",
     "model": "T41XQ",
     "board": "t41",
-    "uboot": "u-boot-t41xq-universal.bin",
+    "uboot": "u-boot-t41xq-nor.bin",
     "nor_lite": "openipc.t41-nor-lite.tgz",
     "nand_lite": "openipc.t41-nand-lite.tgz"
   },
@@ -942,7 +942,7 @@
     "vendor": "Ingenic",
     "model": "T41ZX",
     "board": "t41",
-    "uboot": "u-boot-t41zx-universal.bin",
+    "uboot": "u-boot-t41zx-nor.bin",
     "nor_lite": "openipc.t41-nor-lite.tgz",
     "nand_lite": "openipc.t41-nand-lite.tgz"
   },
