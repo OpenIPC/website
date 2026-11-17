@@ -60,6 +60,8 @@ var pushers = map[string][]string{
 		// Its openipc-fullhan and openipc-grainmedia images, likewise.
 		"OpenIPC/u-boot/.github/workflows/build-fullhan.yml@refs/heads/openipc",
 		"OpenIPC/u-boot/.github/workflows/build-grainmedia.yml@refs/heads/openipc",
+		// Its openipc-ingenic images (T10 to T41), likewise.
+		"OpenIPC/u-boot/.github/workflows/build-ingenic.yml@refs/heads/openipc",
 	},
 	"xmupdates": {"OpenIPC/xmupdates/.github/workflows/weekly-update.yml@refs/heads/main"},
 	"coupler":   {"OpenIPC/coupler/.github/workflows/xm.yml@refs/heads/main"},
