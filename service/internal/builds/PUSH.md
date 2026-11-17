@@ -47,6 +47,7 @@ The `source` field in the body must match the repository that pushed it:
 | OpenIPC/u-boot, `build-novatek.yml` on `openipc` | `uboot` |
 | OpenIPC/u-boot, `build-fullhan.yml` on `openipc` | `uboot` |
 | OpenIPC/u-boot, `build-grainmedia.yml` on `openipc` | `uboot` |
+| OpenIPC/u-boot, `build-ingenic.yml` on `openipc` | `uboot` |
 
 ## Body
 
