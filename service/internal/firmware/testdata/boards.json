@@ -860,91 +860,91 @@
     "urlname": "t41a",
     "vendor": "Ingenic",
     "model": "T41A",
-    "board": "t41a",
-    "uboot": "",
-    "nor_lite": "openipc.t41a-nor-lite.tgz",
-    "nand_lite": "openipc.t41a-nand-lite.tgz"
+    "board": "t41",
+    "uboot": "u-boot-t41a-universal.bin",
+    "nor_lite": "openipc.t41-nor-lite.tgz",
+    "nand_lite": "openipc.t41-nand-lite.tgz"
   },
   {
     "urlname": "t41l",
     "vendor": "Ingenic",
     "model": "T41L",
-    "board": "t41l",
-    "uboot": "",
-    "nor_lite": "openipc.t41l-nor-lite.tgz",
-    "nand_lite": "openipc.t41l-nand-lite.tgz"
+    "board": "t41",
+    "uboot": "u-boot-t41l-universal.bin",
+    "nor_lite": "openipc.t41-nor-lite.tgz",
+    "nand_lite": "openipc.t41-nand-lite.tgz"
   },
   {
     "urlname": "t41lc",
     "vendor": "Ingenic",
     "model": "T41LC",
-    "board": "t41lc",
+    "board": "t41",
     "uboot": "",
-    "nor_lite": "openipc.t41lc-nor-lite.tgz",
-    "nand_lite": "openipc.t41lc-nand-lite.tgz"
+    "nor_lite": "openipc.t41-nor-lite.tgz",
+    "nand_lite": "openipc.t41-nand-lite.tgz"
   },
   {
     "urlname": "t41lq",
     "vendor": "Ingenic",
     "model": "T41LQ",
-    "board": "t41lq",
-    "uboot": "",
-    "nor_lite": "openipc.t41lq-nor-lite.tgz",
-    "nand_lite": "openipc.t41lq-nand-lite.tgz"
+    "board": "t41",
+    "uboot": "u-boot-t41lq-universal.bin",
+    "nor_lite": "openipc.t41-nor-lite.tgz",
+    "nand_lite": "openipc.t41-nand-lite.tgz"
   },
   {
     "urlname": "t41n",
     "vendor": "Ingenic",
     "model": "T41N",
-    "board": "t41n",
-    "uboot": "",
-    "nor_lite": "openipc.t41n-nor-lite.tgz",
-    "nand_lite": "openipc.t41n-nand-lite.tgz"
+    "board": "t41",
+    "uboot": "u-boot-t41n-universal.bin",
+    "nor_lite": "openipc.t41-nor-lite.tgz",
+    "nand_lite": "openipc.t41-nand-lite.tgz"
   },
   {
     "urlname": "t41nq",
     "vendor": "Ingenic",
     "model": "T41NQ",
-    "board": "t41nq",
-    "uboot": "",
-    "nor_lite": "openipc.t41nq-nor-lite.tgz",
-    "nand_lite": "openipc.t41nq-nand-lite.tgz"
+    "board": "t41",
+    "uboot": "u-boot-t41nq-universal.bin",
+    "nor_lite": "openipc.t41-nor-lite.tgz",
+    "nand_lite": "openipc.t41-nand-lite.tgz"
   },
   {
     "urlname": "t41xq",
     "vendor": "Ingenic",
     "model": "T41XQ",
-    "board": "t41xq",
-    "uboot": "",
-    "nor_lite": "openipc.t41xq-nor-lite.tgz",
-    "nand_lite": "openipc.t41xq-nand-lite.tgz"
+    "board": "t41",
+    "uboot": "u-boot-t41xq-universal.bin",
+    "nor_lite": "openipc.t41-nor-lite.tgz",
+    "nand_lite": "openipc.t41-nand-lite.tgz"
   },
   {
     "urlname": "t41zl",
     "vendor": "Ingenic",
     "model": "T41ZL",
-    "board": "t41zl",
+    "board": "t41",
     "uboot": "",
-    "nor_lite": "openipc.t41zl-nor-lite.tgz",
-    "nand_lite": "openipc.t41zl-nand-lite.tgz"
+    "nor_lite": "openipc.t41-nor-lite.tgz",
+    "nand_lite": "openipc.t41-nand-lite.tgz"
   },
   {
     "urlname": "t41zn",
     "vendor": "Ingenic",
     "model": "T41ZN",
-    "board": "t41zn",
+    "board": "t41",
     "uboot": "",
-    "nor_lite": "openipc.t41zn-nor-lite.tgz",
-    "nand_lite": "openipc.t41zn-nand-lite.tgz"
+    "nor_lite": "openipc.t41-nor-lite.tgz",
+    "nand_lite": "openipc.t41-nand-lite.tgz"
   },
   {
     "urlname": "t41zx",
     "vendor": "Ingenic",
     "model": "T41ZX",
-    "board": "t41zx",
-    "uboot": "",
-    "nor_lite": "openipc.t41zx-nor-lite.tgz",
-    "nand_lite": "openipc.t41zx-nand-lite.tgz"
+    "board": "t41",
+    "uboot": "u-boot-t41zx-universal.bin",
+    "nor_lite": "openipc.t41-nor-lite.tgz",
+    "nand_lite": "openipc.t41-nand-lite.tgz"
   },
   {
     "urlname": "msc313e",
