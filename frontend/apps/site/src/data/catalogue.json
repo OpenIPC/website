@@ -997,7 +997,7 @@
           "family": "T41",
           "version": null,
           "urlname": "t41a",
-          "status": "rnd",
+          "status": "wip",
           "load_address": "0x80600000",
           "featured": false,
           "segment": "consumer"
@@ -1007,7 +1007,7 @@
           "family": "T41",
           "version": null,
           "urlname": "t41l",
-          "status": "rnd",
+          "status": "wip",
           "load_address": "0x80600000",
           "featured": false,
           "segment": "consumer"
@@ -1017,7 +1017,7 @@
           "family": "T41",
           "version": null,
           "urlname": "t41lc",
-          "status": "rnd",
+          "status": "wip",
           "load_address": "0x80600000",
           "featured": false,
           "segment": "consumer"
@@ -1027,7 +1027,7 @@
           "family": "T41",
           "version": null,
           "urlname": "t41lq",
-          "status": "rnd",
+          "status": "wip",
           "load_address": "0x80600000",
           "featured": false,
           "segment": "consumer"
@@ -1037,7 +1037,7 @@
           "family": "T41",
           "version": null,
           "urlname": "t41n",
-          "status": "rnd",
+          "status": "wip",
           "load_address": "0x80600000",
           "featured": false,
           "segment": "consumer"
@@ -1047,7 +1047,7 @@
           "family": "T41",
           "version": null,
           "urlname": "t41nq",
-          "status": "rnd",
+          "status": "wip",
           "load_address": "0x80600000",
           "featured": false,
           "segment": "consumer"
@@ -1057,7 +1057,7 @@
           "family": "T41",
           "version": null,
           "urlname": "t41xq",
-          "status": "rnd",
+          "status": "wip",
           "load_address": "0x80600000",
           "featured": false,
           "segment": "consumer"
@@ -1067,7 +1067,7 @@
           "family": "T41",
           "version": null,
           "urlname": "t41zl",
-          "status": "rnd",
+          "status": "wip",
           "load_address": "0x80600000",
           "featured": false,
           "segment": "consumer"
@@ -1077,7 +1077,7 @@
           "family": "T41",
           "version": null,
           "urlname": "t41zn",
-          "status": "rnd",
+          "status": "wip",
           "load_address": "0x80600000",
           "featured": false,
           "segment": "consumer"
@@ -1087,7 +1087,7 @@
           "family": "T41",
           "version": null,
           "urlname": "t41zx",
-          "status": "rnd",
+          "status": "wip",
           "load_address": "0x80600000",
           "featured": false,
           "segment": "consumer"
