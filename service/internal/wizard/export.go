@@ -240,7 +240,17 @@ func (e *exporter) fitsEight(edition string) bool {
 		}
 		return true
 	}
-	return f.FlashMB <= 8 && f.KernelKB <= eightKernelKB && f.RootfsKB <= eightRootfsKB
+	if f.FlashMB > 8 {
+		return false
+	}
+	// An edition installed from its split package is measured against the
+	// split image, not the fixed slots it does not use (#593): a Lite rootfs
+	// past 5120 KiB still fits 8 MB when the kernel leaves room. A report
+	// that did not measure the kernel keeps the fixed-slot rule.
+	if f.KernelKB > 0 && firmware.SplitOnlyEdition(e.soc, e.idx, edition) {
+		return firmware.SplitFits(e.soc, f, 8)
+	}
+	return f.KernelKB <= eightKernelKB && f.RootfsKB <= eightRootfsKB
 }
 
 func (e *exporter) needsFlashMB() int {

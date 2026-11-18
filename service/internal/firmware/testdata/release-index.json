@@ -243,11 +243,17 @@
       "updated_at": "2026-09-23T18:32:13Z",
       "release": "nightly-20260923-830fa4c"
     },
-    "openipc.hi3516cv100-nor-lite.tgz": {
-      "size": 7009657,
-      "digest": "sha256:4b57d91f0e222074d76c1de9b0a33f0dc145e51c570d5a56208571dd99705936",
-      "updated_at": "2026-09-23T18:32:16Z",
-      "release": "nightly-20260923-830fa4c"
+    "openipc.hi3516cv100-nor-lite-split.tgz": {
+      "size": 7112307,
+      "digest": "sha256:1951fd57346ee8d890a352791752a5326b8f66fee6e8799f61366cf3e3c62ecc",
+      "updated_at": "2026-11-17T19:13:44Z",
+      "release": "nightly-20261117-03d1125"
+    },
+    "openipc.hi3516cv100-nor-neo-split.tgz": {
+      "size": 6389347,
+      "digest": "sha256:7f6574930a940c222f74367224cee834cdaa06aed81b85ddcccd87ef515cee9c",
+      "updated_at": "2026-11-17T19:13:44Z",
+      "release": "nightly-20261117-03d1125"
     },
     "openipc.hi3516cv100-nor-neo.tgz": {
       "size": 6216611,
@@ -255,11 +261,17 @@
       "updated_at": "2026-09-23T18:32:18Z",
       "release": "nightly-20260923-830fa4c"
     },
-    "openipc.hi3516cv200-nor-lite.tgz": {
-      "size": 6848964,
-      "digest": "sha256:5aa93af26ccd1156a179ef7f61afb993a3fde47db016b392a1f2311424a7b452",
-      "updated_at": "2026-09-23T18:32:21Z",
-      "release": "nightly-20260923-830fa4c"
+    "openipc.hi3516cv200-nor-lite-split.tgz": {
+      "size": 7112307,
+      "digest": "sha256:ec00cd788811967c1a8cabe89098d858138ae2451fb1c60c550dc9c78b71ecb2",
+      "updated_at": "2026-11-17T19:13:44Z",
+      "release": "nightly-20261117-03d1125"
+    },
+    "openipc.hi3516cv200-nor-neo-split.tgz": {
+      "size": 6389347,
+      "digest": "sha256:277ce4b5c6d17e7d68acf2391bd2938e66c56271659d3c8ea853e391a55bb235",
+      "updated_at": "2026-11-17T19:13:44Z",
+      "release": "nightly-20261117-03d1125"
     },
     "openipc.hi3516cv200-nor-neo.tgz": {
       "size": 6518920,
@@ -387,11 +399,11 @@
       "updated_at": "2026-09-23T18:33:07Z",
       "release": "nightly-20260923-830fa4c"
     },
-    "openipc.hi3518cv100-nor-lite.tgz": {
-      "size": 7009628,
-      "digest": "sha256:9f144fefbd0f85b4a23a9e40cff58bbab581038aec78aef0976918d57d99ce0f",
-      "updated_at": "2026-09-23T18:33:14Z",
-      "release": "nightly-20260923-830fa4c"
+    "openipc.hi3518cv100-nor-lite-split.tgz": {
+      "size": 7112307,
+      "digest": "sha256:30d859cbbd00912fa72389ee8986bada2ce556e5b2583e6d89f806a25ff86660",
+      "updated_at": "2026-11-17T19:13:44Z",
+      "release": "nightly-20261117-03d1125"
     },
     "openipc.hi3518ev100-nor-lite.tgz": {
       "size": 6897067,
@@ -903,6 +915,12 @@
       "updated_at": "2026-05-16T17:32:40Z",
       "release": "latest"
     },
+    "u-boot-hi3516cv100-nor.bin": {
+      "size": 140000,
+      "digest": "sha256:2ac5b95b76d7805e4ed5b44b25d8e5fa965d894166a3ca75f6597f4aea15d5df",
+      "updated_at": "2026-11-17T08:26:21Z",
+      "release": "latest"
+    },
     "u-boot-hi3516cv100-universal.bin": {
       "size": 232920,
       "digest": "sha256:fdc84421ab631a076faa32f06f78ec896a958a59dcda178261ed7f213baa3dca",
@@ -913,6 +931,12 @@
       "size": 127263,
       "digest": "sha256:3aa668b781c950b8339a1787db076627b0f3f4a8b0f43c7782136d0ae1fd33c6",
       "updated_at": "2026-08-27T10:55:40Z",
+      "release": "latest"
+    },
+    "u-boot-hi3516cv200-nor.bin": {
+      "size": 140000,
+      "digest": "sha256:a27223fccc1fea37dcffdc4fbc4bc661f228d10dcccd0b4ee56a7e2669962a1f",
+      "updated_at": "2026-11-17T08:26:21Z",
       "release": "latest"
     },
     "u-boot-hi3516cv200-universal.bin": {
@@ -1027,6 +1051,12 @@
       "size": 232920,
       "digest": "sha256:365feb833458e053707f10a5974b2f55f3640b44b56e2decf3529815248a4b68",
       "updated_at": "2026-05-08T12:00:44Z",
+      "release": "latest"
+    },
+    "u-boot-hi3518cv100-nor.bin": {
+      "size": 140000,
+      "digest": "sha256:77f6776e28bb91f8b484e27ccd5e31237bdfad5272f65d512cf6cb03cbd2b63d",
+      "updated_at": "2026-11-17T08:26:21Z",
       "release": "latest"
     },
     "u-boot-hi3518cv100-universal.bin": {
@@ -1482,8 +1512,8 @@
     },
     "hi3516cv100-lite": {
       "flash_mb": 8,
-      "kernel_kb": 1820,
-      "rootfs_kb": 5048
+      "kernel_kb": 1822,
+      "rootfs_kb": 5136
     },
     "hi3516cv100-neo": {
       "flash_mb": 8,
@@ -1492,8 +1522,8 @@
     },
     "hi3516cv200-lite": {
       "flash_mb": 8,
-      "kernel_kb": 1657,
-      "rootfs_kb": 5064
+      "kernel_kb": 1660,
+      "rootfs_kb": 5128
     },
     "hi3516cv200-neo": {
       "flash_mb": 8,
@@ -1567,8 +1597,8 @@
     },
     "hi3516ev300-lite": {
       "flash_mb": 8,
-      "kernel_kb": 2006,
-      "rootfs_kb": 5108
+      "kernel_kb": 2009,
+      "rootfs_kb": 5240
     },
     "hi3516ev300-neo": {
       "flash_mb": 8,
@@ -1582,8 +1612,8 @@
     },
     "hi3518cv100-lite": {
       "flash_mb": 8,
-      "kernel_kb": 1820,
-      "rootfs_kb": 5048
+      "kernel_kb": 1822,
+      "rootfs_kb": 5136
     },
     "hi3518ev100-lite": {
       "flash_mb": 8,

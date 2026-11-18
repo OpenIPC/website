@@ -56,10 +56,11 @@ socs:
   load_address: '0x82000000'
   sdk: ''
   kernel: ''
-  uboot_filename: u-boot-hi3516cv100-universal.bin
+  uboot_filename: u-boot-hi3516cv100-nor.bin
   linux_filename: openipc.hi3516cv100-nor-lite.tgz
   notes: '9m034 ar0130 ar0140 ar0330 himax1375 icx692 imx104 imx122 imx138 imx222 imx225 imx236 mn34041
     mt9p006 ov2710 ov9712 ov9732 po3100k sc1035 soih22 soih42 '
+  nor_split: true
   urlname: hi3516cv100
   featured: false
   segment: cctv
@@ -70,11 +71,12 @@ socs:
   load_address: '0x82000000'
   sdk: ''
   kernel: ''
-  uboot_filename: u-boot-hi3516cv200-universal.bin
+  uboot_filename: u-boot-hi3516cv200-nor.bin
   linux_filename: openipc.hi3516cv200-nor-lite.tgz
   notes: '9m034 ar0130 ar0230 gc1034 gc2023 gc2033 imx122 imx222 imx291 imx307 imx323 imx327 jxf22 jxf23
     jxh62 jxh65 mn34222 ov2718 ov2735 ov9712 ov9732 ov9750 ov9752 sc1135 sc1145 sc1235 sc2035 sc2135 sc2232
     sc2235 '
+  nor_split: true
   urlname: hi3516cv200
   featured: false
   segment: cctv
@@ -259,9 +261,10 @@ socs:
   load_address: '0x82000000'
   sdk: ''
   kernel: ''
-  uboot_filename: u-boot-hi3518cv100-universal.bin
+  uboot_filename: u-boot-hi3518cv100-nor.bin
   linux_filename: openipc.hi3518cv100-nor-lite.tgz
   notes: ''
+  nor_split: true
   urlname: hi3518cv100
   featured: false
   segment: cctv

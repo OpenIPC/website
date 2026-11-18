@@ -168,6 +168,61 @@ func TestEightMegabyteOnlyWhereTheBuildFits(t *testing.T) {
 	}
 }
 
+// #593: a Lite build whose rootfs outgrew the fixed slots' 5120 KiB ships only
+// its split package, and is installed and offered on 8 MB as the split image it
+// fits -- on the SoCs moved to the split layout with it (hi3516cv100,
+// hi3516cv200, hi3518cv100) and on hi3516ev300, split-only since #491.
+func TestSplitLiteOffersEightMegabytes(t *testing.T) {
+	cat, idx := inputs(t)
+	for _, slug := range []string{"hi3516cv100", "hi3516cv200", "hi3518cv100", "hi3516ev300"} {
+		d := decode(t, Document(cat.SoC(slug), idx))
+		if d["default_flash_chip"] != "nor8m" || d["needs_flash_mb"] != nil {
+			t.Errorf("%s: default chip %v, needs %v; want nor8m and nothing", slug, d["default_flash_chip"], d["needs_flash_mb"])
+		}
+		eight := false
+		for _, c := range d["combinations"].([]any) {
+			c := c.(map[string]any)
+			if c["edition"] != "lite" || c["flash_family"] != "nor" {
+				continue
+			}
+			board := cat.SoC(slug).URLName
+			if want := "openipc." + board + "-nor-lite-split.tgz"; c["firmware_filename"] != want {
+				t.Errorf("%s %v: installs %v, want %s", slug, c["flash_type"], c["firmware_filename"], want)
+			}
+			if strings.Contains(c["firmware_url"].(string), "/download/latest/") {
+				t.Errorf("%s %v: links the moving latest release: %v", slug, c["flash_type"], c["firmware_url"])
+			}
+			if c["flash_type"] == "nor8m" {
+				eight = true
+			}
+		}
+		if !eight {
+			t.Errorf("%s: lite is not offered on an 8 MB chip", slug)
+		}
+	}
+}
+
+func TestSplitFitsEight(t *testing.T) {
+	cat, _ := inputs(t)
+	soc := cat.SoC("hi3516cv100")
+	for _, tc := range []struct {
+		f    firmware.Fit
+		want bool
+	}{
+		{firmware.Fit{FlashMB: 8, KernelKB: 1822, RootfsKB: 5136}, true},
+		// 0x50000 + 2048 KiB + 5760 KiB leaves exactly the last block.
+		{firmware.Fit{FlashMB: 8, KernelKB: 2048, RootfsKB: 5760}, true},
+		{firmware.Fit{FlashMB: 8, KernelKB: 2048, RootfsKB: 5761}, false},
+		// Longer than the 2 MiB the bootloaders read.
+		{firmware.Fit{FlashMB: 8, KernelKB: 2049, RootfsKB: 4000}, false},
+		{firmware.Fit{FlashMB: 8, KernelKB: 0, RootfsKB: 4000}, false},
+	} {
+		if got := firmware.SplitFits(soc, tc.f, 8); got != tc.want {
+			t.Errorf("SplitFits(%+v) = %v, want %v", tc.f, got, tc.want)
+		}
+	}
+}
+
 // Links name the release that published the file, never the moving `latest`.
 func TestLinksPointAtTheReleaseThatPublished(t *testing.T) {
 	cat, idx := inputs(t)
@@ -576,7 +631,7 @@ func TestScanningBootloaderNORInstall(t *testing.T) {
 		}
 	}
 
-	old := cam("hi3516cv200", "nor8m", "nor8m")
+	old := cam("hi3518ev200", "nor8m", "nor8m")
 	if old.scansLayout() || !strings.Contains(strings.Join(old.flashingLinux(), "\n"), "run uknor8m; run urnor8m") {
 		t.Errorf("a -universal bootloader lost its macros: %s\n%s", old.bootloader(), strings.Join(old.flashingLinux(), "\n"))
 	}
