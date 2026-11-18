@@ -29,6 +29,11 @@ type SoC struct {
 	// which keeps the split layout (boot, env, kernel, ubi) and its `run
 	// uknand; run urnand` for every SoC that still boots that way.
 	UBootNANDFilename string `yaml:"uboot_nand_filename"`
+	// UBootNANDLegacyFilename is the -universal U-Boot a NAND install on the
+	// older layout (boot, env, kernel, ubi) still writes, on a SoC whose NOR
+	// install moved to a -nor.bin that cannot drive NAND. Without it such a
+	// SoC installs nothing on NAND.
+	UBootNANDLegacyFilename string `yaml:"uboot_nand_legacy_filename"`
 	// NANDBoard is the build name upstream publishes this SoC's NAND
 	// firmware under, when that is not the NOR one. No SoC needs it today:
 	// GK7205V510, which had a NOR build of its own, now installs the
@@ -149,10 +154,16 @@ func (c *Catalogue) All() []*SoC {
 func (s *SoC) UBINand() bool { return s.UBootNANDFilename != "" }
 
 // Bootloader is the U-Boot file for a flash type ("nor" or "nand"): the NAND
-// build where there is one, and the single universal or NOR build otherwise.
+// build where there is one, the -universal one a legacy NAND install keeps,
+// and the single universal or NOR build otherwise.
 func (s *SoC) Bootloader(flashType string) string {
-	if flashType == "nand" && s.UBINand() {
-		return s.UBootNANDFilename
+	if flashType == "nand" {
+		if s.UBINand() {
+			return s.UBootNANDFilename
+		}
+		if s.UBootNANDLegacyFilename != "" {
+			return s.UBootNANDLegacyFilename
+		}
 	}
 	return s.UBootFilename
 }

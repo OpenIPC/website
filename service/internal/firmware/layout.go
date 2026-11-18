@@ -124,6 +124,9 @@ func NewSpec(soc *catalogue.SoC, flashType, rel string, size, layout int) (Spec,
 	switch flashType {
 	case "nand":
 		s.SizeMB, s.LayoutMB = 0, 0
+		if !NANDInstallable(soc) {
+			return s, ErrInvalid{fmt.Sprintf("%s has no NAND bootloader", soc.Model)}
+		}
 		return s, nil
 	case "nor":
 	default:
@@ -142,6 +145,15 @@ func NewSpec(soc *catalogue.SoC, flashType, rel string, size, layout int) (Spec,
 }
 
 func (s Spec) nand() bool { return s.FlashType == "nand" }
+
+// NANDInstallable says whether a SoC has a bootloader that can drive NAND:
+// not when its only one is a layout-scanning OpenIPC/u-boot NOR build
+// (-nor.bin), which knows SPI NOR alone. SigmaStar's and Ingenic's -nor.bin
+// are their vendors' trees and stay as they were.
+func NANDInstallable(soc *catalogue.SoC) bool {
+	return !strings.HasSuffix(soc.Bootloader("nand"), "-nor.bin") ||
+		slices.Contains(fixedMtdpartsVendors, soc.Vendor.Name)
+}
 
 func (s Spec) nor() norLayout {
 	table := norLayouts
@@ -207,26 +219,27 @@ func (s Spec) LinuxAsset(idx *Index) string {
 	return fmt.Sprintf("openipc.%s-%s-%s.tgz", BoardFor(s.SoC, idx, s.FlashType), s.FlashType, s.Release)
 }
 
-// splitOnly says whether a NOR edition comes only as the split package.
+// splitOnly says whether a NOR spec is made from the split package.
 func splitOnly(s Spec, idx *Index) bool {
-	return !s.nand() && SplitOnlyEdition(s.SoC, idx, s.Release)
+	return !s.nand() && SplitEdition(s.SoC, idx, s.Release)
 }
 
-// SplitOnlyEdition says whether a NOR edition installs only from the split
-// package: on a SoC with no fixed-slot build (nor_split_only), whatever plain
+// SplitEdition says whether a NOR edition installs from the split package:
+// on a SoC with no fixed-slot build (nor_split_only) always, whatever plain
 // package the index still lists for the board from before, and on any split
-// SoC for an edition only the split package carries.
-func SplitOnlyEdition(soc *catalogue.SoC, idx *Index, edition string) bool {
+// SoC whenever the edition's split package is published -- the split layout
+// is the standard, and a fixed-slot package beside it is not offered. Only an
+// edition with no split package at all (builder's FPV builds) keeps the fixed
+// slots.
+func SplitEdition(soc *catalogue.SoC, idx *Index, edition string) bool {
 	if !soc.NORSplit {
 		return false
 	}
 	if soc.NORSplitOnly {
 		return true
 	}
-	board := BoardFor(soc, idx, "nor")
-	_, plain := idx.Asset(fmt.Sprintf("openipc.%s-nor-%s.tgz", board, edition))
-	_, split := idx.Asset(SplitName(board, edition))
-	return !plain && split
+	_, split := idx.Asset(SplitName(BoardFor(soc, idx, "nor"), edition))
+	return split
 }
 
 // NORReleases are the NOR editions a SoC installs from. A split-only SoC

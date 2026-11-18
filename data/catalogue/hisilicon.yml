@@ -16,10 +16,12 @@ socs:
   load_address: '0x82000000'
   sdk: ''
   kernel: ''
-  uboot_filename: u-boot-hi3516av100-universal.bin
+  uboot_filename: u-boot-hi3516av100-nor.bin
+  uboot_nand_legacy_filename: u-boot-hi3516av100-universal.bin
   linux_filename: openipc.hi3516av100-nor-lite.tgz
   notes: ar0230 ar0237 ar0330 imx122 imx123 imx178 imx185 imx224 imx225 imx290 imx291 imx385 os05a10 ov2718
     ov4689 ov5658 sc2310 sc5235
+  nor_split: true
   urlname: hi3516av100
   featured: false
   segment: cctv
@@ -30,9 +32,11 @@ socs:
   load_address: '0x82000000'
   sdk: ''
   kernel: ''
-  uboot_filename: u-boot-hi3516av200-universal.bin
+  uboot_filename: u-boot-hi3516av200-nor.bin
+  uboot_nand_legacy_filename: u-boot-hi3516av200-universal.bin
   linux_filename: openipc.hi3516av200-nor-lite.tgz
   notes: ''
+  nor_split: true
   urlname: hi3516av200
   featured: false
   segment: cctv
@@ -43,9 +47,10 @@ socs:
   load_address: '0x82000000'
   sdk: ''
   kernel: ''
-  uboot_filename: u-boot-hi3516av300-universal.bin
+  uboot_filename: u-boot-hi3516av300-nor.bin
   linux_filename: openipc.hi3516av300-nor-lite.tgz
   notes: ''
+  nor_split: true
   urlname: hi3516av300
   featured: false
   segment: cctv
@@ -102,10 +107,11 @@ socs:
   load_address: '0x82000000'
   sdk: ''
   kernel: ''
-  uboot_filename: u-boot-hi3516cv500-universal.bin
+  uboot_filename: u-boot-hi3516cv500-nor.bin
   linux_filename: openipc.hi3516cv500-nor-lite.tgz
   notes: 'gc2053 imx290 imx307 imx327 imx334 imx335 imx377 imx390 imx415 imx458 mn34220 os04b10 os05a
     os08a10 ov12870 ov2775 ov9284 ps5260 sc4210 '
+  nor_split: true
   urlname: hi3516cv500
   featured: false
   segment: cctv
@@ -176,9 +182,11 @@ socs:
   load_address: '0x82000000'
   sdk: ''
   kernel: ''
-  uboot_filename: u-boot-hi3516dv100-universal.bin
+  uboot_filename: u-boot-hi3516dv100-nor.bin
+  uboot_nand_legacy_filename: u-boot-hi3516dv100-universal.bin
   linux_filename: openipc.hi3516dv100-nor-lite.tgz
   notes: ''
+  nor_split: true
   urlname: hi3516dv100
   featured: false
   segment: cctv
@@ -204,9 +212,10 @@ socs:
   load_address: '0x82000000'
   sdk: ''
   kernel: ''
-  uboot_filename: u-boot-hi3516dv300-universal.bin
+  uboot_filename: u-boot-hi3516dv300-nor.bin
   linux_filename: openipc.hi3516dv300-nor-lite.tgz
   notes: ''
+  nor_split: true
   urlname: hi3516dv300
   featured: false
   segment: cctv
@@ -275,9 +284,10 @@ socs:
   load_address: '0x82000000'
   sdk: ''
   kernel: ''
-  uboot_filename: u-boot-hi3518ev100-universal.bin
+  uboot_filename: u-boot-hi3518ev100-nor.bin
   linux_filename: openipc.hi3518ev100-nor-lite.tgz
   notes: ''
+  nor_split: true
   urlname: hi3518ev100
   featured: false
   segment: cctv
@@ -288,9 +298,11 @@ socs:
   load_address: '0x82000000'
   sdk: ''
   kernel: ''
-  uboot_filename: u-boot-hi3518ev200-universal.bin
+  uboot_filename: u-boot-hi3518ev200-nor.bin
+  uboot_nand_legacy_filename: u-boot-hi3518ev200-universal.bin
   linux_filename: openipc.hi3518ev200-nor-lite.tgz
   notes: ''
+  nor_split: true
   urlname: hi3518ev200
   featured: false
   segment: cctv
@@ -363,9 +375,10 @@ socs:
   load_address: '0x82000000'
   sdk: ''
   kernel: ''
-  uboot_filename: u-boot-hi3519v101-universal.bin
+  uboot_filename: u-boot-hi3519v101-nor.bin
   linux_filename: openipc.hi3519v101-nor-lite.tgz
   notes: 'imx178 imx185 imx226 imx274 imx290 imx326 imx327 imx385 os05a os08a10 ov4689 sc4210 '
+  nor_split: true
   urlname: hi3519v101
   featured: false
   segment: cctv
@@ -392,6 +405,7 @@ socs:
   uboot_filename: ''
   linux_filename: ''
   notes: ''
+  nor_split: true
   urlname: hi3520dv200
   featured: false
   segment: cctv
@@ -405,6 +419,7 @@ socs:
   uboot_filename: ''
   linux_filename: openipc.hi3536cv100-nor-lite.tgz
   notes: ''
+  nor_split: true
   urlname: hi3536cv100
   featured: false
   segment: cctv
@@ -415,9 +430,10 @@ socs:
   load_address: '0x82000000'
   sdk: ''
   kernel: ''
-  uboot_filename: u-boot-hi3536dv100-original.bin
+  uboot_filename: u-boot-hi3536dv100-nor.bin
   linux_filename: openipc.hi3536dv100-nor-lite.tgz
   notes: ''
+  nor_split: true
   urlname: hi3536dv100
   featured: false
   segment: cctv

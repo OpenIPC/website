@@ -44,6 +44,9 @@ func Availability(soc *catalogue.SoC, idx *Index) string {
 		if ft == "nor" {
 			rels = NORReleases(soc, idx)
 		}
+		if ft == "nand" && !NANDInstallable(soc) {
+			continue
+		}
 		if len(rels) > 0 && BootloaderPublished(soc, idx, ft) {
 			return "wizard"
 		}

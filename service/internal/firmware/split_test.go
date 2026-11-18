@@ -150,9 +150,9 @@ func TestSplitImages(t *testing.T) {
 	})
 }
 
-// Where a board publishes the plain package as well (the gk7205v200 family),
-// the full image keeps the fixed slots: Split is only for split-only editions.
-func TestSplitImageOnlyWhenSplitOnly(t *testing.T) {
+// Where a board publishes the plain package as well, the full image is still
+// the split one: the split layout is the standard wherever an edition has it.
+func TestSplitImageEvenBesideAPlainPackage(t *testing.T) {
 	cat := loadCatalogue(t)
 	idx := NewIndex("b", []Asset{
 		{Name: "u-boot-gk7205v300-nor.bin"},
@@ -167,7 +167,7 @@ func TestSplitImageOnlyWhenSplitOnly(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if in.Spec.Split || in.Linux.Name != "openipc.gk7205v300-nor-lite.tgz" {
+	if !in.Spec.Split || in.Linux.Name != "openipc.gk7205v300-nor-lite-split.tgz" {
 		t.Errorf("gk7205v300 lite: %+v", in)
 	}
 }
@@ -222,24 +222,26 @@ func TestSplitOnlyReleasesNeedTheSplitPackage(t *testing.T) {
 	}
 }
 
-// On a split SoC that also builds fixed slots, an edition only the split
-// package carries is assembled from it, not from a plain package that does
-// not exist.
-func TestSplitEditionOfAFixedSlotSoC(t *testing.T) {
+// On a split SoC every edition with a split package is assembled from it,
+// plain package or not; only an edition with no split package at all (a
+// builder FPV build) keeps the fixed slots.
+func TestSplitEditionOfASplitSoC(t *testing.T) {
 	cat := loadCatalogue(t)
 	idx := NewIndex("b", []Asset{
 		{Name: "u-boot-gk7205v300-nor.bin"},
 		{Name: "openipc.gk7205v300-nor-lite.tgz"},
 		{Name: "openipc.gk7205v300-nor-lite-split.tgz"},
 		{Name: "openipc.gk7205v300-nor-ultimate-split.tgz"},
+		{Name: "openipc.gk7205v300-nor-wfbng.tgz"},
 	}, nil, nil)
 	soc := cat.SoC("gk7205v300")
 	for _, tc := range []struct {
 		edition, linux string
 		split          bool
 	}{
-		{"lite", "openipc.gk7205v300-nor-lite.tgz", false},
+		{"lite", "openipc.gk7205v300-nor-lite-split.tgz", true},
 		{"ultimate", "openipc.gk7205v300-nor-ultimate-split.tgz", true},
+		{"wfbng", "openipc.gk7205v300-nor-wfbng.tgz", false},
 	} {
 		spec, err := NewSpec(soc, "nor", tc.edition, 16, 0)
 		if err != nil {
@@ -252,6 +254,26 @@ func TestSplitEditionOfAFixedSlotSoC(t *testing.T) {
 		if in.Spec.Split != tc.split || in.Linux.Name != tc.linux {
 			t.Errorf("%s: split %v from %s, want %v from %s", tc.edition, in.Spec.Split, in.Linux.Name, tc.split, tc.linux)
 		}
+	}
+}
+
+// A NOR-only bootloader cannot install NAND: no NAND image is made for a SoC
+// whose one U-Boot is an OpenIPC/u-boot -nor.bin, while one that keeps its
+// -universal U-Boot for NAND (uboot_nand_legacy_filename) still gets it.
+func TestNANDNeedsANANDBootloader(t *testing.T) {
+	cat := loadCatalogue(t)
+	if _, err := NewSpec(cat.SoC("hi3516cv100"), "nand", "lite", 0, 0); err == nil {
+		t.Error("hi3516cv100 (u-boot -nor.bin only) accepted a NAND image")
+	}
+	soc := cat.SoC("hi3516av100")
+	if _, err := NewSpec(soc, "nand", "ultimate", 0, 0); err != nil {
+		t.Errorf("hi3516av100 NAND: %v", err)
+	}
+	if got := soc.Bootloader("nand"); got != "u-boot-hi3516av100-universal.bin" {
+		t.Errorf("hi3516av100 NAND bootloader %q", got)
+	}
+	if !NANDInstallable(cat.SoC("ssc337de")) {
+		t.Error("SigmaStar's own -nor.bin lost its NAND install")
 	}
 }
 

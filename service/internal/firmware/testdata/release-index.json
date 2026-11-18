@@ -1382,6 +1382,312 @@
       "digest": "sha256:9428e88dbefb48cff2642ef27f4a9f56cab92240bc6cf2958f93e0b60892828d",
       "updated_at": "2026-07-24T19:11:33Z",
       "release": "latest"
+    },
+    "openipc.hi3516av100-nor-lite-split.tgz": {
+      "size": 7000000,
+      "digest": "sha256:c021dd2a09471e5eefbf85218d9fed376ff92e1b18144d5a44393788e67753ad",
+      "updated_at": "2026-11-17T19:13:44Z",
+      "release": "nightly-20261117-03d1125"
+    },
+    "openipc.hi3516av100-nor-neo-split.tgz": {
+      "size": 7000000,
+      "digest": "sha256:c9586a0c44ad3c621aa24ba7e870fa276a2126bed888b7c2ea9f9d35f8f4fd54",
+      "updated_at": "2026-11-17T19:13:44Z",
+      "release": "nightly-20261117-03d1125"
+    },
+    "openipc.hi3516av100-nor-ultimate-split.tgz": {
+      "size": 7000000,
+      "digest": "sha256:91d143ed4c2542f2706372942c2ad81f6597974bb490dba53d1a1d7b788b4668",
+      "updated_at": "2026-11-17T19:13:44Z",
+      "release": "nightly-20261117-03d1125"
+    },
+    "openipc.hi3516av200-nor-lite-split.tgz": {
+      "size": 7000000,
+      "digest": "sha256:b91b7c93144311aac7bab055e39089e562feab271ade641eac9ebe9321e6c7ee",
+      "updated_at": "2026-11-17T19:13:44Z",
+      "release": "nightly-20261117-03d1125"
+    },
+    "openipc.hi3516av200-nor-neo-split.tgz": {
+      "size": 7000000,
+      "digest": "sha256:ae9208c4d1f4de2bdede5cc9d16d9354e950fbdb00e60baceef827627bc22f41",
+      "updated_at": "2026-11-17T19:13:44Z",
+      "release": "nightly-20261117-03d1125"
+    },
+    "openipc.hi3516av200-nor-ultimate-split.tgz": {
+      "size": 7000000,
+      "digest": "sha256:1674b89f74523e2160ca0f3d2c9c49bdde48f0fc65cdc2dbed4e72471a26939a",
+      "updated_at": "2026-11-17T19:13:44Z",
+      "release": "nightly-20261117-03d1125"
+    },
+    "openipc.hi3516av300-nor-lite-split.tgz": {
+      "size": 7000000,
+      "digest": "sha256:c1734fb631005a316811133bdfecac42f31d6b2c54ff2c3bbf1acd111c312087",
+      "updated_at": "2026-11-17T19:13:44Z",
+      "release": "nightly-20261117-03d1125"
+    },
+    "openipc.hi3516av300-nor-neo-split.tgz": {
+      "size": 7000000,
+      "digest": "sha256:5f1142771172b9c8c8b334f423a3068ceb1ef8bc3ef93889ad52947c00dee83d",
+      "updated_at": "2026-11-17T19:13:44Z",
+      "release": "nightly-20261117-03d1125"
+    },
+    "openipc.hi3516cv500-nor-lite-split.tgz": {
+      "size": 7000000,
+      "digest": "sha256:6f3f82b3c65f8a9055ed5d2ba5e3e83c0a2b165669b3b7bf1243a8ab643c9de3",
+      "updated_at": "2026-11-17T19:13:44Z",
+      "release": "nightly-20261117-03d1125"
+    },
+    "openipc.hi3516dv100-nor-lite-split.tgz": {
+      "size": 7000000,
+      "digest": "sha256:cab316876b24cda8934e74bc8a23b60149574f09d099b1d2936eeeb2514d937f",
+      "updated_at": "2026-11-17T19:13:44Z",
+      "release": "nightly-20261117-03d1125"
+    },
+    "openipc.hi3516dv100-nor-ultimate-split.tgz": {
+      "size": 7000000,
+      "digest": "sha256:c87df4bce94022b73ecfc49400b57b6dcf6638cc79a3f0f243c98a8208276de7",
+      "updated_at": "2026-11-17T19:13:44Z",
+      "release": "nightly-20261117-03d1125"
+    },
+    "openipc.hi3516dv300-nor-lite-split.tgz": {
+      "size": 7000000,
+      "digest": "sha256:d3deaeebbbd20f2a49cd4c4b814e9a0361608c5c6e4a3357104e438f299bdb2b",
+      "updated_at": "2026-11-17T19:13:44Z",
+      "release": "nightly-20261117-03d1125"
+    },
+    "openipc.hi3518ev100-nor-lite-split.tgz": {
+      "size": 7000000,
+      "digest": "sha256:e6cbde7a90848af932924bca90540ee9461046d78fb05e28aed105b131e459bb",
+      "updated_at": "2026-11-17T19:13:44Z",
+      "release": "nightly-20261117-03d1125"
+    },
+    "openipc.hi3518ev200-nor-lite-split.tgz": {
+      "size": 7000000,
+      "digest": "sha256:150202a62e7ec4a5fe6cccaeca1ca77a852b0739fbab5e79f3b624ec45c53267",
+      "updated_at": "2026-11-17T19:13:44Z",
+      "release": "nightly-20261117-03d1125"
+    },
+    "openipc.hi3518ev200-nor-ultimate-split.tgz": {
+      "size": 7000000,
+      "digest": "sha256:3569c6cdd955127828733822fa48deb1ba8d465c80aefb0f22e1d81d034fdd79",
+      "updated_at": "2026-11-17T19:13:44Z",
+      "release": "nightly-20261117-03d1125"
+    },
+    "openipc.hi3519v101-nor-lite-split.tgz": {
+      "size": 7000000,
+      "digest": "sha256:63e4005d2ada6ffd90e6e5346e931fe7139f160f2312b611687965670788a4b9",
+      "updated_at": "2026-11-17T19:13:44Z",
+      "release": "nightly-20261117-03d1125"
+    },
+    "openipc.hi3520dv200-nor-lite-split.tgz": {
+      "size": 7000000,
+      "digest": "sha256:052788e563348d865d02f9ac619326a19943f3e76e22b9e7720ebe9040eb5757",
+      "updated_at": "2026-11-17T19:13:44Z",
+      "release": "nightly-20261117-03d1125"
+    },
+    "openipc.hi3520dv200-nor-neo-split.tgz": {
+      "size": 7000000,
+      "digest": "sha256:31ef5a56a722e411b101538a40399f2e959d2160ccb5830366c697cb3c65d766",
+      "updated_at": "2026-11-17T19:13:44Z",
+      "release": "nightly-20261117-03d1125"
+    },
+    "openipc.hi3536cv100-nor-lite-split.tgz": {
+      "size": 7000000,
+      "digest": "sha256:b5cbd5caf50df688e26cd8f5964c584678965e18fc57483d91de1127d1820036",
+      "updated_at": "2026-11-17T19:13:44Z",
+      "release": "nightly-20261117-03d1125"
+    },
+    "openipc.hi3536dv100-nor-lite-split.tgz": {
+      "size": 7000000,
+      "digest": "sha256:00f7cc8d3f9e3aa5a0f2ee0dd66c43ea86e28a1a9e436c3316fffd5cbbd12696",
+      "updated_at": "2026-11-17T19:13:44Z",
+      "release": "nightly-20261117-03d1125"
+    },
+    "openipc.gk7102-nor-lite-split.tgz": {
+      "size": 7000000,
+      "digest": "sha256:36920c8a9111a6544e96e09d81e2c4108820e16ffd8aa8706e69807fb62a693f",
+      "updated_at": "2026-11-17T19:13:44Z",
+      "release": "nightly-20261117-03d1125"
+    },
+    "openipc.gk7102s-nor-lite-split.tgz": {
+      "size": 7000000,
+      "digest": "sha256:e3771b7e01188bc247096a0accbac526c950ac53e7f9166cdb947a16ffdf0b04",
+      "updated_at": "2026-11-17T19:13:44Z",
+      "release": "nightly-20261117-03d1125"
+    },
+    "openipc.gk7206v11a-nor-lite-split.tgz": {
+      "size": 7000000,
+      "digest": "sha256:14b30f52dc250ebe95e87467f081d44977b8fde9f55a2590dbfc870235a90558",
+      "updated_at": "2026-11-17T19:13:44Z",
+      "release": "nightly-20261117-03d1125"
+    },
+    "openipc.gk7201v200-nor-lite-split.tgz": {
+      "size": 7000000,
+      "digest": "sha256:f0f4d168aceaeb7b577a6895bfc0415e0faeba7aff84b48ad512f95a24c68556",
+      "updated_at": "2026-11-17T19:13:44Z",
+      "release": "nightly-20261117-03d1125"
+    },
+    "openipc.gk7202v300-nor-lite-split.tgz": {
+      "size": 7000000,
+      "digest": "sha256:65c5b723127059420ac496a200305c9a4b2b77e6572af5d61593987b246dd5ae",
+      "updated_at": "2026-11-17T19:13:44Z",
+      "release": "nightly-20261117-03d1125"
+    },
+    "openipc.gk7202v300-nor-ultimate-split.tgz": {
+      "size": 7000000,
+      "digest": "sha256:94879a6ab061fafa58f5eae498636de2494181925935e9d18870575621969952",
+      "updated_at": "2026-11-17T19:13:44Z",
+      "release": "nightly-20261117-03d1125"
+    },
+    "openipc.gk7205v200-nor-lite-split.tgz": {
+      "size": 7000000,
+      "digest": "sha256:688e871bb844eb8190f133925e4fc62b847dc3772818c29d5cfd5077f49c2b8f",
+      "updated_at": "2026-11-17T19:13:44Z",
+      "release": "nightly-20261117-03d1125"
+    },
+    "openipc.gk7205v200-nor-ultimate-split.tgz": {
+      "size": 7000000,
+      "digest": "sha256:56aaad4dc801e75345bf2fadb23d3598b9904acf68e8d5df99e99bdf74d393ab",
+      "updated_at": "2026-11-17T19:13:44Z",
+      "release": "nightly-20261117-03d1125"
+    },
+    "openipc.gk7205v300-nor-lite-split.tgz": {
+      "size": 7000000,
+      "digest": "sha256:261ccb1318353c3367ba479a8c09144a1a30cd2ffafc3ae9c2df721733f64547",
+      "updated_at": "2026-11-17T19:13:44Z",
+      "release": "nightly-20261117-03d1125"
+    },
+    "openipc.gk7205v300-nor-ultimate-split.tgz": {
+      "size": 7000000,
+      "digest": "sha256:dc4c95abaac55a0d85306f8cf3e6bc09bf50e6e40221f72f9fc8f2c0cd1a15a9",
+      "updated_at": "2026-11-17T19:13:44Z",
+      "release": "nightly-20261117-03d1125"
+    },
+    "openipc.gk7605v100-nor-lite-split.tgz": {
+      "size": 7000000,
+      "digest": "sha256:2331ee2b2c0306580cdfaf100c59fd2979c84521a61b9aec8dd2dddf5055e94b",
+      "updated_at": "2026-11-17T19:13:44Z",
+      "release": "nightly-20261117-03d1125"
+    },
+    "openipc.hi3516cv300-nor-lite-split.tgz": {
+      "size": 7000000,
+      "digest": "sha256:23355c740eb9862f9d919e0ce4ffcfee83434e1d480869aa050e9c4c3b859a61",
+      "updated_at": "2026-11-17T19:13:44Z",
+      "release": "nightly-20261117-03d1125"
+    },
+    "openipc.hi3516cv300-nor-neo-split.tgz": {
+      "size": 7000000,
+      "digest": "sha256:8831fa71df9848791decd2d4358b261549017e6eb8a5d1f0345e6c489f10936e",
+      "updated_at": "2026-11-17T19:13:44Z",
+      "release": "nightly-20261117-03d1125"
+    },
+    "openipc.hi3516cv300-nor-ultimate-split.tgz": {
+      "size": 7000000,
+      "digest": "sha256:9bc8fa03cbae1830d5f4056c9b7e771d225e32f229ede7bd9e39f1b097b63143",
+      "updated_at": "2026-11-17T19:13:44Z",
+      "release": "nightly-20261117-03d1125"
+    },
+    "openipc.hi3516dv200-nor-lite-split.tgz": {
+      "size": 7000000,
+      "digest": "sha256:af2829281037f03bf1c832185894815406ca5ce9612cb60ae036d0c913e9e839",
+      "updated_at": "2026-11-17T19:13:44Z",
+      "release": "nightly-20261117-03d1125"
+    },
+    "openipc.hi3516ev100-nor-lite-split.tgz": {
+      "size": 7000000,
+      "digest": "sha256:2a0d54fb66b9cf496789fd4edc8c9319849fdad80abf5042d495ef9e2ff8e606",
+      "updated_at": "2026-11-17T19:13:44Z",
+      "release": "nightly-20261117-03d1125"
+    },
+    "openipc.hi3516ev200-nor-lite-split.tgz": {
+      "size": 7000000,
+      "digest": "sha256:fdf5ad1d2954a4bc9507cdefd1927d8032437c3733fea821f9ba0f30399cb344",
+      "updated_at": "2026-11-17T19:13:44Z",
+      "release": "nightly-20261117-03d1125"
+    },
+    "openipc.hi3516ev200-nor-ultimate-split.tgz": {
+      "size": 7000000,
+      "digest": "sha256:7b3484a869ee1e401479dc129b8341d0132106525d6b35b2e784187579a8211c",
+      "updated_at": "2026-11-17T19:13:44Z",
+      "release": "nightly-20261117-03d1125"
+    },
+    "openipc.hi3516ev300-nor-neo-split.tgz": {
+      "size": 7000000,
+      "digest": "sha256:c36b455c8bd287e7d358c75a0cef9d2390a7ecb24eeae43162c1083dcd65a53a",
+      "updated_at": "2026-11-17T19:13:44Z",
+      "release": "nightly-20261117-03d1125"
+    },
+    "openipc.hi3518ev300-nor-lite-split.tgz": {
+      "size": 7000000,
+      "digest": "sha256:0129670f2f3ad4788d82de4807f447d0236d1f4409e3e4f8a7c69719c02ea72a",
+      "updated_at": "2026-11-17T19:13:44Z",
+      "release": "nightly-20261117-03d1125"
+    },
+    "openipc.hi3518ev300-nor-ultimate-split.tgz": {
+      "size": 7000000,
+      "digest": "sha256:727c9d72d002d0f7c125fe608df8040db6d4cd9038d6bf5935c8ed4ad5228c29",
+      "updated_at": "2026-11-17T19:13:44Z",
+      "release": "nightly-20261117-03d1125"
+    },
+    "u-boot-hi3516av100-nor.bin": {
+      "size": 200000,
+      "digest": "sha256:09bc083d73c70b48b4b7a573df1b9145aa4a1d5dee907a61212280552049328b",
+      "updated_at": "2026-11-17T08:26:21Z",
+      "release": "latest"
+    },
+    "u-boot-hi3516av200-nor.bin": {
+      "size": 200000,
+      "digest": "sha256:2fa94106e672992f4ab766eab7cacbea882f2ff2a8d3e46b4927570d25c7a02e",
+      "updated_at": "2026-11-17T08:26:21Z",
+      "release": "latest"
+    },
+    "u-boot-hi3516av300-nor.bin": {
+      "size": 200000,
+      "digest": "sha256:d71b1d37bc20d3dc7ee104d86b7407306053f2b2cac9a3bba6e737a638323099",
+      "updated_at": "2026-11-17T08:26:21Z",
+      "release": "latest"
+    },
+    "u-boot-hi3516cv500-nor.bin": {
+      "size": 200000,
+      "digest": "sha256:eb2c8222b6c4e6578216d31008d63ed87a433b56f5ef2ba19c6c4f589b0b6e07",
+      "updated_at": "2026-11-17T08:26:21Z",
+      "release": "latest"
+    },
+    "u-boot-hi3516dv100-nor.bin": {
+      "size": 200000,
+      "digest": "sha256:1f99ca28b07324568a7d73c308a1351be0b05741f4ff3b720025493016dde79e",
+      "updated_at": "2026-11-17T08:26:21Z",
+      "release": "latest"
+    },
+    "u-boot-hi3516dv300-nor.bin": {
+      "size": 200000,
+      "digest": "sha256:a46ee2ee1f6d30c41fbb949c9d983853cfa622256387340fa522a0ad9a9d25ca",
+      "updated_at": "2026-11-17T08:26:21Z",
+      "release": "latest"
+    },
+    "u-boot-hi3518ev100-nor.bin": {
+      "size": 200000,
+      "digest": "sha256:fcf33500680706bf3ef5b946020c7ad5e20a9c4364b138e6a39f11e22bc615af",
+      "updated_at": "2026-11-17T08:26:21Z",
+      "release": "latest"
+    },
+    "u-boot-hi3518ev200-nor.bin": {
+      "size": 200000,
+      "digest": "sha256:1f99e7c80758c3815cdf380309b2d7b17abdb8bd67fc8f3da67a74b35752a954",
+      "updated_at": "2026-11-17T08:26:21Z",
+      "release": "latest"
+    },
+    "u-boot-hi3519v101-nor.bin": {
+      "size": 200000,
+      "digest": "sha256:a4d60a17e61c123c52d36b6a42586759097bd7a31a21baa673cd91b94da19d98",
+      "updated_at": "2026-11-17T08:26:21Z",
+      "release": "latest"
+    },
+    "u-boot-hi3536dv100-nor.bin": {
+      "size": 200000,
+      "digest": "sha256:26c2504fe4df2dc7290572ca03caa20be926f2a6200bd344dfd367c8f5114af6",
+      "updated_at": "2026-11-17T08:26:21Z",
+      "release": "latest"
     }
   },
   "fits": {

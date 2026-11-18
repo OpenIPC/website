@@ -436,7 +436,7 @@
     "vendor": "HiSilicon",
     "model": "HI3516AV100",
     "board": "hi3516av100",
-    "uboot": "u-boot-hi3516av100-universal.bin",
+    "uboot": "u-boot-hi3516av100-nor.bin",
     "nor_lite": "openipc.hi3516av100-nor-lite.tgz",
     "nand_lite": "openipc.hi3516av100-nand-lite.tgz"
   },
@@ -445,7 +445,7 @@
     "vendor": "HiSilicon",
     "model": "HI3516AV200",
     "board": "hi3516av200",
-    "uboot": "u-boot-hi3516av200-universal.bin",
+    "uboot": "u-boot-hi3516av200-nor.bin",
     "nor_lite": "openipc.hi3516av200-nor-lite.tgz",
     "nand_lite": "openipc.hi3516av200-nand-lite.tgz"
   },
@@ -454,7 +454,7 @@
     "vendor": "HiSilicon",
     "model": "HI3516AV300",
     "board": "hi3516av300",
-    "uboot": "u-boot-hi3516av300-universal.bin",
+    "uboot": "u-boot-hi3516av300-nor.bin",
     "nor_lite": "openipc.hi3516av300-nor-lite.tgz",
     "nand_lite": "openipc.hi3516av300-nand-lite.tgz"
   },
@@ -491,7 +491,7 @@
     "vendor": "HiSilicon",
     "model": "HI3516CV500",
     "board": "hi3516cv500",
-    "uboot": "u-boot-hi3516cv500-universal.bin",
+    "uboot": "u-boot-hi3516cv500-nor.bin",
     "nor_lite": "openipc.hi3516cv500-nor-lite.tgz",
     "nand_lite": "openipc.hi3516cv500-nand-lite.tgz"
   },
@@ -540,7 +540,7 @@
     "vendor": "HiSilicon",
     "model": "HI3516DV100",
     "board": "hi3516dv100",
-    "uboot": "u-boot-hi3516dv100-universal.bin",
+    "uboot": "u-boot-hi3516dv100-nor.bin",
     "nor_lite": "openipc.hi3516dv100-nor-lite.tgz",
     "nand_lite": "openipc.hi3516dv100-nand-lite.tgz"
   },
@@ -559,7 +559,7 @@
     "vendor": "HiSilicon",
     "model": "HI3516DV300",
     "board": "hi3516dv300",
-    "uboot": "u-boot-hi3516dv300-universal.bin",
+    "uboot": "u-boot-hi3516dv300-nor.bin",
     "nor_lite": "openipc.hi3516dv300-nor-lite.tgz",
     "nand_lite": "openipc.hi3516dv300-nand-lite.tgz"
   },
@@ -606,7 +606,7 @@
     "vendor": "HiSilicon",
     "model": "HI3518EV100",
     "board": "hi3518ev100",
-    "uboot": "u-boot-hi3518ev100-universal.bin",
+    "uboot": "u-boot-hi3518ev100-nor.bin",
     "nor_lite": "openipc.hi3518ev100-nor-lite.tgz",
     "nand_lite": "openipc.hi3518ev100-nand-lite.tgz"
   },
@@ -615,7 +615,7 @@
     "vendor": "HiSilicon",
     "model": "HI3518EV200",
     "board": "hi3518ev200",
-    "uboot": "u-boot-hi3518ev200-universal.bin",
+    "uboot": "u-boot-hi3518ev200-nor.bin",
     "nor_lite": "openipc.hi3518ev200-nor-lite.tgz",
     "nand_lite": "openipc.hi3518ev200-nand-lite.tgz"
   },
@@ -663,7 +663,7 @@
     "vendor": "HiSilicon",
     "model": "HI3519V101",
     "board": "hi3519v101",
-    "uboot": "u-boot-hi3519v101-universal.bin",
+    "uboot": "u-boot-hi3519v101-nor.bin",
     "nor_lite": "openipc.hi3519v101-nor-lite.tgz",
     "nand_lite": "openipc.hi3519v101-nand-lite.tgz"
   },
@@ -699,7 +699,7 @@
     "vendor": "HiSilicon",
     "model": "HI3536DV100",
     "board": "hi3536dv100",
-    "uboot": "u-boot-hi3536dv100-original.bin",
+    "uboot": "u-boot-hi3536dv100-nor.bin",
     "nor_lite": "openipc.hi3536dv100-nor-lite.tgz",
     "nand_lite": "openipc.hi3536dv100-nand-lite.tgz"
   },
