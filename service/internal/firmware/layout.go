@@ -55,6 +55,21 @@ const (
 // block, as the firmware build and its image assembly require.
 const splitOverlayMin = 0x10000
 
+// SplitFits says whether a build its size report describes makes a split
+// image for a sizeMB chip: the uImage no longer than the bootloaders read,
+// and firmware.bin -- the uImage, then the squashfs at the next 64 KiB --
+// ending a block short of the chip's end. The fixed slots' 2048 KiB kernel
+// and 5120 KiB rootfs do not apply: the kernel divides the space at boot.
+// The image builder still measures the members themselves.
+func SplitFits(soc *catalogue.SoC, f Fit, sizeMB int) bool {
+	kernel := int64(f.KernelKB) * 1024
+	if f.KernelKB <= 0 || f.RootfsKB <= 0 || kernel > soc.KernelRead() {
+		return false
+	}
+	firmware := (kernel+0xffff)&^0xffff + int64(f.RootfsKB)*1024
+	return soc.FirmwareOffset()+firmware <= int64(sizeMB)*mb-splitOverlayMin
+}
+
 const (
 	ubiBootLimit = 0xc0000
 	ubiOffset    = 0x100000

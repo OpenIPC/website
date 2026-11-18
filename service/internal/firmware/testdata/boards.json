@@ -463,7 +463,7 @@
     "vendor": "HiSilicon",
     "model": "HI3516CV100",
     "board": "hi3516cv100",
-    "uboot": "u-boot-hi3516cv100-universal.bin",
+    "uboot": "u-boot-hi3516cv100-nor.bin",
     "nor_lite": "openipc.hi3516cv100-nor-lite.tgz",
     "nand_lite": "openipc.hi3516cv100-nand-lite.tgz"
   },
@@ -472,7 +472,7 @@
     "vendor": "HiSilicon",
     "model": "HI3516CV200",
     "board": "hi3516cv200",
-    "uboot": "u-boot-hi3516cv200-universal.bin",
+    "uboot": "u-boot-hi3516cv200-nor.bin",
     "nor_lite": "openipc.hi3516cv200-nor-lite.tgz",
     "nand_lite": "openipc.hi3516cv200-nand-lite.tgz"
   },
@@ -597,7 +597,7 @@
     "vendor": "HiSilicon",
     "model": "HI3518CV100",
     "board": "hi3518cv100",
-    "uboot": "u-boot-hi3518cv100-universal.bin",
+    "uboot": "u-boot-hi3518cv100-nor.bin",
     "nor_lite": "openipc.hi3518cv100-nor-lite.tgz",
     "nand_lite": "openipc.hi3518cv100-nand-lite.tgz"
   },
