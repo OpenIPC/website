@@ -639,6 +639,15 @@ func TestAPercentEncodedMACIsRedacted(t *testing.T) {
 			t.Errorf("%s: %s", name, got)
 		}
 	}
+	for _, line := range []string{
+		"mac_address=00%3A00%3A00%3A00%3A00%3A00",
+		"mac_address=ff%3AFF%3Aff%3Aff%3Aff%3Aff",
+		"hwid=2D0%3A01%3A02%3A03%3A04%3A05%3A06%3A07",
+	} {
+		if got := Redact(line, Facts{}, "k"); got != line {
+			t.Errorf("%q became %q", line, got)
+		}
+	}
 }
 
 // Six pairs inside a longer colon run are no MAC: a Dahua hardware ID
