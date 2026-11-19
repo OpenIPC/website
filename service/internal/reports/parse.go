@@ -375,7 +375,8 @@ func Redact(text string, f Facts, key string) string {
 	}
 	for _, m := range anyMAC {
 		text = replaceMACs(text, m.re, m.sep, func(s string) string {
-			return strings.ToLower(strings.ReplaceAll(s, "-", ":"))
+			s = strings.ToLower(s)
+			return strings.NewReplacer("-", ":", "%3a", ":").Replace(s)
 		}, key)
 	}
 	return replaceMACs(text, hexByteMAC, ':', func(s string) string {
@@ -397,6 +398,9 @@ var anyMAC = []struct {
 }{
 	{regexp.MustCompile(`(?i)\b(?:[0-9a-f]{2}:){5}[0-9a-f]{2}\b`), ':'},
 	{regexp.MustCompile(`(?i)\b(?:[0-9a-f]{2}-){5}[0-9a-f]{2}\b`), '-'},
+	// Percent-encoded in a URL's query: a Rostelecom camera's updater asks
+	// for ...&mac_address=e4%3Af1%3A...
+	{regexp.MustCompile(`(?i)\b(?:[0-9a-f]{2}%3a){5}[0-9a-f]{2}\b`), '%'},
 }
 
 // hexByteMAC is a MAC as a driver prints its bytes, each with its 0x and no
