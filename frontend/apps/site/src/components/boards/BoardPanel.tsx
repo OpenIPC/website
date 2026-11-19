@@ -14,7 +14,7 @@ import { Fragment, type ComponentChildren, type Ref } from 'preact';
 import { useEffect, useRef, useState } from 'preact/hooks';
 import type { BoardFile, BoardLink, LinkKind, ModelDetail, Source } from '../../lib/boards/types';
 import { fetchModel } from '../../lib/boards/api';
-import Firmware from './Firmware';
+import Firmware, { BoardCoupler } from './Firmware';
 import ModelFirmware from './ModelFirmware';
 import OwnerReports from '../reports/OwnerReports';
 import LinkCertainty from '../reports/LinkCertainty';
@@ -114,6 +114,7 @@ export default function BoardPanel({ id, entry, all, loaded, locale, t, sources,
   const missing = entry ? firstMissing(entry) : null;
   const devices = entry?.devices ?? (detail.state === 'ok' ? detail.value.devices ?? [] : []);
   const ready = couplerDevices({ devices });
+  const coupler = entry?.coupler ?? (detail.state === 'ok' ? detail.value.coupler ?? null : null);
   const inside = entry ? insideOf(entry, all) : [];
   const holders = entry ? foundIn(entry, all) : [];
   const notFound = detail.state === 'error' && detail.error === 'HTTP 404';
@@ -136,6 +137,11 @@ export default function BoardPanel({ id, entry, all, loaded, locale, t, sources,
           {ready.length > 0 && (
             <p class="m-0 text-[13px] text-body-secondary">
               <b class="text-[#146c3c]">{t('ready_because_label')}</b> {t('ready_because', { ids: ready.join(', ') })}
+            </p>
+          )}
+          {ready.length === 0 && coupler && (
+            <p class="m-0 text-[13px] text-body-secondary">
+              <b class="text-[#146c3c]">{t('ready_because_label')}</b> {t('ready_because_board')}
             </p>
           )}
         </div>
@@ -217,9 +223,10 @@ export default function BoardPanel({ id, entry, all, loaded, locale, t, sources,
           </section>
         )}
 
-        {devices.length > 0 && (
+        {(devices.length > 0 || coupler) && (
           <section aria-labelledby="board-panel-firmware" class="grid gap-3">
             <h3 id="board-panel-firmware" class={`${HEADING} mb-0`}>{t('fw_title')}</h3>
+            {coupler && <BoardCoupler build={coupler} locale={locale} t={t} />}
             {devices.map((d) => (
               <Firmware key={d.id} device={d} heading={t('fw_device', { id: d.id })} note={t('fw_device_hint', { id: d.id })} locale={locale} t={t} />
             ))}

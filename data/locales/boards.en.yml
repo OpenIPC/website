@@ -356,12 +356,14 @@ en:
     links: Links
     ready_because_label: "One-step install:"
     ready_because: "a coupler image moves device {ids} from stock firmware to OpenIPC; it is under Firmware below."
+    ready_because_board: "a coupler image moves this camera from stock firmware to OpenIPC; it is under Firmware below."
     fw_title: Firmware
     fw_device: "Device ID {id}"
     fw_device_hint: "the 4th field of the System version: V5.00.R02.{id}.10010…"
     fw_your_device: "Your device {id}"
     fw_none: "Nothing is archived for this device ID yet: no stock build and no OpenIPC transition image. OpenIPC can still be installed over UART from the SoC's page."
     fw_coupler: Switch to OpenIPC
+    fw_coupler_howto: "How to install"
     fw_built: "built {date}"
     fw_archived: "archived {date}"
     fw_download: Download

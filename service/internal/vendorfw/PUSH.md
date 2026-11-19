@@ -65,6 +65,7 @@ pull-request events. It must also come from one of these workflows:
 | `coupler` | OpenIPC/coupler | `OpenIPC/coupler/.github/workflows/xm.yml@refs/heads/main` |
 | `anjoyupdates` | OpenIPC/anjoyupdates | `OpenIPC/anjoyupdates/.github/workflows/weekly-update.yml@refs/heads/main` |
 | `herospeedupdates` | OpenIPC/herospeedupdates | `OpenIPC/herospeedupdates/.github/workflows/weekly-update.yml@refs/heads/main` |
+| `coupler-rostelecom` | OpenIPC/coupler | `OpenIPC/coupler/.github/workflows/rostelecom.yml@refs/heads/main` |
 
 The workflow needs `permissions: id-token: write`.
 
@@ -192,3 +193,15 @@ above, to the boards of the maker `longse`:
   boards (KL5R and KL5AD share `KL5_1ND_BVHB`): one item each.
 
 Rows whose solution is `/` or a resolution name no board and are not pushed.
+
+## coupler's images for boards with no XM device ID (`coupler-rostelecom`)
+
+A Rostelecom camera has no XM device ID, so coupler's image for it is keyed
+by board model, pushed by its own workflow (a push replaces its source's
+list). An item names the board's code as `device_type` (`IPC8232SWC-WE`),
+matched to the boards of the maker `uniview` like the sources above, but
+**exactly**: an image that flashes the camera never lands on a board whose
+code only begins it. `version` is the build's UTC date, `soc` the chip.
+
+The board then carries the image as `coupler`, in the tree and its detail,
+and is OpenIPC-ready.

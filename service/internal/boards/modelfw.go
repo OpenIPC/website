@@ -2,6 +2,7 @@ package boards
 
 import (
 	"context"
+	"slices"
 	"strings"
 
 	"github.com/jackc/pgx/v5"
@@ -46,12 +47,16 @@ func codePrefix(code, stem string) bool {
 	return i == len(stem) || !(stem[i] >= '0' && stem[i] <= '9')
 }
 
-// modelFirmware gives each board of a maker the builds made for it.
-func modelFirmware(ctx context.Context, tx pgx.Tx, byModel map[string]*modelJSON, locale string) error {
-	for _, m := range byModel {
-		m.Firmware = []vendorfw.Build{}
+// modelFirmware gives each board of a maker the builds made for it, and
+// coupler's newest image for it (Coupler, and the Ready tag). couplerOnly
+// leaves the makers' builds out, as the tree does.
+func modelFirmware(ctx context.Context, tx pgx.Tx, byModel map[string]*modelJSON, locale string, couplerOnly bool) error {
+	if !couplerOnly {
+		for _, m := range byModel {
+			m.Firmware = []vendorfw.Build{}
+		}
 	}
-	builds, err := vendorfw.ModelBuilds(ctx, tx, locale)
+	builds, err := vendorfw.ModelBuilds(ctx, tx, locale, couplerOnly)
 	if err != nil || len(builds) == 0 {
 		return err
 	}
@@ -79,12 +84,29 @@ func modelFirmware(ctx context.Context, tx pgx.Tx, byModel map[string]*modelJSON
 	}
 	for _, b := range builds {
 		stem, best, model := buildStem(b), "", ""
+		exact := strings.NewReplacer("-", "", ".", "").Replace(stem)
 		for code, id := range codes[b.Maker] {
+			// A coupler image flashes the camera: only the board it names
+			// exactly takes it, never one whose code merely begins it.
+			if b.Coupler && code != exact {
+				continue
+			}
 			if len(code) > len(best) && codePrefix(code, stem) {
 				best, model = code, id
 			}
 		}
-		if m := byModel[model]; m != nil {
+		m := byModel[model]
+		switch {
+		case m == nil:
+		case b.Coupler:
+			if m.Coupler == nil { // newest first
+				m.Coupler = &b
+			}
+			if !slices.Contains(m.Tags, Ready) {
+				m.Tags = append(m.Tags, Ready)
+				slices.Sort(m.Tags)
+			}
+		default:
 			m.Firmware = append(m.Firmware, b)
 		}
 	}

@@ -398,12 +398,14 @@ ru:
     links: Ссылки
     ready_because_label: "Установка в один шаг:"
     ready_because: "образ coupler переводит устройство {ids} со стоковой прошивки на OpenIPC; он в разделе «Прошивки» ниже."
+    ready_because_board: "образ coupler переводит эту камеру со стоковой прошивки на OpenIPC; он в разделе «Прошивки» ниже."
     fw_title: Прошивки
     fw_device: "ID устройства {id}"
     fw_device_hint: "четвёртое поле System version: V5.00.R02.{id}.10010…"
     fw_your_device: "Ваше устройство {id}"
     fw_none: "Для этого ID устройства пока ничего не сохранено: ни заводской сборки, ни образа перехода на OpenIPC. OpenIPC всё равно можно установить через UART, см. страницу SoC."
     fw_coupler: Перейти на OpenIPC
+    fw_coupler_howto: "Как установить"
     fw_built: "собран {date}"
     fw_archived: "сохранён {date}"
     fw_download: Скачать

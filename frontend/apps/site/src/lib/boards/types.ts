@@ -82,6 +82,8 @@ export interface Model {
   kind?: string;
   /** The XM device IDs the board runs, with what each can be flashed with. */
   devices?: VendorDevice[];
+  /** coupler's image for a board with no XM device ID, matched by its code. */
+  coupler?: ModelBuild | null;
   /** A finished device's boards: confirmed by an owner, or most likely from the vendor's firmware. */
   contents?: Content[];
   /** The year the maker's own catalogue first showed the board, where a source dates it. */
@@ -155,6 +157,8 @@ export interface ModelDetail {
   devices?: VendorDevice[];
   /** The builds a maker whose firmware is keyed by board model (Anjoy Vision, Longse) made for this board, newest first. */
   firmware?: ModelBuild[];
+  /** coupler's image for a board with no XM device ID, matched by its code. */
+  coupler?: ModelBuild | null;
   /** For each of the board's shared photos, by source then sha256: the other boards that source shows it for. */
   shared_photos?: Record<string, Record<string, { id: string; model: string | null }[]>>;
 }
