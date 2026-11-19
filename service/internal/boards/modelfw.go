@@ -2,6 +2,7 @@ package boards
 
 import (
 	"context"
+	"slices"
 	"strings"
 
 	"github.com/jackc/pgx/v5"
@@ -46,18 +47,23 @@ func codePrefix(code, stem string) bool {
 	return i == len(stem) || !(stem[i] >= '0' && stem[i] <= '9')
 }
 
-// modelFirmware gives each board of a maker the builds made for it.
-func modelFirmware(ctx context.Context, tx pgx.Tx, byModel map[string]*modelJSON, locale string) error {
-	for _, m := range byModel {
-		m.Firmware = []vendorfw.Build{}
+// modelFirmware gives each board of a maker the builds made for it, and
+// coupler's newest image for it (Coupler, and the Ready tag). couplerOnly
+// leaves the makers' builds out, as the tree does.
+func modelFirmware(ctx context.Context, tx pgx.Tx, byModel map[string]*modelJSON, locale string, couplerOnly bool) error {
+	if !couplerOnly {
+		for _, m := range byModel {
+			m.Firmware = []vendorfw.Build{}
+		}
 	}
-	builds, err := vendorfw.ModelBuilds(ctx, tx, locale)
+	builds, err := vendorfw.ModelBuilds(ctx, tx, locale, couplerOnly)
 	if err != nil || len(builds) == 0 {
 		return err
 	}
 	// Every code and alias of the makers concerned, the whole catalogue's
 	// (a SoC page's tree holds only some boards, but the match needs all).
 	codes := map[string]map[string]string{} // maker -> code without hyphens -> model
+	norms := map[string]map[string]string{} // maker -> code_norm -> model
 	rows, err := tx.Query(ctx, `SELECT maker_id, code_norm, model_id FROM board_model_aliases WHERE maker_id = ANY($1)`, makersOf(builds))
 	if err != nil {
 		return err
@@ -69,9 +75,10 @@ func modelFirmware(ctx context.Context, tx pgx.Tx, byModel map[string]*modelJSON
 			return err
 		}
 		if codes[maker] == nil {
-			codes[maker] = map[string]string{}
+			codes[maker], norms[maker] = map[string]string{}, map[string]string{}
 		}
 		codes[maker][strings.ReplaceAll(code, "-", "")] = model
+		norms[maker][code] = model
 	}
 	rows.Close()
 	if err := rows.Err(); err != nil {
@@ -79,12 +86,30 @@ func modelFirmware(ctx context.Context, tx pgx.Tx, byModel map[string]*modelJSON
 	}
 	for _, b := range builds {
 		stem, best, model := buildStem(b), "", ""
-		for code, id := range codes[b.Maker] {
-			if len(code) > len(best) && codePrefix(code, stem) {
-				best, model = code, id
+		if b.Coupler {
+			// A coupler image flashes the camera: only the board whose code
+			// it names exactly, hyphens and all, takes it -- never one whose
+			// code merely begins it, nor IPC1 for IPC-1.
+			model = norms[b.Maker][NormCode(b.DeviceType)]
+		} else {
+			for code, id := range codes[b.Maker] {
+				if len(code) > len(best) && codePrefix(code, stem) {
+					best, model = code, id
+				}
 			}
 		}
-		if m := byModel[model]; m != nil {
+		m := byModel[model]
+		switch {
+		case m == nil:
+		case b.Coupler:
+			if m.Coupler == nil { // newest first
+				m.Coupler = &b
+			}
+			if !slices.Contains(m.Tags, Ready) {
+				m.Tags = append(m.Tags, Ready)
+				slices.Sort(m.Tags)
+			}
+		default:
 			m.Firmware = append(m.Firmware, b)
 		}
 	}

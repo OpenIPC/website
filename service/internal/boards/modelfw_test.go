@@ -2,6 +2,7 @@ package boards
 
 import (
 	"context"
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -152,5 +153,75 @@ func TestAnjoyBuildsLandOnTheirBoards(t *testing.T) {
 	}
 	if len(e6) == 0 || e6[0].Variant == nil || *e6[0].Variant != "обычная ИК-подсветка" || e6[0].Collection == nil || *e6[0].Collection != "pre-2022" {
 		t.Errorf("MC200E6: %+v, want the pre-2022 build by its folder's module, its variant in Russian", e6)
+	}
+}
+
+// coupler's image for a camera with no XM device ID lands on the board its
+// device type names exactly, in the tree and the detail, and makes that board
+// OpenIPC-ready; a board whose code only begins it, or extends it, does not.
+func TestACouplerImageLandsOnTheBoardItNames(t *testing.T) {
+	pool, root := imported(t)
+	im := &Importer{Pool: pool, Log: quiet(), Root: root, Resolve: supported}
+	ctx := context.Background()
+	// Uniview came with its first board from a review, as on openipc.org.
+	if _, err := pool.Exec(ctx, `INSERT INTO board_manufacturers (id, name) VALUES ('uniview', 'Uniview')`); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := im.FromSnapshot(ctx, donor(t, "anjoy",
+		model("uniview", "IPC8232SWC-WE", nil), model("uniview", "IPC8232SWC-WE-B", nil),
+		model("uniview", "IPC8232", nil), model("uniview", "IPC8232SWCWE", nil))); err != nil {
+		t.Fatal(err)
+	}
+	day := time.Date(2026, 11, 19, 0, 0, 0, 0, time.UTC)
+	p := &vendorfw.Payload{Schema: 1, Source: "coupler-rostelecom", Items: []vendorfw.Item{{
+		Key: "rostelecom-ipc8232swc-we-openipc-sd.zip", Version: "2026-11-19", Build: "IPC8232SWC-WE",
+		DeviceType: "IPC8232SWC-WE", App: "public", Category: "camera", SoC: "hi3516ev300", PublishedAt: &day,
+		AssetURL: vendorfw.Sources["coupler-rostelecom"] + "rostelecom/rostelecom-ipc8232swc-we-openipc-sd.zip",
+	}}}
+	if _, err := vendorfw.Save(ctx, pool, p, "test"); err != nil {
+		t.Fatal(err)
+	}
+	// Another vendor's image naming the same code is for that vendor's boards.
+	other := p.Items[0]
+	other.Key, other.AssetURL = "tiandy.box", vendorfw.Sources["coupler-tiandy"]+"tiandy/tiandy.box"
+	if _, err := vendorfw.Save(ctx, pool, &vendorfw.Payload{Schema: 1, Source: "coupler-tiandy", Items: []vendorfw.Item{other}}, "test"); err != nil {
+		t.Fatal(err)
+	}
+	tree, err := Tree(ctx, pool, "en", "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := map[string]bool{"uniview-ipc8232swc-we": true, "uniview-ipc8232swc-we-b": false, "uniview-ipc8232": false, "uniview-ipc8232swcwe": false}
+	for _, m := range tree["manufacturers"].([]*makerJSON) {
+		for _, mo := range m.Models {
+			w, ok := want[mo.ID]
+			if !ok {
+				continue
+			}
+			if got := mo.Coupler != nil; got != w {
+				t.Errorf("%s in the tree: coupler %v, want %v", mo.ID, got, w)
+			}
+			if got := slices.Contains(mo.Tags, Ready); got != w {
+				t.Errorf("%s in the tree: tags %v", mo.ID, mo.Tags)
+			}
+			d, err := ModelDetail(ctx, pool, mo.ID, "en")
+			if err != nil {
+				t.Fatal(err)
+			}
+			c, _ := d["coupler"].(*vendorfw.Build)
+			if got := c != nil; got != w {
+				t.Errorf("%s in its detail: coupler %v, want %v", mo.ID, got, w)
+			}
+			if c != nil && c.Key != p.Items[0].Key {
+				t.Errorf("%s took %s, another vendor's image", mo.ID, c.Key)
+			}
+			if fw, _ := d["firmware"].([]vendorfw.Build); len(fw) != 0 {
+				t.Errorf("%s: coupler's image listed as the maker's firmware: %v", mo.ID, fw)
+			}
+			delete(want, mo.ID)
+		}
+	}
+	if len(want) != 0 {
+		t.Errorf("not in the tree: %v", want)
 	}
 }

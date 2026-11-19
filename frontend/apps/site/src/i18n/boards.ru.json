@@ -524,6 +524,7 @@
     "fw_caution_rollback": "вернуться на заводскую прошивку можно только через UART и восстановление по TFTP",
     "fw_caution_stock": "сначала обновите заводскую прошивку до последней (ниже);",
     "fw_coupler": "Перейти на OpenIPC",
+    "fw_coupler_howto": "Как установить",
     "fw_device": "ID устройства {id}",
     "fw_device_hint": "четвёртое поле System version: V5.00.R02.{id}.10010…",
     "fw_download": "Скачать",
@@ -746,6 +747,7 @@
     },
     "query_short": "Для поиска введите хотя бы три символа.",
     "ready_because": "образ coupler переводит устройство {ids} со стоковой прошивки на OpenIPC; он в разделе «Прошивки» ниже.",
+    "ready_because_board": "образ coupler переводит эту камеру со стоковой прошивки на OpenIPC; он в разделе «Прошивки» ниже.",
     "ready_because_label": "Установка в один шаг:",
     "report": {
       "asked_answer": "Отправить ответ",

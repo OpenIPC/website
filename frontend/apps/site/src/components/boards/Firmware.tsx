@@ -9,7 +9,7 @@
  */
 import type { BoardsT } from '../../lib/boards-i18n';
 import { addsIPeye, bySeller, formatBytes, formatDay } from '../../lib/boards/model';
-import type { VendorDevice, VendorFirmware } from '../../lib/boards/types';
+import type { ModelBuild, VendorDevice, VendorFirmware } from '../../lib/boards/types';
 
 const PYTHON_DVR = 'https://github.com/OpenIPC/python-dvr';
 const RECOVERY = 'https://github.com/OpenIPC/wiki/blob/master/en/installation.md';
@@ -106,6 +106,31 @@ export default function Firmware({ device, heading, note, locale, t }: {
           </ul>
         </div>
       ))}
+    </section>
+  );
+}
+
+/** The release page an asset of a GitHub release is published on: its install notes. */
+export const releasePage = (asset: string): string => asset.replace(/\/releases\/download\/([^/]+)\/[^/]+$/, '/releases/tag/$1');
+
+/** coupler's image for a board with no XM device ID (a Rostelecom camera's SD-card transition). */
+export function BoardCoupler({ build, locale, t }: { build: ModelBuild; locale: string; t: BoardsT }) {
+  return (
+    <section class="overflow-hidden rounded-lg border border-hairline" aria-label={t('fw_coupler')}>
+      <div class="grid gap-2 px-3.5 py-3">
+        <div class="flex flex-wrap items-start justify-between gap-3">
+          <div class="grid min-w-0 gap-0.5">
+            <span class="font-semibold">{t('fw_coupler')}</span>
+            <span class="text-[13px] text-body-secondary">
+              <span class="font-mono break-all text-body">{build.key}</span> · {facts(build, locale, t, 'built')} · OpenIPC/coupler
+            </span>
+          </div>
+          <a class={`${BTN} bg-brand-blue text-white hover:text-white`} href={build.url} aria-label={t('fw_download_of', { name: build.key })}>{t('fw_download')}</a>
+        </div>
+        <div class="rounded-md bg-[#fff5e6] px-3 py-2 text-[13px] text-[#8a5200]">
+          <a href={releasePage(build.url)} class="text-inherit underline">{t('fw_coupler_howto')}</a>; {t('fw_caution_rollback')} (<a href={RECOVERY} class="text-inherit underline">{t('fw_recovery')}</a>).
+        </div>
+      </div>
     </section>
   );
 }

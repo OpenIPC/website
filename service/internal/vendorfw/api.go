@@ -205,6 +205,8 @@ type Build struct {
 	Module *string `json:"-"`
 	// Maker is the catalogue maker whose boards the source's builds are for.
 	Maker string `json:"-"`
+	// Coupler: the build is coupler's image (CouplerByModel), not the maker's.
+	Coupler bool `json:"-"`
 }
 
 // ModelBuilds lists every build of the sources keyed by board model, newest
@@ -213,10 +215,15 @@ type Build struct {
 // listed once (the file known by its sha256, else by its asset); one filed
 // under two modules is each one's (Herospeed's KL5_1ND_BVHB is both KL5RC's
 // and KL5AD's).
-func ModelBuilds(ctx context.Context, db querier, locale string) ([]Build, error) {
+//
+// couplerOnly lists only coupler's images (CouplerByModel), which the board
+// tree carries; the makers' own builds are for one board's detail.
+func ModelBuilds(ctx context.Context, db querier, locale string, couplerOnly bool) ([]Build, error) {
 	sources := make([]string, 0, len(ByModel))
 	for s := range ByModel {
-		sources = append(sources, s)
+		if !couplerOnly || CouplerByModel[s] {
+			sources = append(sources, s)
+		}
 	}
 	rows, err := db.Query(ctx, `
 		SELECT source, key, version, build, asset_url, sha256, size, published_at, device_type, coalesce(app, 'public'),
@@ -253,7 +260,7 @@ func ModelBuilds(ctx context.Context, db querier, locale string) ([]Build, error
 			continue
 		}
 		seen[k] = true
-		b.Maker = ByModel[source]
+		b.Maker, b.Coupler = ByModel[source], CouplerByModel[source]
 		out = append(out, b)
 	}
 	return out, rows.Err()

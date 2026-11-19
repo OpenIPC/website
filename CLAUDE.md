@@ -153,6 +153,9 @@ restores the image but never the schema, so keep migrations additive.
   environment runs the producers' workflows (PUSH.md). Boards link to device IDs through `board_device_ids`
   (tehno32's firmware pages, cctvsp) or a firmware named after the board; a
   board with a coupler image is OpenIPC-ready, derived on read, never stored.
+  A camera with no device ID (Anjoy's, Huishi's, Rostelecom's, Tiandy's)
+  takes coupler's image by its board code exactly (`coupler-<vendor>`, each
+  pushed by that vendor's workflow).
 - `internal/reports` — **owner reports**: ipctool's output, flash backups,
   photos and console captures that camera owners and AI agents send to
   `POST /api/v1/reports` (and `POST /api/v1/boards/identify`, which stores

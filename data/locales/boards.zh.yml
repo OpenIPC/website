@@ -352,12 +352,14 @@ zh:
     links: 链接
     ready_because_label: "一步安装："
     ready_because: "coupler 镜像可将设备 {ids} 从原厂固件切换到 OpenIPC，见下方“固件”。"
+    ready_because_board: "coupler 镜像可将这台摄像机从原厂固件切换到 OpenIPC，见下方“固件”。"
     fw_title: 固件
     fw_device: "设备 ID {id}"
     fw_device_hint: "System version 的第 4 段：V5.00.R02.{id}.10010…"
     fw_your_device: "您的设备 {id}"
     fw_none: "此设备 ID 暂无存档：既没有原厂固件，也没有迁移到 OpenIPC 的镜像。仍可通过 UART 安装 OpenIPC，见该 SoC 页面。"
     fw_coupler: 迁移到 OpenIPC
+    fw_coupler_howto: "安装方法"
     fw_built: "构建于 {date}"
     fw_archived: "存档于 {date}"
     fw_download: 下载

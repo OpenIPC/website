@@ -500,6 +500,7 @@
     "fw_caution_rollback": "there is no way back to stock without UART and TFTP recovery",
     "fw_caution_stock": "update to the latest stock firmware first (below);",
     "fw_coupler": "Switch to OpenIPC",
+    "fw_coupler_howto": "How to install",
     "fw_device": "Device ID {id}",
     "fw_device_hint": "the 4th field of the System version: V5.00.R02.{id}.10010…",
     "fw_download": "Download",
@@ -698,6 +699,7 @@
     },
     "query_short": "Type at least three characters to search.",
     "ready_because": "a coupler image moves device {ids} from stock firmware to OpenIPC; it is under Firmware below.",
+    "ready_because_board": "a coupler image moves this camera from stock firmware to OpenIPC; it is under Firmware below.",
     "ready_because_label": "One-step install:",
     "report": {
       "asked_answer": "Send the answer",

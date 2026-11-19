@@ -22,11 +22,25 @@ var Sources = map[string]string{
 	"anjoyupdates": "https://github.com/OpenIPC/anjoyupdates/releases/download/",
 	// Herospeed's builds for Longse's boards, keyed by board model too.
 	"herospeedupdates": "https://github.com/OpenIPC/herospeedupdates/releases/download/",
+	// coupler's images for cameras with no XM device ID, keyed by board
+	// model: one source per workflow, since a push replaces its source.
+	"coupler-anjoy":      "https://github.com/OpenIPC/coupler/releases/download/",
+	"coupler-huishi":     "https://github.com/OpenIPC/coupler/releases/download/",
+	"coupler-rostelecom": "https://github.com/OpenIPC/coupler/releases/download/",
+	"coupler-tiandy":     "https://github.com/OpenIPC/coupler/releases/download/",
 }
 
 // ByModel are the sources whose items name a device type instead of an XM
 // device ID; they are matched to catalogue boards when read.
-var ByModel = map[string]string{"anjoyupdates": "anjoy", "herospeedupdates": "longse"}
+var ByModel = map[string]string{
+	"anjoyupdates": "anjoy", "herospeedupdates": "longse",
+	"coupler-anjoy": "anjoy", "coupler-huishi": "huishi", "coupler-rostelecom": "uniview", "coupler-tiandy": "tiandy",
+}
+
+// CouplerByModel are the model-keyed sources whose builds are coupler's
+// stock-to-OpenIPC images, not the maker's: a board they match is offered
+// its image and is OpenIPC-ready.
+var CouplerByModel = map[string]bool{"coupler-anjoy": true, "coupler-huishi": true, "coupler-rostelecom": true, "coupler-tiandy": true}
 
 // moduleNamed are the model-keyed sources whose device types name no board
 // (Herospeed's KL5_1ND_BVHB is board KL5RC's only because its list files it

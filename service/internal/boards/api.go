@@ -137,6 +137,9 @@ type modelJSON struct {
 	// is keyed by board model (Anjoy Vision's), newest first (modelfw.go):
 	// in one board's detail only, the tree does not carry them.
 	Firmware []vendorfw.Build `json:"firmware,omitempty"`
+	// Coupler is coupler's image for a board with no XM device ID, matched
+	// by its code (vendorfw.CouplerByModel): it makes the board OpenIPC-ready.
+	Coupler *vendorfw.Build `json:"coupler,omitempty"`
 	// ListedYear is the year the maker's catalogue first showed the board,
 	// where a source dates it.
 	ListedYear *int `json:"listed_year"`
@@ -532,6 +535,9 @@ func tree(ctx context.Context, db *pgxpool.Pool, locale, soc, model string, sens
 	if err := devices(ctx, tx, byModel); err != nil {
 		return nil, nil, err
 	}
+	if err := modelFirmware(ctx, tx, byModel, locale, true); err != nil {
+		return nil, nil, err
+	}
 	if err := contents(ctx, tx, byModel); err != nil {
 		return nil, nil, err
 	}
@@ -775,14 +781,14 @@ func ModelDetail(ctx context.Context, db *pgxpool.Pool, id, locale string) (map[
 	if err := devices(ctx, tx, one); err != nil {
 		return nil, err
 	}
-	if err := modelFirmware(ctx, tx, one, locale); err != nil {
+	if err := modelFirmware(ctx, tx, one, locale, false); err != nil {
 		return nil, err
 	}
 	shared, err := sharedPhotos(ctx, tx, id)
 	if err != nil {
 		return nil, err
 	}
-	return map[string]any{"schema": 1, "locale": locale, "id": id, "model": m.Model, "about": m.About, "links": m.Links, "tags": m.Tags, "devices": m.Devices, "kind": m.Kind, "firmware": m.Firmware, "shared_photos": shared}, nil
+	return map[string]any{"schema": 1, "locale": locale, "id": id, "model": m.Model, "about": m.About, "links": m.Links, "tags": m.Tags, "devices": m.Devices, "kind": m.Kind, "firmware": m.Firmware, "coupler": m.Coupler, "shared_photos": shared}, nil
 }
 
 type hitJSON struct {

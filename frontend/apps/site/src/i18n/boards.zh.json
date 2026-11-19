@@ -423,6 +423,7 @@
     "fw_caution_rollback": "若要回到原厂固件，只能通过 UART 和 TFTP 恢复",
     "fw_caution_stock": "先把原厂固件升级到最新（见下方）；",
     "fw_coupler": "迁移到 OpenIPC",
+    "fw_coupler_howto": "安装方法",
     "fw_device": "设备 ID {id}",
     "fw_device_hint": "System version 的第 4 段：V5.00.R02.{id}.10010…",
     "fw_download": "下载",
@@ -621,6 +622,7 @@
     },
     "query_short": "请至少输入三个字符再搜索。",
     "ready_because": "coupler 镜像可将设备 {ids} 从原厂固件切换到 OpenIPC，见下方“固件”。",
+    "ready_because_board": "coupler 镜像可将这台摄像机从原厂固件切换到 OpenIPC，见下方“固件”。",
     "ready_because_label": "一步安装：",
     "report": {
       "asked_answer": "发送回答",
