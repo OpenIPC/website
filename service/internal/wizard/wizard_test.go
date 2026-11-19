@@ -223,6 +223,43 @@ func TestSplitFitsEight(t *testing.T) {
 	}
 }
 
+// What the commands install is what the page links for download, on every
+// SoC: the split package only where the install is the split one (behind a
+// layout-scanning -nor.bin), the plain one everywhere else. And the NVRs keep
+// their own page, whose procedure the generated commands do not cover.
+func TestInstalledPackageIsTheListedOne(t *testing.T) {
+	cat, idx := inputs(t)
+	for _, soc := range cat.All() {
+		d := decode(t, Document(soc, idx))
+		listed := map[string]string{}
+		for _, p := range d["published"].([]any) {
+			p := p.(map[string]any)
+			if p["flash_type"] == "nor" {
+				listed[p["release"].(string)] = p["filename"].(string)
+			}
+		}
+		for _, c := range d["combinations"].([]any) {
+			c := c.(map[string]any)
+			want, ok := listed[c["edition"].(string)]
+			if c["flash_family"] != "nor" || !ok {
+				continue
+			}
+			if c["firmware_filename"] != want {
+				t.Errorf("%s %v %v: installs %v, the page lists %s", soc.URLName, c["flash_type"], c["edition"], c["firmware_filename"], want)
+				break
+			}
+		}
+	}
+	for _, slug := range []string{"hi3536cv100", "hi3536dv100"} {
+		for _, c := range decode(t, Document(cat.SoC(slug), idx))["combinations"].([]any) {
+			if c.(map[string]any)["page"] != "hi3536dv100" {
+				t.Errorf("%s: a combination without the NVR page: %v", slug, c)
+				break
+			}
+		}
+	}
+}
+
 // Links name the release that published the file, never the moving `latest`.
 func TestLinksPointAtTheReleaseThatPublished(t *testing.T) {
 	cat, idx := inputs(t)
@@ -335,10 +372,12 @@ func TestUBINandLines(t *testing.T) {
 		t.Fatal("hi3516ev300 offers no NAND combination")
 	}
 
-	// hi3516av100 is still on the split layout, so nothing about it moves.
+	// hi3516av100's NAND is still on the older layout (boot, env, kernel,
+	// ubi), installed with its -universal U-Boot while NOR moved to the
+	// -nor.bin one: the page names that one for NAND.
 	d = decode(t, Document(cat.SoC("hi3516av100"), idx))
-	if _, ok := d["uboot_nand_filename"]; ok {
-		t.Error("a split-layout SoC grew a NAND bootloader")
+	if d["uboot_nand_filename"] != "u-boot-hi3516av100-universal.bin" || d["uboot_filename"] != "u-boot-hi3516av100-nor.bin" {
+		t.Errorf("hi3516av100 bootloaders: NOR %v, NAND %v", d["uboot_filename"], d["uboot_nand_filename"])
 	}
 	pool = d["blocks"].(map[string]any)
 	for _, raw := range d["combinations"].([]any) {
@@ -351,6 +390,9 @@ func TestUBINandLines(t *testing.T) {
 		}
 		if full := block(c, "flashing_everything"); strings.Contains(full, "trimffs") {
 			t.Errorf("split-layout full image block:\n%s", full)
+		}
+		if ub := block(c, "flashing_uboot"); !strings.Contains(ub, "u-boot-hi3516av100-universal.bin") {
+			t.Errorf("legacy NAND writes another bootloader:\n%s", ub)
 		}
 		break
 	}
@@ -631,7 +673,7 @@ func TestScanningBootloaderNORInstall(t *testing.T) {
 		}
 	}
 
-	old := cam("hi3518ev200", "nor8m", "nor8m")
+	old := cam("msc313e", "nor8m", "nor8m")
 	if old.scansLayout() || !strings.Contains(strings.Join(old.flashingLinux(), "\n"), "run uknor8m; run urnor8m") {
 		t.Errorf("a -universal bootloader lost its macros: %s\n%s", old.bootloader(), strings.Join(old.flashingLinux(), "\n"))
 	}
@@ -658,13 +700,32 @@ func withAssets(t *testing.T, names ...string) *firmware.Index {
 	return firmware.NewIndex(idx.Build, assets, aliases, nil)
 }
 
+// withoutAssets is the fixture index less the named assets.
+func withoutAssets(t *testing.T, names ...string) *firmware.Index {
+	t.Helper()
+	_, idx := inputs(t)
+	var assets []firmware.Asset
+	for _, a := range idx.Assets() {
+		if !slices.Contains(names, a.Name) {
+			assets = append(assets, a)
+		}
+	}
+	aliases := map[string]string{}
+	for _, chip := range []string{"gk7205v210", "xm550"} {
+		if b := idx.CanonicalBoard(chip); b != chip {
+			aliases[chip] = b
+		}
+	}
+	return firmware.NewIndex(idx.Build, assets, aliases, nil)
+}
+
 // The split NOR layout (catalogue nor_split): where the -split package is
 // published for the board and edition, the Linux step writes its one
 // firmware.bin at 0x50000 and erases to the end of the chip in the same
 // guarded line, and the page links that package. Without it the install stays
 // the two-image one of a scanning bootloader.
 func TestSplitNORInstall(t *testing.T) {
-	cat, plainIdx := inputs(t)
+	cat, _ := inputs(t)
 	idx := withAssets(t,
 		"u-boot-gk7205v300-nor.bin",
 		"openipc.gk7205v300-nor-lite-split.tgz",
@@ -711,9 +772,10 @@ func TestSplitNORInstall(t *testing.T) {
 	}
 
 	// Not published (this edition, or this nightly): the two images.
+	noSplit := withoutAssets(t, "openipc.gk7205v200-nor-ultimate-split.tgz", "openipc.gk7205v300-nor-lite-split.tgz")
 	for _, c := range []*camera{
-		mk(idx, "gk7205v210", "nor8m", "ultimate"),
-		mk(plainIdx, "gk7205v300", "nor16m", "lite"),
+		mk(noSplit, "gk7205v210", "nor8m", "ultimate"),
+		mk(noSplit, "gk7205v300", "nor16m", "lite"),
 	} {
 		if c.split {
 			t.Errorf("%s %s: split without a published package", c.soc.Model, c.edition)

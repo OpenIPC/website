@@ -155,6 +155,9 @@ func fixture(t testing.TB, cat *catalogue.Catalogue, releasesRoot string, ms []m
 		soc := cat.SoC(m.URLName)
 		board := Board(soc, idx)
 		add(soc.UBootFilename, synthetic("uboot:"+board, 200_000))
+		if nand := soc.Bootloader("nand"); nand != soc.UBootFilename {
+			add(nand, synthetic("uboot:"+board, 200_000))
+		}
 		kernel := synthetic("kernel:"+board, 1_500_000)
 		for release, root := range map[string][]byte{
 			"lite": synthetic("rootfs:"+board, 3_000_000), "big": synthetic("big:"+board, 5_300_000)} {

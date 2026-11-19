@@ -63,13 +63,14 @@ func Document(soc *catalogue.SoC, idx *firmware.Index) []byte {
 	d.set("kernel_file", "uImage."+e.board)
 	d.set("rootfs_file", "rootfs.squashfs."+e.board)
 	d.set("bl_url", e.url(soc.UBootFilename))
-	// Only where the SoC has a NAND bootloader of its own, so every other
-	// document stays byte for byte what it was. The page offers this one for
-	// NAND and uboot_filename for NOR.
-	if soc.UBINand() {
-		d.set("uboot_nand_filename", soc.UBootNANDFilename)
-		d.set("bl_nand_url", e.url(soc.UBootNANDFilename))
-		d.set("bootloader_nand_published", e.published(soc.UBootNANDFilename))
+	// Only where the SoC has a NAND bootloader of its own -- the UBI-only
+	// one, or the -universal one a legacy NAND install keeps -- so every
+	// other document stays byte for byte what it was. The page offers this
+	// one for NAND and uboot_filename for NOR.
+	if nand := soc.Bootloader("nand"); nand != soc.UBootFilename {
+		d.set("uboot_nand_filename", nand)
+		d.set("bl_nand_url", e.url(nand))
+		d.set("bootloader_nand_published", e.published(nand))
 	}
 	published := []any{}
 	for _, ft := range flashTypes {
@@ -134,6 +135,10 @@ func (e *exporter) releases(ft string) []string {
 	// type cannot be installed, so it is not offered at all. (Elsewhere a
 	// missing bootloader means installing with the camera's own, which stays.)
 	if e.soc.UBINand() && !firmware.BootloaderPublished(e.soc, e.idx, ft) {
+		return []string{}
+	}
+	// Nor a SoC whose one bootloader is a NOR build: it cannot install NAND.
+	if ft == "nand" && !firmware.NANDInstallable(e.soc) {
 		return []string{}
 	}
 	var rels []string
@@ -247,7 +252,7 @@ func (e *exporter) fitsEight(edition string) bool {
 	// split image, not the fixed slots it does not use (#593): a Lite rootfs
 	// past 5120 KiB still fits 8 MB when the kernel leaves room. A report
 	// that did not measure the kernel keeps the fixed-slot rule.
-	if f.KernelKB > 0 && firmware.SplitOnlyEdition(e.soc, e.idx, edition) {
+	if f.KernelKB > 0 && firmware.SplitEdition(e.soc, e.idx, edition) {
 		return firmware.SplitFits(e.soc, f, 8)
 	}
 	return f.KernelKB <= eightKernelKB && f.RootfsKB <= eightRootfsKB
@@ -271,11 +276,11 @@ func (e *exporter) linuxFilename(release, ft string) string {
 	return fmt.Sprintf("openipc.%s-%s-%s.tgz", e.boardFor(ft), ft, release)
 }
 
-// packageName is the package an edition is published as: the plain one, or
-// for a board that publishes only the split NOR package (hi3516cv6xx,
-// hi3519dv500), that one.
+// packageName is the package an edition installs from: the split NOR package
+// wherever the SoC is on the split layout and the edition has one, and the
+// plain one otherwise.
 func (e *exporter) packageName(release, ft string) string {
-	if ft == "nor" && firmware.SplitOnlyEdition(e.soc, e.idx, release) {
+	if ft == "nor" && firmware.SplitEdition(e.soc, e.idx, release) {
 		return splitFilename(e.boardFor(ft), release)
 	}
 	return e.linuxFilename(release, ft)
@@ -336,6 +341,9 @@ func (e *exporter) editionsFor(ft string, layout *string) []string {
 	if e.soc.UBINand() && !firmware.BootloaderPublished(e.soc, e.idx, familyOf(ft)) {
 		return nil
 	}
+	if familyOf(ft) == "nand" && !firmware.NANDInstallable(e.soc) {
+		return nil
+	}
 	published := e.releases(familyOf(ft))
 	offered := published
 	if len(published) == 0 {
@@ -394,12 +402,11 @@ func (e *exporter) camera(ft string, layout *string, edition, iface, sd, mac str
 	if layout != nil {
 		c.layout = *layout
 	}
-	// The split install where its package is published, and always on a SoC
-	// that has no fixed-slot build (nor_split_only): it is shown the install
-	// it will get, at its own firmware offset, rather than fixed slots it has
-	// none of, whatever plain package is still listed for it.
-	c.split = e.soc.NORSplit && c.scansLayout() &&
-		(e.soc.NORSplitOnly || e.published(splitFilename(c.board, edition)))
+	// The split install wherever firmware.SplitEdition says the edition
+	// installs from its split package -- the same answer the download list,
+	// the 8 MB check and the full image take -- at the SoC's own firmware
+	// offset.
+	c.split = !c.nand() && firmware.SplitEdition(e.soc, e.idx, edition)
 	return c
 }
 
