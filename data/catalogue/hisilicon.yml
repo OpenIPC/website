@@ -405,7 +405,6 @@ socs:
   uboot_filename: ''
   linux_filename: ''
   notes: ''
-  nor_split: true
   urlname: hi3520dv200
   featured: false
   segment: cctv
@@ -419,7 +418,6 @@ socs:
   uboot_filename: ''
   linux_filename: openipc.hi3536cv100-nor-lite.tgz
   notes: ''
-  nor_split: true
   urlname: hi3536cv100
   featured: false
   segment: cctv
@@ -430,10 +428,9 @@ socs:
   load_address: '0x82000000'
   sdk: ''
   kernel: ''
-  uboot_filename: u-boot-hi3536dv100-nor.bin
+  uboot_filename: u-boot-hi3536dv100-original.bin
   linux_filename: openipc.hi3536dv100-nor-lite.tgz
   notes: ''
-  nor_split: true
   urlname: hi3536dv100
   featured: false
   segment: cctv

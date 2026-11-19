@@ -16,6 +16,7 @@ import (
 	"strings"
 
 	"github.com/OpenIPC/website/service/internal/catalogue"
+	"github.com/OpenIPC/website/service/internal/firmware"
 )
 
 // The menu, in the order it offers things.
@@ -265,7 +266,7 @@ func (c *camera) postFlashCommands() []string {
 // install writes each image at its offset itself and sets nothing.
 // SigmaStar and Ingenic keep their fixed mtdparts (fixedMtdparts).
 func (c *camera) scansLayout() bool {
-	return !c.nand() && !c.fixedMtdparts() && strings.HasSuffix(c.bootloader(), "-nor.bin")
+	return !c.nand() && firmware.ScansNORLayout(c.soc)
 }
 
 func (c *camera) layoutCommands() []string {

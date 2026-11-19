@@ -146,6 +146,15 @@ func NewSpec(soc *catalogue.SoC, flashType, rel string, size, layout int) (Spec,
 
 func (s Spec) nand() bool { return s.FlashType == "nand" }
 
+// ScansNORLayout says whether a SoC's NOR bootloader is a per-flash-type
+// OpenIPC U-Boot (-nor.bin) that finds the kernel and rootfs at boot, so it
+// boots the split layout's firmware.bin as well as the fixed slots. SigmaStar
+// and Ingenic keep their fixed mtdparts.
+func ScansNORLayout(soc *catalogue.SoC) bool {
+	return strings.HasSuffix(soc.Bootloader("nor"), "-nor.bin") &&
+		!slices.Contains(fixedMtdpartsVendors, soc.Vendor.Name)
+}
+
 // NANDInstallable says whether a SoC has a bootloader that can drive NAND:
 // not when its only one is a layout-scanning OpenIPC/u-boot NOR build
 // (-nor.bin), which knows SPI NOR alone. SigmaStar's and Ingenic's -nor.bin
@@ -232,7 +241,10 @@ func splitOnly(s Spec, idx *Index) bool {
 // edition with no split package at all (builder's FPV builds) keeps the fixed
 // slots.
 func SplitEdition(soc *catalogue.SoC, idx *Index, edition string) bool {
-	if !soc.NORSplit {
+	// Only behind a bootloader that finds the layout: a camera's own, or an
+	// older one with fixed partitions, does not boot firmware.bin, so a SoC
+	// that names no -nor.bin keeps listing the plain package it installs.
+	if !soc.NORSplit || !ScansNORLayout(soc) {
 		return false
 	}
 	if soc.NORSplitOnly {

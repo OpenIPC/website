@@ -19,7 +19,6 @@ socs:
   uboot_filename: ''
   linux_filename: openipc.gk7102-nor-lite.tgz
   notes: ''
-  nor_split: true
   urlname: gk7102
   featured: false
   segment: cctv
@@ -33,7 +32,6 @@ socs:
   uboot_filename: ''
   linux_filename: openipc.gk7102-nor-lite.tgz
   notes: ''
-  nor_split: true
   urlname: gk7102c
   featured: false
   segment: cctv
@@ -47,7 +45,6 @@ socs:
   uboot_filename: ''
   linux_filename: openipc.gk7102-nor-lite.tgz
   notes: ''
-  nor_split: true
   urlname: gk7102ca
   featured: false
   segment: cctv
@@ -61,7 +58,6 @@ socs:
   uboot_filename: ''
   linux_filename: openipc.gk7102-nor-lite.tgz
   notes: ''
-  nor_split: true
   urlname: gk7102ct
   featured: false
   segment: cctv
@@ -75,7 +71,6 @@ socs:
   uboot_filename: ''
   linux_filename: openipc.gk7102-nor-lite.tgz
   notes: ''
-  nor_split: true
   urlname: gk7102cw
   featured: false
   segment: cctv
@@ -89,7 +84,6 @@ socs:
   uboot_filename: ''
   linux_filename: openipc.gk7102s-nor-lite.tgz
   notes: ''
-  nor_split: true
   urlname: gk7102s
   featured: false
   segment: cctv
@@ -236,7 +230,6 @@ socs:
   uboot_filename: ''
   linux_filename: openipc.gk7206v11a-nor-lite.tgz
   notes: 512Mb DDR2 in the package; XMedia Lotus SDK, kernel 5.10
-  nor_split: true
   urlname: gk7206v10
   featured: false
   segment: cctv
@@ -250,7 +243,6 @@ socs:
   uboot_filename: ''
   linux_filename: openipc.gk7206v11a-nor-lite.tgz
   notes: 512Mb DDR2 in the package; XMedia Lotus SDK, kernel 5.10
-  nor_split: true
   urlname: gk7206v10b
   featured: false
   segment: cctv
@@ -264,7 +256,6 @@ socs:
   uboot_filename: ''
   linux_filename: openipc.gk7206v11a-nor-lite.tgz
   notes: 1Gb DDR3L in the package; XMedia Lotus SDK, kernel 5.10
-  nor_split: true
   urlname: gk7206v11
   featured: false
   segment: cctv
@@ -278,7 +269,6 @@ socs:
   uboot_filename: ''
   linux_filename: openipc.gk7206v11a-nor-lite.tgz
   notes: 1Gb DDR3L in the package; XMedia Lotus SDK, kernel 5.10
-  nor_split: true
   urlname: gk7206v11a
   featured: false
   segment: cctv
@@ -292,7 +282,6 @@ socs:
   uboot_filename: ''
   linux_filename: openipc.gk7206v11a-nor-lite.tgz
   notes: 1Gb DDR3L in the package; XMedia Lotus SDK, kernel 5.10
-  nor_split: true
   urlname: gk7206v11at
   featured: false
   segment: cctv
@@ -306,7 +295,6 @@ socs:
   uboot_filename: ''
   linux_filename: openipc.gk7206v11a-nor-lite.tgz
   notes: 2Gb DDR3L in the package; XMedia Lotus SDK, kernel 5.10
-  nor_split: true
   urlname: gk7206v12a
   featured: false
   segment: cctv

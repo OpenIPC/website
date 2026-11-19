@@ -402,12 +402,11 @@ func (e *exporter) camera(ft string, layout *string, edition, iface, sd, mac str
 	if layout != nil {
 		c.layout = *layout
 	}
-	// The split install where its package is published, and always on a SoC
-	// that has no fixed-slot build (nor_split_only): it is shown the install
-	// it will get, at its own firmware offset, rather than fixed slots it has
-	// none of, whatever plain package is still listed for it.
-	c.split = e.soc.NORSplit && c.scansLayout() &&
-		(e.soc.NORSplitOnly || e.published(splitFilename(c.board, edition)))
+	// The split install wherever firmware.SplitEdition says the edition
+	// installs from its split package -- the same answer the download list,
+	// the 8 MB check and the full image take -- at the SoC's own firmware
+	// offset.
+	c.split = !c.nand() && firmware.SplitEdition(e.soc, e.idx, edition)
 	return c
 }
 

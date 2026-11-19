@@ -223,6 +223,43 @@ func TestSplitFitsEight(t *testing.T) {
 	}
 }
 
+// What the commands install is what the page links for download, on every
+// SoC: the split package only where the install is the split one (behind a
+// layout-scanning -nor.bin), the plain one everywhere else. And the NVRs keep
+// their own page, whose procedure the generated commands do not cover.
+func TestInstalledPackageIsTheListedOne(t *testing.T) {
+	cat, idx := inputs(t)
+	for _, soc := range cat.All() {
+		d := decode(t, Document(soc, idx))
+		listed := map[string]string{}
+		for _, p := range d["published"].([]any) {
+			p := p.(map[string]any)
+			if p["flash_type"] == "nor" {
+				listed[p["release"].(string)] = p["filename"].(string)
+			}
+		}
+		for _, c := range d["combinations"].([]any) {
+			c := c.(map[string]any)
+			want, ok := listed[c["edition"].(string)]
+			if c["flash_family"] != "nor" || !ok {
+				continue
+			}
+			if c["firmware_filename"] != want {
+				t.Errorf("%s %v %v: installs %v, the page lists %s", soc.URLName, c["flash_type"], c["edition"], c["firmware_filename"], want)
+				break
+			}
+		}
+	}
+	for _, slug := range []string{"hi3536cv100", "hi3536dv100"} {
+		for _, c := range decode(t, Document(cat.SoC(slug), idx))["combinations"].([]any) {
+			if c.(map[string]any)["page"] != "hi3536dv100" {
+				t.Errorf("%s: a combination without the NVR page: %v", slug, c)
+				break
+			}
+		}
+	}
+}
+
 // Links name the release that published the file, never the moving `latest`.
 func TestLinksPointAtTheReleaseThatPublished(t *testing.T) {
 	cat, idx := inputs(t)
