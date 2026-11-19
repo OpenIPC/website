@@ -181,6 +181,12 @@ func TestACouplerImageLandsOnTheBoardItNames(t *testing.T) {
 	if _, err := vendorfw.Save(ctx, pool, p, "test"); err != nil {
 		t.Fatal(err)
 	}
+	// Another vendor's image naming the same code is for that vendor's boards.
+	other := p.Items[0]
+	other.Key, other.AssetURL = "tiandy.box", vendorfw.Sources["coupler-tiandy"]+"tiandy/tiandy.box"
+	if _, err := vendorfw.Save(ctx, pool, &vendorfw.Payload{Schema: 1, Source: "coupler-tiandy", Items: []vendorfw.Item{other}}, "test"); err != nil {
+		t.Fatal(err)
+	}
 	tree, err := Tree(ctx, pool, "en", "")
 	if err != nil {
 		t.Fatal(err)
@@ -205,6 +211,9 @@ func TestACouplerImageLandsOnTheBoardItNames(t *testing.T) {
 			c, _ := d["coupler"].(*vendorfw.Build)
 			if got := c != nil; got != w {
 				t.Errorf("%s in its detail: coupler %v, want %v", mo.ID, got, w)
+			}
+			if c != nil && c.Key != p.Items[0].Key {
+				t.Errorf("%s took %s, another vendor's image", mo.ID, c.Key)
 			}
 			if fw, _ := d["firmware"].([]vendorfw.Build); len(fw) != 0 {
 				t.Errorf("%s: coupler's image listed as the maker's firmware: %v", mo.ID, fw)
