@@ -63,6 +63,7 @@ func modelFirmware(ctx context.Context, tx pgx.Tx, byModel map[string]*modelJSON
 	// Every code and alias of the makers concerned, the whole catalogue's
 	// (a SoC page's tree holds only some boards, but the match needs all).
 	codes := map[string]map[string]string{} // maker -> code without hyphens -> model
+	norms := map[string]map[string]string{} // maker -> code_norm -> model
 	rows, err := tx.Query(ctx, `SELECT maker_id, code_norm, model_id FROM board_model_aliases WHERE maker_id = ANY($1)`, makersOf(builds))
 	if err != nil {
 		return err
@@ -74,9 +75,10 @@ func modelFirmware(ctx context.Context, tx pgx.Tx, byModel map[string]*modelJSON
 			return err
 		}
 		if codes[maker] == nil {
-			codes[maker] = map[string]string{}
+			codes[maker], norms[maker] = map[string]string{}, map[string]string{}
 		}
 		codes[maker][strings.ReplaceAll(code, "-", "")] = model
+		norms[maker][code] = model
 	}
 	rows.Close()
 	if err := rows.Err(); err != nil {
@@ -84,15 +86,16 @@ func modelFirmware(ctx context.Context, tx pgx.Tx, byModel map[string]*modelJSON
 	}
 	for _, b := range builds {
 		stem, best, model := buildStem(b), "", ""
-		exact := strings.NewReplacer("-", "", ".", "").Replace(stem)
-		for code, id := range codes[b.Maker] {
-			// A coupler image flashes the camera: only the board it names
-			// exactly takes it, never one whose code merely begins it.
-			if b.Coupler && code != exact {
-				continue
-			}
-			if len(code) > len(best) && codePrefix(code, stem) {
-				best, model = code, id
+		if b.Coupler {
+			// A coupler image flashes the camera: only the board whose code
+			// it names exactly, hyphens and all, takes it -- never one whose
+			// code merely begins it, nor IPC1 for IPC-1.
+			model = norms[b.Maker][NormCode(b.DeviceType)]
+		} else {
+			for code, id := range codes[b.Maker] {
+				if len(code) > len(best) && codePrefix(code, stem) {
+					best, model = code, id
+				}
 			}
 		}
 		m := byModel[model]

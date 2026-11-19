@@ -169,7 +169,7 @@ func TestACouplerImageLandsOnTheBoardItNames(t *testing.T) {
 	}
 	if _, err := im.FromSnapshot(ctx, donor(t, "anjoy",
 		model("uniview", "IPC8232SWC-WE", nil), model("uniview", "IPC8232SWC-WE-B", nil),
-		model("uniview", "IPC8232", nil))); err != nil {
+		model("uniview", "IPC8232", nil), model("uniview", "IPC8232SWCWE", nil))); err != nil {
 		t.Fatal(err)
 	}
 	day := time.Date(2026, 11, 19, 0, 0, 0, 0, time.UTC)
@@ -191,7 +191,7 @@ func TestACouplerImageLandsOnTheBoardItNames(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	want := map[string]bool{"uniview-ipc8232swc-we": true, "uniview-ipc8232swc-we-b": false, "uniview-ipc8232": false}
+	want := map[string]bool{"uniview-ipc8232swc-we": true, "uniview-ipc8232swc-we-b": false, "uniview-ipc8232": false, "uniview-ipc8232swcwe": false}
 	for _, m := range tree["manufacturers"].([]*makerJSON) {
 		for _, mo := range m.Models {
 			w, ok := want[mo.ID]
