@@ -625,6 +625,31 @@ func TestAMACAsHexBytesIsRedacted(t *testing.T) {
 	}
 }
 
+// A MAC percent-encoded in a URL (r-bxuf57u3's updater request) has the
+// same mark as the MAC written out.
+func TestAPercentEncodedMACIsRedacted(t *testing.T) {
+	const mac = "02:12:07:7c:d6:0b"
+	line := "version.json?fw_env=prod&mac_address=02%3A12%3A07%3a7C%3Ad6%3A0b&model=x\n"
+	mark := "<mac:" + Keyed("k", "mac", mac) + ">"
+	for name, got := range map[string]string{
+		"from ipctool":  Redact(line, Facts{MAC: mac}, "k"),
+		"from the text": Redact(line, Facts{}, "k"),
+	} {
+		if !strings.Contains(got, "&mac_address="+mark+"&model=x") {
+			t.Errorf("%s: %s", name, got)
+		}
+	}
+	for _, line := range []string{
+		"mac_address=00%3A00%3A00%3A00%3A00%3A00",
+		"mac_address=ff%3AFF%3Aff%3Aff%3Aff%3Aff",
+		"hwid=2D0%3A01%3A02%3A03%3A04%3A05%3A06%3A07",
+	} {
+		if got := Redact(line, Facts{}, "k"); got != line {
+			t.Errorf("%q became %q", line, got)
+		}
+	}
+}
+
 // Six pairs inside a longer colon run are no MAC: a Dahua hardware ID
 // (r-wzjhqxvu's note). A MAC in its usual places still is.
 func TestALongerColonRunIsNoMAC(t *testing.T) {

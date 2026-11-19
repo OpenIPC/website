@@ -375,10 +375,11 @@ func Redact(text string, f Facts, key string) string {
 	}
 	for _, m := range anyMAC {
 		text = replaceMACs(text, m.re, m.sep, func(s string) string {
-			return strings.ToLower(strings.ReplaceAll(s, "-", ":"))
+			s = strings.ToLower(s)
+			return strings.NewReplacer("-", ":", "%3a", ":").Replace(s)
 		}, key)
 	}
-	return replaceMACs(text, hexByteMAC, ':', func(s string) string {
+	return replaceMACs(text, hexByteMAC, ":", func(s string) string {
 		var b []string
 		for _, p := range strings.Split(strings.ToLower(s), ":") {
 			p = strings.TrimPrefix(p, "0x")
@@ -393,10 +394,13 @@ func Redact(text string, f Facts, key string) string {
 
 var anyMAC = []struct {
 	re  *regexp.Regexp
-	sep byte
+	sep string
 }{
-	{regexp.MustCompile(`(?i)\b(?:[0-9a-f]{2}:){5}[0-9a-f]{2}\b`), ':'},
-	{regexp.MustCompile(`(?i)\b(?:[0-9a-f]{2}-){5}[0-9a-f]{2}\b`), '-'},
+	{regexp.MustCompile(`(?i)\b(?:[0-9a-f]{2}:){5}[0-9a-f]{2}\b`), ":"},
+	{regexp.MustCompile(`(?i)\b(?:[0-9a-f]{2}-){5}[0-9a-f]{2}\b`), "-"},
+	// Percent-encoded in a URL's query: a Rostelecom camera's updater asks
+	// for ...&mac_address=e4%3Af1%3A...
+	{regexp.MustCompile(`(?i)\b(?:[0-9a-f]{2}%3a){5}[0-9a-f]{2}\b`), "%3a"},
 }
 
 // hexByteMAC is a MAC as a driver prints its bytes, each with its 0x and no
@@ -409,7 +413,7 @@ var hexByteMAC = regexp.MustCompile(`(?i)\b0x[0-9a-f]{1,2}(?::0x[0-9a-f]{1,2}){5
 // longer -- a Dahua hardware ID, IPC-X-Lexus:01:02:02:23:21:00:01:00:... --
 // and no MAC. One more group alone is not enough: a MAC is written with a
 // port after it (00:12:41:ab:cd:ef:8080).
-func replaceMACs(text string, re *regexp.Regexp, sep byte, norm func(string) string, key string) string {
+func replaceMACs(text string, re *regexp.Regexp, sep string, norm func(string) string, key string) string {
 	idx := re.FindAllStringIndex(text, -1)
 	if idx == nil {
 		return text
@@ -418,7 +422,7 @@ func replaceMACs(text string, re *regexp.Regexp, sep byte, norm func(string) str
 	last := 0
 	for _, m := range idx {
 		s := text[m[0]:m[1]]
-		if zeroish(s) || groupsBefore(text[:m[0]], sep)+groupsAfter(text[m[1]:], sep) >= 2 {
+		if zeroish(norm(s)) || groupsBefore(text[:m[0]], sep)+groupsAfter(text[m[1]:], sep) >= 2 {
 			continue
 		}
 		b.WriteString(text[last:m[0]])
@@ -435,10 +439,10 @@ var macGroup = regexp.MustCompile(`(?i)^(?:0x)?[0-9a-f]{1,4}$`)
 
 // groupsBefore is how many groups, up to two, the separator joins to the
 // end of head; groupsAfter, to the start of tail.
-func groupsBefore(head string, sep byte) int {
+func groupsBefore(head string, sep string) int {
 	n := 0
-	for ; n < 2 && head != "" && head[len(head)-1] == sep; n++ {
-		head = head[:len(head)-1]
+	for ; n < 2 && len(head) >= len(sep) && strings.EqualFold(head[len(head)-len(sep):], sep); n++ {
+		head = head[:len(head)-len(sep)]
 		i := len(head)
 		for i > 0 && isAlnum(head[i-1]) {
 			i--
@@ -451,10 +455,10 @@ func groupsBefore(head string, sep byte) int {
 	return n
 }
 
-func groupsAfter(tail string, sep byte) int {
+func groupsAfter(tail string, sep string) int {
 	n := 0
-	for ; n < 2 && tail != "" && tail[0] == sep; n++ {
-		tail = tail[1:]
+	for ; n < 2 && len(tail) >= len(sep) && strings.EqualFold(tail[:len(sep)], sep); n++ {
+		tail = tail[len(sep):]
 		i := 0
 		for i < len(tail) && isAlnum(tail[i]) {
 			i++
