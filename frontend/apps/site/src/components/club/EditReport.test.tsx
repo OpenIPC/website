@@ -89,5 +89,5 @@ test('a report that has a dump is not offered another', () => {
   const withDump = report({ files: [{ position: 1, kind: 'backup', name: 'backup.bin', bytes: 1 << 20, url: '', points: 10 }] });
   const { container } = render(<EditReport report={withDump} t={t} onSaved={() => {}} onCancel={() => {}} />);
   const values = [...container.querySelectorAll('option')].map((o) => o.value);
-  expect(values).toEqual(['photo', 'boot_log', 'uboot_env']);
+  expect(values).toEqual(['photo', 'boot_log', 'uboot_env', 'firmware']);
 });

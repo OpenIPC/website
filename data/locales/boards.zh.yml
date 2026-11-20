@@ -86,6 +86,7 @@ zh:
       kind_uboot_env: "U-Boot 环境变量"
       kind_note: "备注"
       kind_document: "文档"
+      kind_firmware: "原厂固件"
       looks_like: "看起来像目录中的 {board}"
       looks_like_why: "审核后才能确定"
       filed_under: "归属"
@@ -538,6 +539,7 @@ zh:
       kind_uboot_env: 'U-Boot 控制台'
       kind_note: '备注'
       kind_document: '文档'
+      kind_firmware: '原厂固件'
       kind_yaml: 'ipctool 报告'
       no_board: '未指定电路板'
       new_link: '添加目录中没有的摄像头'
@@ -575,12 +577,15 @@ zh:
       send_kind_uboot_env: 'U-Boot 控制台'
       send_kind_photo: '照片'
       send_kind_backup: '完整闪存转储'
+      send_kind_firmware: '原厂固件'
       send_hint_uboot_env: '从 UART 抓取 U-Boot 控制台：上电，按 Ctrl+C（或主板提示的按键）中断自动启动，然后执行 help、printenv 和 version。从第一行开始的全部内容：启动横幅、DRAM 和闪存那几行，以及这些命令的输出。'
       send_hint_boot_log: 'UART 从上电到登录提示符打印的全部内容，不要中断：先是 U-Boot，然后是内核和原厂固件的启动过程。'
       send_paste: '在此粘贴文本，或在下方选择文件'
       send_file: '文件'
       send_photos: '照片：正面、背面、UART 引脚'
       send_dump: '整颗芯片：编程器读出的镜像，或 ipctool 备份'
+      send_firmware: '厂商固件，保持下载时的原样：升级包，或其中的每个文件'
+      send_hint_firmware: '从厂商网站或技术支持获得的升级文件，保持原样，即使它是包含多个镜像的压缩包（u-boot.bin、uImage、rootfs、program.bin…）。从中可以看出厂商如何打包固件，OpenIPC 免拆机刷写摄像头的镜像正是据此制作。只有 OpenIPC 的维护者能看到它。'
       send_public: '随报告公开此转储。其中包含 Wi-Fi 密钥和密码：不勾选则保持私密。'
       send_note: '其他信息：购买渠道、商品名称'
       send_button: '提交到目录'

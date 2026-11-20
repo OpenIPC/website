@@ -11,8 +11,8 @@ import type { BoardsT } from '../../lib/boards-i18n';
 import { editReport, type MemberReport } from '../../lib/club';
 import PhotoChecks from './PhotoChecks';
 
-type AddKind = 'photo' | 'boot_log' | 'uboot_env' | 'backup';
-const ADD_KINDS: AddKind[] = ['photo', 'boot_log', 'uboot_env', 'backup'];
+type AddKind = 'photo' | 'boot_log' | 'uboot_env' | 'backup' | 'firmware';
+const ADD_KINDS: AddKind[] = ['photo', 'boot_log', 'uboot_env', 'backup', 'firmware'];
 const field = 'rounded-md border border-hairline px-2.5 py-1.5 text-sm text-body';
 
 export default function EditReport({ report, t, onSaved, onCancel }: {
@@ -110,11 +110,11 @@ export default function EditReport({ report, t, onSaved, onCancel }: {
           </select>
           {/* keyed on the kind: switching it clears what was picked, input and all */}
           <input key={kind} type="file" multiple={kind !== 'backup'} aria-label={t('club.edit_add')}
-            accept={kind === 'photo' ? 'image/jpeg,image/png,image/webp' : kind === 'backup' ? '' : '.txt,.log,text/plain'}
+            accept={kind === 'photo' ? 'image/jpeg,image/png,image/webp' : kind === 'backup' || kind === 'firmware' ? '' : '.txt,.log,text/plain'}
             onChange={(e) => setAdd([...((e.target as HTMLInputElement).files ?? [])])} class="text-sm text-body" />
         </div>
         {kind === 'photo' && <PhotoChecks files={add} onFiles={setAdd} own={own} onOwn={setOwn} onBusy={setProcessing} t={t} />}
-        {(kind === 'boot_log' || kind === 'uboot_env') && <p class="m-0 text-[12px] text-body-secondary">{t(`club.send_hint_${kind}`)}</p>}
+        {(kind === 'boot_log' || kind === 'uboot_env' || kind === 'firmware') && <p class="m-0 text-[12px] text-body-secondary">{t(`club.send_hint_${kind}`)}</p>}
         {kind === 'backup' && (
           <>
             <p class="m-0 text-[12px] text-body-secondary">{t('club.send_dump')}</p>

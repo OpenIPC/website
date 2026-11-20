@@ -88,6 +88,24 @@ test('a dump read with a programmer goes with the photos, private unless ticked'
   }
 });
 
+test('the vendor\'s stock firmware goes with the photos as its files, without a dump or consent (#600)', async () => {
+  const sent = capture();
+  const { container, getByText } = render(<NewCameraForm locale="en" />);
+  fireEvent.input(input(container, 'Maker'), { target: { value: 'Dahua' } });
+  fireEvent.input(input(container, 'Board marking'), { target: { value: 'IPC-HFW1230S' } });
+  const [photosIn, , firmwareIn] = [...container.querySelectorAll('input[type=file]')];
+  expect((firmwareIn as HTMLInputElement).multiple).toBe(true);
+  fireEvent.change(photosIn, { target: { files: [new File(['a'], 'front.jpg', { type: 'image/jpeg' })] } });
+  fireEvent.change(firmwareIn, { target: { files: [new File([new Uint8Array(16)], 'DH_IPC.bin'), new File([new Uint8Array(16)], 'romfs.img')] } });
+  fireEvent.click(getByText(/These photos are of my own camera/));
+  await waitFor(() => expect((container.querySelector('button[type=submit]') as HTMLButtonElement).disabled).toBe(false));
+  fireEvent.submit(container.querySelector('form')!);
+  await waitFor(() => expect(getByText(/Received as/)).toBeTruthy());
+  expect(sent[0].getAll('firmware').map((f) => (f as File).name)).toEqual(['DH_IPC.bin', 'romfs.img']);
+  expect(sent[0].get('backup')).toBeNull();
+  expect(sent[0].get('consent')).toBeNull();
+});
+
 const queued = (over: Partial<Queued>): Queued => ({
   id: 'r-new23456', received_at: '2026-10-06T10:00:00Z', channel: 'web', status: 'pending', chip: '', sensor: '',
   board: null, models: [], backup_consent: 'none', member: 'Ivan', file_list: [], potential: 2, revision: 0,

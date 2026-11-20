@@ -181,6 +181,33 @@
     h3 { font-size: var(--text-h3); }
     h4 { font-size: 1.5rem; }
   }
+
+  /*
+   * A file input's button (#600). Preflight strips ::file-selector-button of
+   * its border and background, which left "Choose files" as plain text beside
+   * the file's name, not something to press. Outlined like .site-btn-sm, on
+   * every file input the site has.
+   */
+  input[type='file']::file-selector-button {
+    background-color: #fff;
+    border: 1px solid var(--color-brand-blue);
+    border-radius: 0.25rem;
+    color: var(--color-brand-blue);
+    cursor: pointer;
+    font-size: 0.875rem;
+    font-weight: 600;
+    margin-inline-end: 0.75rem;
+    padding: 0.25rem 0.75rem;
+    transition:
+      color 0.15s ease-in-out,
+      background-color 0.15s ease-in-out;
+  }
+
+  input[type='file']:hover::file-selector-button,
+  input[type='file']:focus-visible::file-selector-button {
+    background-color: var(--color-brand-blue);
+    color: #fff;
+  }
 }
 
 /*

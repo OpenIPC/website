@@ -3,7 +3,8 @@
  * photos of it are a report (POST /api/v1/club/reports, channel web, maker,
  * board and soc instead of a board's model). A whole-flash dump -- read
  * with a programmer when ipctool cannot run, or ipctool's backup -- is
- * private unless the sender ticks the box, as on the board pages; ipctool's
+ * private unless the sender ticks the box, as on the board pages; the
+ * vendor's stock firmware as downloaded (#600) stays the maintainers'; ipctool's
  * output and a boot log help the reviewer. All of them are optional. A maintainer who publishes the report
  * adds the board to the catalogue, and the photos become its first unit.
  *
@@ -27,6 +28,7 @@ export default function NewCameraForm({ locale }: { locale: Locale }) {
   const [photos, setPhotos] = useState<File[]>([]);
   const [dump, setDump] = useState<File | null>(null);
   const [publicDump, setPublicDump] = useState(false);
+  const [firmware, setFirmware] = useState<File[]>([]);
   const [own, setOwn] = useState(false);
   const [processing, setProcessing] = useState(false);
   const [ipctool, setIpctool] = useState('');
@@ -68,6 +70,7 @@ export default function NewCameraForm({ locale }: { locale: Locale }) {
       form.append('backup', dump, dump.name);
       form.set('consent', publicDump ? 'public' : 'private');
     }
+    for (const f of firmware) form.append('firmware', f, f.name);
     setState({ s: 'sending' });
     sendReport(form)
       .then((sent) => setState({ s: 'sent', sent }))
@@ -128,6 +131,12 @@ export default function NewCameraForm({ locale }: { locale: Locale }) {
             {t('club.send_public')}
           </label>
         )}
+      </div>
+      <div class="grid gap-1">
+        <label class="grid gap-1 text-[12.5px] text-body-secondary">{t('club.send_firmware')}
+          <input type="file" multiple onChange={(e) => setFirmware([...((e.target as HTMLInputElement).files ?? [])])} class="text-sm text-body" />
+        </label>
+        <p class="m-0 text-[12px] text-body-secondary">{t('club.send_hint_firmware')}</p>
       </div>
       <details class="text-[12.5px] text-body-secondary">
         <summary class="cursor-pointer text-brand-blue">{t('club.new_more')}</summary>

@@ -59,7 +59,7 @@ func Points(kind string, known bool) int {
 			return StarsPerRawDump
 		}
 		return StarsPerDump
-	case "yaml", "photo", "boot_log", "uboot_env", "note", "document":
+	case "yaml", "photo", "boot_log", "uboot_env", "note", "document", "firmware":
 		if known {
 			return 0
 		}

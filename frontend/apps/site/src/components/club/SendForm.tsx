@@ -1,6 +1,7 @@
 /**
  * The board panel's "Have this board?" ask, answered on the page: paste a
- * boot log or a U-Boot console, drop photos or a flash dump, and it goes to
+ * boot log or a U-Boot console, drop photos, a flash dump or the vendor's
+ * stock firmware (#600), and it goes to
  * the owner-reports queue for the board (POST /api/v1/club/reports, channel
  * web, model = the board). It replaced a prefilled GitHub issue (#365, #366).
  *
@@ -20,8 +21,8 @@ import { STARS, fetchMe, remembered, sendReport, type Member, type Sent } from '
 import IpctoolCode from './IpctoolCode';
 import PhotoChecks from './PhotoChecks';
 
-export type SendKind = 'boot_log' | 'uboot_env' | 'photo' | 'backup';
-const KINDS: SendKind[] = ['uboot_env', 'boot_log', 'photo', 'backup'];
+export type SendKind = 'boot_log' | 'uboot_env' | 'photo' | 'backup' | 'firmware';
+const KINDS: SendKind[] = ['uboot_env', 'boot_log', 'photo', 'backup', 'firmware'];
 // An answer names no board, which a programmer's dump needs (one from ipctool would be a report of its own).
 const ANSWER_KINDS: SendKind[] = ['photo', 'boot_log', 'uboot_env'];
 
@@ -111,15 +112,16 @@ export default function SendForm({ model, answers, kind, locale, t, note }: {
           </button>
         ))}
       </div>
-      {textual && <p class="m-0 text-[12px] text-body-secondary">{t(`club.send_hint_${chosen}`)}</p>}
+      {(textual || chosen === 'firmware') && <p class="m-0 text-[12px] text-body-secondary">{t(`club.send_hint_${chosen}`)}</p>}
       {textual && (
         <textarea aria-label={t('club.send_paste')} placeholder={t('club.send_paste')} value={text}
           onInput={(e) => setText((e.target as HTMLTextAreaElement).value)}
           class="min-h-[96px] w-full resize-y rounded-md border border-hairline bg-surface-alt p-2 font-mono text-[12.5px] leading-snug" />
       )}
       <label class="grid gap-1 text-[12.5px] text-body-secondary">
-        {chosen === 'photo' ? t('club.send_photos') : chosen === 'backup' ? t('club.send_dump') : t('club.send_file')}
-        <input type="file" multiple={chosen === 'photo'} accept={chosen === 'photo' ? 'image/jpeg,image/png,image/webp' : chosen === 'backup' ? '' : '.txt,.log,text/plain'}
+        {chosen === 'photo' ? t('club.send_photos') : chosen === 'backup' ? t('club.send_dump') : chosen === 'firmware' ? t('club.send_firmware') : t('club.send_file')}
+        <input type="file" multiple={chosen === 'photo' || chosen === 'firmware'}
+          accept={chosen === 'photo' ? 'image/jpeg,image/png,image/webp' : chosen === 'backup' || chosen === 'firmware' ? '' : '.txt,.log,text/plain'}
           onChange={(e) => setFiles([...((e.target as HTMLInputElement).files ?? [])])} class="text-sm text-body" />
       </label>
       {chosen === 'photo' && <PhotoChecks files={files} onFiles={setFiles} own={own} onOwn={setOwn} onBusy={setProcessing} t={t} />}
