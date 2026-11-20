@@ -4,6 +4,7 @@ import (
 	"context"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -274,5 +275,51 @@ func TestTheSameBoardUnderAnotherMakerIsNotMadeAgain(t *testing.T) {
 	}
 	if _, err := create(t, pool, NewModel{MakerID: "rt", MakerName: "Rostelecom", ModelID: "rt-ipc8232swc-we", Model: "IPC8232SWC-WE", SoC: "SSC335DE"}); err != nil {
 		t.Errorf("another SoC refused: %v", err)
+	}
+}
+
+// The same board is found by any code the proposal would give it, by a SoC
+// written as shorthand, and once only when two reviews make it at once.
+func TestTheSameBoardIsFoundByAliasShorthandAndRace(t *testing.T) {
+	pool, _ := imported(t)
+	ctx := context.Background()
+	if _, err := pool.Exec(ctx, `INSERT INTO board_manufacturers (id, name) VALUES ('uniview', 'Uniview')`); err != nil {
+		t.Fatal(err)
+	}
+	id, err := create(t, pool, NewModel{MakerID: "uniview", MakerName: "Uniview", ModelID: "uniview-c1l", Model: "C1L-2WN", SoC: "Hi3516DV100"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if sug, _ := Suggest(ctx, pool, "Rostelecom", "C1L-2WN", "Hi3516D"); sug.Existing != id {
+		t.Errorf("shorthand SoC: %+v", sug)
+	}
+	if _, err := create(t, pool, NewModel{MakerID: "rt", MakerName: "Rostelecom", ModelID: "rt-new-name", Model: "NEW-NAME",
+		SoC: "Hi3516DV100", Aliases: []string{"C1L 2WN"}}); err == nil || !strings.Contains(err.Error(), "already has "+id) {
+		t.Errorf("another maker's marking as an alias: %v", err)
+	}
+
+	tx1, err := pool.Begin(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer tx1.Rollback(ctx)
+	if _, err := CreateModel(ctx, tx1, NewModel{MakerID: "acme", MakerName: "Acme", ModelID: "acme-x9", Model: "X9", SoC: "Hi3516DV100"}, supported); err != nil {
+		t.Fatal(err)
+	}
+	second := make(chan error, 1)
+	go func() {
+		_, err := create(t, pool, NewModel{MakerID: "rt", MakerName: "Rostelecom", ModelID: "rt-x9", Model: "X9", SoC: "Hi3516DV100"})
+		second <- err
+	}()
+	select {
+	case err := <-second:
+		t.Fatalf("the second review did not wait for the first: %v", err)
+	case <-time.After(300 * time.Millisecond):
+	}
+	if err := tx1.Commit(ctx); err != nil {
+		t.Fatal(err)
+	}
+	if err := <-second; err == nil || !strings.Contains(err.Error(), "already has acme-x9") {
+		t.Errorf("the second review: %v", err)
 	}
 }
