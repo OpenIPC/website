@@ -614,6 +614,7 @@ zh:
       send_guest: '无需登录也可提交。登录后可获得星星并跟踪审核进度。'
       send_failed: '未提交：{error}'
       send_empty: '请先添加文件、照片或文本。'
+      send_too_large: '一次发送的所有文件合计不超过 {n} MB。其余的请作为另一份报告发送，或在本报告发出后再编辑添加。'
       reward: '+{n} ★'
       send_another: '再提交其他内容'
       review_title: '审核队列'

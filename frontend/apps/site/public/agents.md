@@ -134,6 +134,8 @@ board (`model`, or `maker` and `board` with a photo), or answers another
 | `tool` | your name and version, e.g. `claude-code 2.x` | 200 chars |
 | `note` (text, not a file) | a line of text: where the camera came from, what it is sold as. Longer text goes in the file above. | 4000 chars |
 
+All the files of one report together: at most 300 MB, the most the server takes in one request.
+
 For example (with your own name and version in `tool`):
 
     curl -F channel=agent -F tool="claude-code 2.x" -F yaml=@ipctool.yml \

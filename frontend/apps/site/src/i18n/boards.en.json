@@ -299,6 +299,7 @@
       "send_photos": "Photos: the front, the back, the UART pins",
       "send_public": "Publish the dump with the report. It holds Wi-Fi keys and passwords: leave this off to keep it private.",
       "send_signed_in": "Signed in as {name}. Stars count once a maintainer accepts it.",
+      "send_too_large": "All files together: at most {n} MB in one send. Send the rest as another report, or edit this one once it is sent.",
       "sending": "Sending…",
       "sent_guest": "Received as {id}. A maintainer reviews it before it is shown.",
       "sent_marking": "Nothing in it names the board. A photo of the board's marking (the code printed on the PCB, or its sticker) is what lets a maintainer place it: add one.",

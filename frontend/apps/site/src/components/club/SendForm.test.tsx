@@ -85,6 +85,27 @@ describe('the send form', () => {
     expect(sent[0].get('consent')).toBeNull();
   });
 
+  test('text pasted for a log does not count once firmware is chosen instead', () => {
+    const sent = capture();
+    const { container, getByRole } = render(<SendForm model="anjoy-ms-j10" kind="boot_log" locale="en" t={t} />);
+    fireEvent.input(container.querySelector('textarea')!, { target: { value: 'U-Boot 2016.11\n' } });
+    fireEvent.click(getByRole('button', { name: /Stock firmware/ }));
+    fireEvent.submit(container.querySelector('form')!);
+    expect(getByRole('alert').textContent).toBe(t('club.send_empty'));
+    expect(sent).toHaveLength(0);
+  });
+
+  test('more than one request carries is refused before it is sent', () => {
+    const sent = capture();
+    const { container, getByRole } = render(<SendForm model="anjoy-ms-j10" kind="firmware" locale="en" t={t} />);
+    // Sized without the bytes: nothing this large is allocated.
+    const big = (name: string) => Object.defineProperty(new File([], name), 'size', { value: 150 << 20 });
+    fireEvent.change(container.querySelector('input[type=file]')!, { target: { files: [big('a.bin'), big('b.bin')] } });
+    fireEvent.submit(container.querySelector('form')!);
+    expect(getByRole('alert').textContent).toContain('at most 290 MB');
+    expect(sent).toHaveLength(0);
+  });
+
   test('refuses to send nothing, without a request', () => {
     const sent = capture();
     const { container, getByRole } = render(<SendForm model="anjoy-ms-j10" kind="boot_log" locale="en" t={t} />);

@@ -619,6 +619,7 @@ en:
       send_guest: 'You can send without signing in. Sign in to collect stars and follow what happens to it.'
       send_failed: 'Not sent: {error}'
       send_empty: 'Add a file, a photo or some text first.'
+      send_too_large: 'All files together: at most {n} MB in one send. Send the rest as another report, or edit this one once it is sent.'
       reward: '+{n} ★'
       send_another: 'Send something else'
       review_title: 'Review queue'

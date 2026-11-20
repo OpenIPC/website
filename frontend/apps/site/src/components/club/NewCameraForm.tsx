@@ -13,7 +13,7 @@
 import { useEffect, useState } from 'preact/hooks';
 import { useBoardsTranslations } from '../../lib/boards-i18n';
 import { pathFor, type Locale } from '../../lib/i18n';
-import { STARS, fetchMe, remembered, sendReport, type Member, type Sent } from '../../lib/club';
+import { MAX_SEND_MB, STARS, fetchMe, remembered, sendReport, tooLarge, type Member, type Sent } from '../../lib/club';
 import IpctoolCode from './IpctoolCode';
 import PhotoChecks from './PhotoChecks';
 
@@ -71,6 +71,10 @@ export default function NewCameraForm({ locale }: { locale: Locale }) {
       form.set('consent', publicDump ? 'public' : 'private');
     }
     for (const f of firmware) form.append('firmware', f, f.name);
+    if (tooLarge([...photos, dump, ...firmware])) {
+      setState({ s: 'error', error: t('club.send_too_large', { n: MAX_SEND_MB }) });
+      return;
+    }
     setState({ s: 'sending' });
     sendReport(form)
       .then((sent) => setState({ s: 'sent', sent }))

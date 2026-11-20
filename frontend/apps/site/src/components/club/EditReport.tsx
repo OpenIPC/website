@@ -8,7 +8,7 @@
  */
 import { useState } from 'preact/hooks';
 import type { BoardsT } from '../../lib/boards-i18n';
-import { editReport, type MemberReport } from '../../lib/club';
+import { MAX_SEND_MB, editReport, tooLarge, type MemberReport } from '../../lib/club';
 import PhotoChecks from './PhotoChecks';
 
 type AddKind = 'photo' | 'boot_log' | 'uboot_env' | 'backup' | 'firmware';
@@ -62,6 +62,10 @@ export default function EditReport({ report, t, onSaved, onCancel }: {
     for (const f of add) form.append(kind, f, f.name);
     if (kind === 'backup' && add.length > 0) form.set('consent', publicDump ? 'public' : 'private');
     if (photos) form.set('own_photos', 'yes');
+    if (tooLarge(add)) {
+      setError(t('club.send_too_large', { n: MAX_SEND_MB }));
+      return;
+    }
     setBusy(true);
     setError(null);
     editReport(report.id, form)

@@ -17,7 +17,7 @@
 import { useEffect, useState } from 'preact/hooks';
 import type { BoardsT } from '../../lib/boards-i18n';
 import { pathFor, type Locale } from '../../lib/i18n';
-import { STARS, fetchMe, remembered, sendReport, type Member, type Sent } from '../../lib/club';
+import { MAX_SEND_MB, STARS, fetchMe, remembered, sendReport, tooLarge, type Member, type Sent } from '../../lib/club';
 import IpctoolCode from './IpctoolCode';
 import PhotoChecks from './PhotoChecks';
 
@@ -48,7 +48,8 @@ export default function SendForm({ model, answers, kind, locale, t, note }: {
   const textual = chosen === 'boot_log' || chosen === 'uboot_env';
   const submit = (e: Event) => {
     e.preventDefault();
-    if (!text.trim() && files.length === 0 && !extra.trim()) {
+    // Text pasted for a log is not sent once another kind is chosen.
+    if (!(textual && text.trim()) && files.length === 0 && !extra.trim()) {
       setState({ s: 'error', error: t('club.send_empty') });
       return;
     }
@@ -71,6 +72,10 @@ export default function SendForm({ model, answers, kind, locale, t, note }: {
     for (const f of files) form.append(chosen, f, f.name);
     if (chosen === 'backup') form.set('consent', publicDump ? 'public' : 'private');
     if (photos) form.set('own_photos', 'yes');
+    if (tooLarge(files)) {
+      setState({ s: 'error', error: t('club.send_too_large', { n: MAX_SEND_MB }) });
+      return;
+    }
     setState({ s: 'sending' });
     sendReport(form)
       .then((sent) => setState({ s: 'sent', sent }))

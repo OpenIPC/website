@@ -298,6 +298,19 @@ export async function editReport(id: string, form: FormData): Promise<{ status: 
   return body as { status: ReportState; rereview: boolean };
 }
 
+/**
+ * The most one send may carry, all its files together, in MB. nginx takes at
+ * most 300m in one request to /api/v1/reports and /api/v1/club/ (and so do
+ * the mirrors), and refuses more before the service reads a byte; this
+ * leaves room for the multipart framing and the fields.
+ */
+export const MAX_SEND_MB = 290;
+
+/** Whether the files chosen are together more than one send may carry. */
+export function tooLarge(files: (Blob | null)[]): boolean {
+  return files.reduce((n, f) => n + (f?.size ?? 0), 0) > MAX_SEND_MB * 2 ** 20;
+}
+
 export async function sendReport(form: FormData): Promise<Sent> {
   const r = await fetch(`${BASE}/reports`, { method: 'POST', body: form, credentials: 'same-origin' });
   let body: unknown = null;
