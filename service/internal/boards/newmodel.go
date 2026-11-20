@@ -67,6 +67,26 @@ var (
 	modelID = regexp.MustCompile(`^[a-z0-9][a-z0-9-]{0,127}$`)
 )
 
+// socKey is a SoC as sent, lower-case, its shorthand written out (Hi3516D is
+// hi3516dv100): what the catalogue's slug is when it knows the chip.
+func socKey(label string) string {
+	l := strings.ToLower(strings.ReplaceAll(strings.TrimSpace(label), " ", ""))
+	if full, ok := socShorthand[l]; ok {
+		l = full
+	}
+	return l
+}
+
+// sameBoardSQL finds the board another maker files under the same code
+// with the same SoC: one camera sold under two names (Rostelecom's
+// IPC8232SWC-WE is Uniview's), not a second board. $1 is the code, $2 the
+// maker proposed, $3 and $4 the SoC as sent and as the catalogue names it.
+const sameBoardSQL = `
+	SELECT a.model_id FROM board_model_aliases a JOIN board_models m ON m.id = a.model_id
+	WHERE a.code_norm = $1 AND a.maker_id <> $2 AND $3 <> ''
+	  AND (lower(m.soc) IN (lower($3), lower($4)) OR lower(m.soc_label) IN (lower($3), lower($4)))
+	ORDER BY a.model_id LIMIT 1`
+
 type queryer interface {
 	QueryRow(ctx context.Context, sql string, args ...any) pgx.Row
 	Query(ctx context.Context, sql string, args ...any) (pgx.Rows, error)
@@ -102,6 +122,12 @@ func Suggest(ctx context.Context, q queryer, maker, model, soc string, devices .
 		LIMIT 1`, s.MakerID, NormCode(s.Model), s.ModelID).Scan(&s.Existing)
 	if err != nil && !errors.Is(err, pgx.ErrNoRows) {
 		return s, err
+	}
+	if s.Existing == "" {
+		err = q.QueryRow(ctx, sameBoardSQL, NormCode(s.Model), s.MakerID, s.SoC, socKey(s.SoC)).Scan(&s.Existing)
+		if err != nil && !errors.Is(err, pgx.ErrNoRows) {
+			return s, err
+		}
 	}
 	if s.Existing != "" {
 		return s, nil
@@ -177,6 +203,35 @@ func CreateModel(ctx context.Context, tx pgx.Tx, m NewModel, resolve func(string
 	code := NormCode(m.Model)
 	if !codeShape.MatchString(code) {
 		return "", fmt.Errorf("new board: the marking %q has no letters or digits the catalogue can key it by", m.Model)
+	}
+	// Every code the board will answer to, each held for the transaction so
+	// two reviews of one camera under two makers cannot both make it; then
+	// none may be another maker's board on the same SoC.
+	codes := []string{code}
+	for _, a := range m.Aliases {
+		if c := NormCode(a); c != "" && !slices.Contains(codes, c) {
+			codes = append(codes, c)
+		}
+	}
+	slices.Sort(codes)
+	soc := socSlug(m.SoC, resolve)
+	if soc == "" {
+		soc = socKey(m.SoC)
+	}
+	for _, c := range codes {
+		if _, err := tx.Exec(ctx, `SELECT pg_advisory_xact_lock(hashtextextended('board-code:' || $1, 0))`, c); err != nil {
+			return "", err
+		}
+	}
+	for _, c := range codes {
+		var same string
+		err := tx.QueryRow(ctx, sameBoardSQL, c, m.MakerID, m.SoC, soc).Scan(&same)
+		if err == nil {
+			return "", fmt.Errorf("new board: the catalogue already has %s, marked %s on the same SoC; link the report to it", same, c)
+		}
+		if !errors.Is(err, pgx.ErrNoRows) {
+			return "", err
+		}
 	}
 	if _, err := tx.Exec(ctx, `INSERT INTO board_manufacturers (id, name, position)
 		VALUES ($1, $2, (SELECT coalesce(max(position), 0) + 1 FROM board_manufacturers)) ON CONFLICT (id) DO NOTHING`,
@@ -293,10 +348,7 @@ func fit(id string, n int) string {
 
 // socSlug is the catalogue's slug for a SoC as a person or a shop wrote it.
 func socSlug(label string, resolve func(string) string) string {
-	l := strings.ToLower(strings.ReplaceAll(label, " ", ""))
-	if full, ok := socShorthand[l]; ok {
-		l = full
-	}
+	l := socKey(label)
 	if resolve == nil || l == "" {
 		return ""
 	}
