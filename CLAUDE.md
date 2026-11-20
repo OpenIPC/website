@@ -238,7 +238,8 @@ restores the image but never the schema, so keep migrations additive.
   photos (`report_proposals`, migration 028), and publishing it from the
   review queue adds the board (`boards.CreateModel`, alias source `club`,
   `created_by_report`, migration 033) -- the only way a model is made
-  besides the importers. An agent (`channel=agent`) may name a board
+  besides the importers. A marking and SoC another maker already has is
+  that board, not a new one (a carrier's name for a Uniview camera). An agent (`channel=agent`) may name a board
   (`model`) or propose one as the form does, so a whole chip read without
   ipctool -- no shell on the camera -- is a report from `agents.md` too. Rejecting that report later unlinks it, and the
   units refresh removes the board once nothing else is on it

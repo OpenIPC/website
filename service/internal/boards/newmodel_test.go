@@ -243,3 +243,36 @@ func TestMarkingsAreAddedToABoardTheCatalogueHas(t *testing.T) {
 		t.Error("a board the catalogue does not have")
 	}
 }
+
+// One camera sold under two names is one board: a proposal naming a
+// carrier (Rostelecom) for a marking and SoC another maker (Uniview) already
+// has is that board, in the suggestion and when the board would be made. The
+// same marking on another SoC is another board.
+func TestTheSameBoardUnderAnotherMakerIsNotMadeAgain(t *testing.T) {
+	pool, _ := imported(t)
+	ctx := context.Background()
+	if _, err := pool.Exec(ctx, `INSERT INTO board_manufacturers (id, name) VALUES ('uniview', 'Uniview')`); err != nil {
+		t.Fatal(err)
+	}
+	id, err := create(t, pool, NewModel{MakerID: "uniview", MakerName: "Uniview", ModelID: "uniview-ipc8232swc-we", Model: "IPC8232SWC-WE", SoC: "Hi3516EV300"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	sug, err := Suggest(ctx, pool, "Rostelecom", "IPC8232SWC-WE", "Hi3516EV300")
+	if err != nil || sug.Existing != id {
+		t.Fatalf("suggested %+v: %v", sug, err)
+	}
+	if _, err := create(t, pool, NewModel{MakerID: "rt", MakerName: "Rostelecom", ModelID: "rt-ipc8232swc-we", Model: "IPC8232SWC-WE", SoC: "Hi3516EV300"}); err == nil ||
+		!strings.Contains(err.Error(), "already has "+id) {
+		t.Errorf("made again under another maker: %v", err)
+	}
+	if n := count(t, pool, `SELECT count(*) FROM board_manufacturers WHERE id = 'rt'`); n != 0 {
+		t.Errorf("the refused board's maker was added")
+	}
+	if sug, _ := Suggest(ctx, pool, "Rostelecom", "IPC8232SWC-WE", "SSC335DE"); sug.Existing != "" {
+		t.Errorf("another SoC: %+v", sug)
+	}
+	if _, err := create(t, pool, NewModel{MakerID: "rt", MakerName: "Rostelecom", ModelID: "rt-ipc8232swc-we", Model: "IPC8232SWC-WE", SoC: "SSC335DE"}); err != nil {
+		t.Errorf("another SoC refused: %v", err)
+	}
+}
