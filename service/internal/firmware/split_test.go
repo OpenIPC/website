@@ -338,3 +338,36 @@ func TestInfinity6CIsSplitOnly(t *testing.T) {
 		}
 	}
 }
+
+// builder's FPV stacks for ssc378qe are published only as the plain package:
+// split-only or not, the image is made from it in fixed slots, as before.
+func TestInfinity6CBuilderStackKeepsFixedSlots(t *testing.T) {
+	cat := loadCatalogue(t)
+	soc := cat.SoC("ssc378qe")
+	idx := NewIndex("b", []Asset{
+		{Name: "u-boot-ssc378qe-nor.bin"},
+		{Name: "openipc.ssc378qe-nor-lite-split.tgz"},
+		{Name: "openipc.ssc378qe-nor-lite.tgz"},
+		{Name: "openipc.ssc378qe-nor-wfbng.tgz", Repo: RepoBuilder},
+	}, nil, nil)
+	if got := NORReleases(soc, idx); !slices.Equal(got, []string{"lite", "wfbng"}) {
+		t.Errorf("NOR releases %v, want [lite wfbng]", got)
+	}
+	for ed, want := range map[string]string{
+		"lite":  "openipc.ssc378qe-nor-lite-split.tgz",
+		"wfbng": "openipc.ssc378qe-nor-wfbng.tgz",
+	} {
+		spec, err := NewSpec(soc, "nor", ed, 16, 16)
+		if err != nil {
+			t.Fatal(err)
+		}
+		in, err := Resolve(spec, idx)
+		if err != nil {
+			t.Errorf("%s: %v", ed, err)
+			continue
+		}
+		if in.Linux.Name != want || in.Spec.Split != (ed == "lite") {
+			t.Errorf("%s: %s split=%v, want %s", ed, in.Linux.Name, in.Spec.Split, want)
+		}
+	}
+}

@@ -250,7 +250,7 @@ func SplitEdition(soc *catalogue.SoC, idx *Index, edition string) bool {
 	// split_layout.c), so any U-Boot that bootm's the uImage at the firmware
 	// offset boots it -- a fixed-mtdparts vendor's included.
 	if soc.NORSplitOnly {
-		return true
+		return !builderFixedSlots(soc, idx, edition)
 	}
 	// Otherwise only behind a bootloader that finds the layout: a camera's
 	// own, or an older one with fixed partitions, does not boot firmware.bin,
@@ -274,11 +274,27 @@ func NORReleases(soc *catalogue.SoC, idx *Index) []string {
 	}
 	var out []string
 	for _, r := range rels {
-		if _, ok := idx.Asset(SplitName(board, r)); ok {
+		if _, ok := idx.Asset(SplitName(board, r)); ok || builderFixedSlots(soc, idx, r) {
 			out = append(out, r)
 		}
 	}
 	return out
+}
+
+// builderFixedSlots says whether a NOR edition is a builder stack published
+// only as the plain package: the fixed-slot image it is made into is the one
+// builder ships, even on a split-only SoC, whose own firmware's plain package
+// is the stale one nor_split_only is there to skip.
+func builderFixedSlots(soc *catalogue.SoC, idx *Index, edition string) bool {
+	if idx == nil {
+		return false
+	}
+	board := BoardFor(soc, idx, "nor")
+	if _, split := idx.Asset(SplitName(board, edition)); split {
+		return false
+	}
+	a, ok := idx.Asset(IndexName(board, "nor", edition))
+	return ok && a.Repo == RepoBuilder
 }
 
 func (s Spec) ubi() bool { return s.nand() && s.SoC.UBINand() }
