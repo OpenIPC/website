@@ -71,7 +71,6 @@ effective_cache_size = 256MB
 work_mem = 4MB
 maintenance_work_mem = 32MB
 password_encryption = scram-sha-256
-log_min_duration_statement = 250ms
 CONF
   [ "$(cat "$conf")" = "$before" ] || changed=1
   # The containers run as uid 1000, which is not the role's name, so peer
