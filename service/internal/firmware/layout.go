@@ -241,14 +241,23 @@ func splitOnly(s Spec, idx *Index) bool {
 // edition with no split package at all (builder's FPV builds) keeps the fixed
 // slots.
 func SplitEdition(soc *catalogue.SoC, idx *Index, edition string) bool {
-	// Only behind a bootloader that finds the layout: a camera's own, or an
-	// older one with fixed partitions, does not boot firmware.bin, so a SoC
-	// that names no -nor.bin keeps listing the plain package it installs.
-	if !soc.NORSplit || !ScansNORLayout(soc) {
+	if !soc.NORSplit {
 		return false
 	}
+	// A split-only SoC has nothing else to install, and needs no bootloader
+	// that finds the layout: its kernel divides firmware.bin itself and
+	// ignores the mtdparts= the bootloader passes (SigmaStar Infinity6C's
+	// split_layout.c), so any U-Boot that bootm's the uImage at the firmware
+	// offset boots it -- a fixed-mtdparts vendor's included.
 	if soc.NORSplitOnly {
 		return true
+	}
+	// Otherwise only behind a bootloader that finds the layout: a camera's
+	// own, or an older one with fixed partitions, does not boot firmware.bin,
+	// so a SoC that names no -nor.bin keeps listing the plain package it
+	// installs.
+	if !ScansNORLayout(soc) {
+		return false
 	}
 	_, split := idx.Asset(SplitName(BoardFor(soc, idx, "nor"), edition))
 	return split

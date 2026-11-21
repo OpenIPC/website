@@ -657,37 +657,37 @@
       "updated_at": "2026-09-23T18:34:58Z",
       "release": "nightly-20260923-830fa4c"
     },
-    "openipc.ssc377-nor-lite.tgz": {
+    "openipc.ssc377-nor-lite-split.tgz": {
       "size": 7211000,
       "digest": "sha256:e890f0478b6e15b3a396085ab6c39383602f67f9d029cc8b706ce88481a53c16",
       "updated_at": "2026-09-23T18:35:00Z",
       "release": "nightly-20260923-830fa4c"
     },
-    "openipc.ssc377d-nor-lite.tgz": {
+    "openipc.ssc377d-nor-lite-split.tgz": {
       "size": 7211051,
       "digest": "sha256:7a983b953c6abe985d216f5627d9ba939a932246cb63c9f30f9527dd49e18202",
       "updated_at": "2026-09-23T18:35:03Z",
       "release": "nightly-20260923-830fa4c"
     },
-    "openipc.ssc377de-nor-lite.tgz": {
+    "openipc.ssc377de-nor-lite-split.tgz": {
       "size": 7211278,
       "digest": "sha256:74b83e616ec347ba2d172b36675b5328ed0202fb1999a208c098c17f84e9c5bc",
       "updated_at": "2026-09-23T18:35:05Z",
       "release": "nightly-20260923-830fa4c"
     },
-    "openipc.ssc377qe-nor-lite.tgz": {
+    "openipc.ssc377qe-nor-lite-split.tgz": {
       "size": 7211958,
       "digest": "sha256:82dc3fae8b9bf71e5ebb1ad4544925994ee6df31b85dcfd2e92c4e846f2090c2",
       "updated_at": "2026-09-23T18:35:08Z",
       "release": "nightly-20260923-830fa4c"
     },
-    "openipc.ssc378de-nor-lite.tgz": {
+    "openipc.ssc378de-nor-lite-split.tgz": {
       "size": 7212043,
       "digest": "sha256:3c06ce156e7ec2bed88d33cec1a7e37f151d5ad0a7da0a064d9b9c7935677215",
       "updated_at": "2026-09-23T18:35:10Z",
       "release": "nightly-20260923-830fa4c"
     },
-    "openipc.ssc378qe-nor-lite.tgz": {
+    "openipc.ssc378qe-nor-lite-split.tgz": {
       "size": 7210988,
       "digest": "sha256:6e149ccc85806cf0ec59dd569eea5b8e8d34b53261acbe7d4f357012a1f0f422",
       "updated_at": "2026-09-23T18:35:13Z",

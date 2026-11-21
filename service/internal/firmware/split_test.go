@@ -306,3 +306,35 @@ func TestSplitImageHasOneLayout(t *testing.T) {
 		t.Errorf("parts8m split image: %s/%s, natural %s/%s", b.Spec.Filename(), b.Key(), a.Spec.Filename(), a.Key())
 	}
 }
+
+// Infinity6C publishes only the split NOR package since firmware#2919: the
+// full image of each of its SoCs is assembled from it, with no plain package
+// in the index at all.
+func TestInfinity6CIsSplitOnly(t *testing.T) {
+	cat := loadCatalogue(t)
+	for _, board := range []string{"ssc377", "ssc377d", "ssc377de", "ssc377qe", "ssc378de", "ssc378qe"} {
+		idx := NewIndex("b", []Asset{
+			{Name: "u-boot-" + board + "-nor.bin"},
+			{Name: "openipc." + board + "-nor-lite-split.tgz"},
+		}, nil, nil)
+		soc := cat.SoC(board)
+		if soc == nil {
+			t.Fatalf("%s: not in the catalogue", board)
+		}
+		if got := NORReleases(soc, idx); !slices.Equal(got, []string{"lite"}) {
+			t.Errorf("%s: NOR releases %v, want [lite]", board, got)
+		}
+		spec, err := NewSpec(soc, "nor", "lite", 16, 16)
+		if err != nil {
+			t.Fatal(err)
+		}
+		in, err := Resolve(spec, idx)
+		if err != nil {
+			t.Errorf("%s lite 16M: %v", board, err)
+			continue
+		}
+		if !in.Spec.Split || in.Linux.Name != "openipc."+board+"-nor-lite-split.tgz" {
+			t.Errorf("%s lite 16M: %+v", board, in)
+		}
+	}
+}

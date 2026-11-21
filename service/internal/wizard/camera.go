@@ -270,7 +270,10 @@ func (c *camera) scansLayout() bool {
 }
 
 func (c *camera) layoutCommands() []string {
-	if c.scansLayout() {
+	if c.scansLayout() || c.split {
+		// A split install has no partitions to size: the kernel finds them in
+		// firmware.bin and ignores the bootloader's mtdparts (see
+		// firmware.SplitEdition), so a fixed-mtdparts vendor's rootmtd is moot.
 		return nil
 	}
 	if c.ubi() {
@@ -292,7 +295,7 @@ func (c *camera) layoutCommands() []string {
 }
 
 func (c *camera) bootloaderVariables() []string {
-	if c.ubi() || c.scansLayout() {
+	if c.ubi() || c.scansLayout() || c.split {
 		// None of the install is a bootloader macro here, so the page has no
 		// uknand, urnand or setnand to point at `printenv` for.
 		return []string{}
