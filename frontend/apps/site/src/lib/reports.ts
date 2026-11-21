@@ -10,7 +10,7 @@ export type ReportState = 'pending' | 'asked' | 'published' | 'rejected' | 'with
 export const waiting = (s: ReportState) => s === 'pending' || s === 'asked';
 
 export interface ReportFile {
-  kind: 'backup' | 'photo' | 'boot_log' | 'uboot_env' | 'note' | 'document';
+  kind: 'backup' | 'photo' | 'boot_log' | 'uboot_env' | 'note' | 'document' | 'firmware';
   name: string;
   bytes: number;
   sha256?: string;

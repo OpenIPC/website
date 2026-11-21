@@ -129,9 +129,12 @@ board (`model`, or `maker` and `board` with a photo), or answers another
 | `own_photos` | `yes` only when the owner tells you the photos are of their own camera and that they took them (not a picture found elsewhere, nor a screen showing one); the reviewer sees whether it was said | |
 | `boot_log`, `uboot_env`, `note` (file, repeatable) | text | 4 MB each |
 | `document` (file) | PDF | 20 MB |
+| `firmware` (file, repeatable) | the vendor's stock firmware as downloaded: its update archive, or each file in it. Kept for OpenIPC's maintainers, never published. | 128 MB each |
 | `channel` | `agent` | |
 | `tool` | your name and version, e.g. `claude-code 2.x` | 200 chars |
 | `note` (text, not a file) | a line of text: where the camera came from, what it is sold as. Longer text goes in the file above. | 4000 chars |
+
+All the files of one report together: at most 300 MB, the most the server takes in one request.
 
 For example (with your own name and version in `tool`):
 

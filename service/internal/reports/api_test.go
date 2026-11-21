@@ -853,3 +853,56 @@ func TestAPublishedReportsDumpIsLinkedOrCounted(t *testing.T) {
 		}
 	}
 }
+
+// A vendor's stock firmware as downloaded (#600) -- an update archive, or
+// the images it unpacks to -- is kept for the maintainers: private whatever
+// the consent, never served once the report is published, and no reviewer
+// can publish it. A picture sent as firmware was picked in the wrong place.
+func TestStockFirmwareIsKeptForTheMaintainersOnly(t *testing.T) {
+	e := newEnv(t)
+	ctx := context.Background()
+	zip := append([]byte("PK\x03\x04"), bytes.Repeat([]byte{0}, 600)...)
+	rec, out := e.post(t, upload{
+		fields: map[string]string{"channel": "web", "model": "xiongmai-50h20l", "consent": "public"},
+		files:  map[string][]byte{"firmware": zip, "firmware#2": bytes.Repeat([]byte{0x27, 0x05, 0x19, 0x56}, 200)},
+	}, "203.0.113.60")
+	if rec.Code != 201 {
+		t.Fatalf("%d %s", rec.Code, rec.Body)
+	}
+	files := out["files"].([]any)
+	if len(files) != 2 {
+		t.Fatalf("files: %v", files)
+	}
+	for _, f := range files {
+		if f := f.(map[string]any); f["kind"] != "firmware" || f["private"] != true {
+			t.Errorf("a firmware file: %v", f)
+		}
+	}
+	id := out["id"].(string)
+	var mimes []string
+	rows, _ := e.pool.Query(ctx, `SELECT mime FROM report_files WHERE report_id = $1 ORDER BY mime`, id)
+	for rows.Next() {
+		var m string
+		_ = rows.Scan(&m)
+		mimes = append(mimes, m)
+	}
+	if strings.Join(mimes, ",") != "application/octet-stream,application/zip" {
+		t.Errorf("mimes: %v", mimes)
+	}
+	if err := (&Store{DB: e.pool}).Review(ctx, id, "publish", "test", ""); err != nil {
+		t.Fatal(err)
+	}
+	for _, pos := range []string{"1", "2"} {
+		if rec, _ := e.get(t, "/api/v1/reports/"+id+"/files/"+pos); rec.Code != 404 {
+			t.Errorf("published firmware %s answered %d", pos, rec.Code)
+		}
+	}
+	if err := e.api.DecidePhoto(ctx, id, 1, PhotoAsSent, nil, "test"); !errors.Is(err, ErrNotPhoto) {
+		t.Errorf("publishing firmware as sent: %v", err)
+	}
+
+	if rec, out := e.post(t, upload{fields: map[string]string{"channel": "web", "model": "xiongmai-50h20l"},
+		files: map[string][]byte{"firmware": jpeg}}, "203.0.113.61"); rec.Code != 415 {
+		t.Errorf("a photo as firmware: %d %v", rec.Code, out)
+	}
+}

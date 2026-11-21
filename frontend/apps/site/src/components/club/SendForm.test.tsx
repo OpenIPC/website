@@ -70,6 +70,42 @@ describe('the send form', () => {
     expect((sent[0].get('backup') as File).name).toBe('flash.bin');
   });
 
+  test('stock firmware goes as the files of its archive, several at once, with no consent (#600)', async () => {
+    const sent = capture();
+    const { container, getByRole, getByText, queryByText } = render(<SendForm model="anjoy-ms-j10" kind="photo" locale="en" t={t} />);
+    fireEvent.click(getByRole('button', { name: /Stock firmware/ }));
+    expect(queryByText(/Only OpenIPC's maintainers see it/)).not.toBeNull();
+    const input = container.querySelector('input[type=file]') as HTMLInputElement;
+    expect(input.multiple).toBe(true);
+    const files = [new File([new Uint8Array(64)], 'u-boot.bin'), new File([new Uint8Array(64)], 'program.bin')];
+    fireEvent.change(input, { target: { files } });
+    fireEvent.submit(container.querySelector('form')!);
+    await waitFor(() => expect(getByText(/Received/)).toBeTruthy());
+    expect(sent[0].getAll('firmware').map((f) => (f as File).name)).toEqual(['u-boot.bin', 'program.bin']);
+    expect(sent[0].get('consent')).toBeNull();
+  });
+
+  test('text pasted for a log does not count once firmware is chosen instead', () => {
+    const sent = capture();
+    const { container, getByRole } = render(<SendForm model="anjoy-ms-j10" kind="boot_log" locale="en" t={t} />);
+    fireEvent.input(container.querySelector('textarea')!, { target: { value: 'U-Boot 2016.11\n' } });
+    fireEvent.click(getByRole('button', { name: /Stock firmware/ }));
+    fireEvent.submit(container.querySelector('form')!);
+    expect(getByRole('alert').textContent).toBe(t('club.send_empty'));
+    expect(sent).toHaveLength(0);
+  });
+
+  test('more than one request carries is refused before it is sent', () => {
+    const sent = capture();
+    const { container, getByRole } = render(<SendForm model="anjoy-ms-j10" kind="firmware" locale="en" t={t} />);
+    // Sized without the bytes: nothing this large is allocated.
+    const big = (name: string) => Object.defineProperty(new File([], name), 'size', { value: 150 << 20 });
+    fireEvent.change(container.querySelector('input[type=file]')!, { target: { files: [big('a.bin'), big('b.bin')] } });
+    fireEvent.submit(container.querySelector('form')!);
+    expect(getByRole('alert').textContent).toContain('at most 290 MB');
+    expect(sent).toHaveLength(0);
+  });
+
   test('refuses to send nothing, without a request', () => {
     const sent = capture();
     const { container, getByRole } = render(<SendForm model="anjoy-ms-j10" kind="boot_log" locale="en" t={t} />);

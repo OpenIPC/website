@@ -31,6 +31,9 @@ const (
 	maxPhoto       = 20 << 20
 	maxText        = 4 << 20
 	maxDocument    = 20 << 20
+	// maxFirmware: one file of a vendor's stock firmware, an update
+	// archive or one image of it (#600).
+	maxFirmware = 128 << 20
 	maxField       = 4000
 	// UploadIdle: how long an upload may go without a byte arriving.
 	UploadIdle = 60 * time.Second
@@ -88,11 +91,12 @@ type received struct {
 }
 
 var textKinds = map[string]bool{"boot_log": true, "uboot_env": true, "note": true}
-var fileKinds = map[string]int64{"photo": maxPhoto, "boot_log": maxText, "uboot_env": maxText, "note": maxText, "document": maxDocument}
+var fileKinds = map[string]int64{"photo": maxPhoto, "boot_log": maxText, "uboot_env": maxText, "note": maxText, "document": maxDocument,
+	"firmware": maxFirmware}
 
 // upload is POST /api/v1/reports. The body is multipart -- a yaml part (or
-// field), an optional backup, any of photo, boot_log, uboot_env, note and
-// document, and the fields consent, channel, tool and note -- or, for
+// field), an optional backup, any of photo, boot_log, uboot_env, note,
+// document and firmware, and the fields consent, channel, tool and note -- or, for
 // `ipctool | curl --data-binary @- .../api/v1/reports`, ipctool's output as
 // the whole body.
 func (a *API) upload(w http.ResponseWriter, r *http.Request) {
@@ -445,6 +449,11 @@ func (a *API) prepare(p part, consent string, facts Facts, key string, places *[
 	switch {
 	case p.kind == "backup" && consent != "public":
 		// stored for the maintainers, never served
+	case p.kind == "firmware":
+		// The vendor's firmware as it is distributed, for the maintainers
+		// (coupler's images are made from it): never served, whatever the
+		// consent. What the sender packed into it -- partitions read from
+		// their own camera, its configuration with them -- nothing reads.
 	case textKinds[p.kind]:
 		rd, err := p.in.Open()
 		if err != nil {
@@ -639,7 +648,7 @@ func (a *API) read(r *http.Request, edit bool) (*received, int, error) {
 			}
 			in.parts[len(in.parts)-1].mime = mt
 		default:
-			return in, http.StatusBadRequest, fmt.Errorf("%q is not a part a report has: yaml, backup, photo, boot_log, uboot_env, note, document, consent, channel, tool, model, maker, board, soc, club, answers", name)
+			return in, http.StatusBadRequest, fmt.Errorf("%q is not a part a report has: yaml, backup, photo, boot_log, uboot_env, note, document, firmware, consent, channel, tool, model, maker, board, soc, club, answers", name)
 		}
 	}
 	if !edit && in.yaml == "" && in.backup == nil && in.fields["model"] == "" && in.fields["maker"] == "" && in.fields["board"] == "" &&
@@ -658,7 +667,9 @@ func sizeStatus(err error) int {
 }
 
 // sniff decides a file's type from its bytes, never from what the client
-// declared: photos are JPEG, PNG or WebP; text is text; a document is a PDF.
+// declared: photos are JPEG, PNG or WebP; text is text; a document is a PDF;
+// firmware is anything but a picture or a PDF -- a vendor's archive or
+// image in whatever format the vendor chose.
 func sniff(in *Incoming, kind string) (string, error) {
 	rd, err := in.Open()
 	if err != nil {
@@ -680,6 +691,16 @@ func sniff(in *Incoming, kind string) (string, error) {
 			return got, nil
 		}
 		return "", errors.New("a document is a PDF")
+	case "firmware":
+		switch {
+		case got == "application/zip", got == "application/x-gzip", got == "application/x-rar-compressed":
+			return got, nil
+		case strings.HasPrefix(got, "image/"), got == "application/pdf":
+			// a photo or a manual picked in the wrong place; a script is
+			// not refused: some vendors ship a self-extracting one
+			return "", errors.New("firmware is the vendor's file as downloaded, an archive or an image, not a picture or a PDF")
+		}
+		return "application/octet-stream", nil
 	default:
 		if strings.HasPrefix(got, "text/plain") || got == "application/octet-stream" && printable(head) {
 			return "text/plain; charset=utf-8", nil
@@ -822,7 +843,7 @@ func (a *API) ServeStored(w http.ResponseWriter, r *http.Request, id string, pos
 
 func (a *API) send(w http.ResponseWriter, id, sum, name, mt, kind, cache string) {
 	disposition := "inline"
-	if kind == "backup" || kind == "document" {
+	if kind == "backup" || kind == "document" || kind == "firmware" {
 		disposition = "attachment"
 	}
 	w.Header().Set("Content-Type", mt)
