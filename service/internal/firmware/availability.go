@@ -89,8 +89,14 @@ func FPVMap(cat *catalogue.Catalogue, idx *Index) map[string][]string {
 		}
 		board := BoardFor(soc, idx, "nor")
 		var eds []string
-		for _, e := range idx.Releases(board, "nor") {
-			if a, ok := idx.Asset(IndexName(board, "nor", e)); ok && a.Repo == RepoBuilder && slices.Contains(FPVEditions, e) {
+		for _, e := range NORReleases(soc, idx) {
+			// The package the installer makes the image from: a split-only
+			// SoC's plain build is not one it can download.
+			name := IndexName(board, "nor", e)
+			if SplitEdition(soc, idx, e) {
+				name = SplitName(board, e)
+			}
+			if a, ok := idx.Asset(name); ok && a.Repo == RepoBuilder && slices.Contains(FPVEditions, e) {
 				eds = append(eds, e)
 			}
 		}
