@@ -241,14 +241,23 @@ func splitOnly(s Spec, idx *Index) bool {
 // edition with no split package at all (builder's FPV builds) keeps the fixed
 // slots.
 func SplitEdition(soc *catalogue.SoC, idx *Index, edition string) bool {
-	// Only behind a bootloader that finds the layout: a camera's own, or an
-	// older one with fixed partitions, does not boot firmware.bin, so a SoC
-	// that names no -nor.bin keeps listing the plain package it installs.
-	if !soc.NORSplit || !ScansNORLayout(soc) {
+	if !soc.NORSplit {
 		return false
 	}
+	// A split-only SoC has nothing else to install, and needs no bootloader
+	// that finds the layout: its kernel divides firmware.bin itself and
+	// ignores the mtdparts= the bootloader passes (SigmaStar Infinity6C's
+	// split_layout.c), so any U-Boot that bootm's the uImage at the firmware
+	// offset boots it -- a fixed-mtdparts vendor's included.
 	if soc.NORSplitOnly {
-		return true
+		return !builderFixedSlots(soc, idx, edition)
+	}
+	// Otherwise only behind a bootloader that finds the layout: a camera's
+	// own, or an older one with fixed partitions, does not boot firmware.bin,
+	// so a SoC that names no -nor.bin keeps listing the plain package it
+	// installs.
+	if !ScansNORLayout(soc) {
+		return false
 	}
 	_, split := idx.Asset(SplitName(BoardFor(soc, idx, "nor"), edition))
 	return split
@@ -265,11 +274,27 @@ func NORReleases(soc *catalogue.SoC, idx *Index) []string {
 	}
 	var out []string
 	for _, r := range rels {
-		if _, ok := idx.Asset(SplitName(board, r)); ok {
+		if _, ok := idx.Asset(SplitName(board, r)); ok || builderFixedSlots(soc, idx, r) {
 			out = append(out, r)
 		}
 	}
 	return out
+}
+
+// builderFixedSlots says whether a NOR edition is a builder stack published
+// only as the plain package: the fixed-slot image it is made into is the one
+// builder ships, even on a split-only SoC, whose own firmware's plain package
+// is the stale one nor_split_only is there to skip.
+func builderFixedSlots(soc *catalogue.SoC, idx *Index, edition string) bool {
+	if idx == nil {
+		return false
+	}
+	board := BoardFor(soc, idx, "nor")
+	if _, split := idx.Asset(SplitName(board, edition)); split {
+		return false
+	}
+	a, ok := idx.Asset(IndexName(board, "nor", edition))
+	return ok && a.Repo == RepoBuilder
 }
 
 func (s Spec) ubi() bool { return s.nand() && s.SoC.UBINand() }

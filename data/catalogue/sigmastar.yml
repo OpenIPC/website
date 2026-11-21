@@ -1108,6 +1108,8 @@ socs:
   sdk: null
   kernel: null
   uboot_filename: u-boot-ssc377-nor.bin
+  nor_split: true
+  nor_split_only: true
   linux_filename: openipc.ssc377-nor-lite.tgz
   notes: Infinity6c (SSC37X), SDK name - Maruko
   urlname: ssc377
@@ -1152,6 +1154,8 @@ socs:
   sdk: null
   kernel: null
   uboot_filename: u-boot-ssc377d-nor.bin
+  nor_split: true
+  nor_split_only: true
   linux_filename: openipc.ssc377d-nor-lite.tgz
   notes: Infinity6c (SSC37X), SDK name - Maruko
   urlname: ssc377d
@@ -1179,6 +1183,8 @@ socs:
   sdk: null
   kernel: null
   uboot_filename: u-boot-ssc377de-nor.bin
+  nor_split: true
+  nor_split_only: true
   linux_filename: openipc.ssc377de-nor-lite.tgz
   notes: Infinity6c (SSC37X), SDK name - Maruko
   urlname: ssc377de
@@ -1198,6 +1204,8 @@ socs:
   sdk: null
   kernel: null
   uboot_filename: u-boot-ssc377qe-nor.bin
+  nor_split: true
+  nor_split_only: true
   linux_filename: openipc.ssc377qe-nor-lite.tgz
   notes: Infinity6c (SSC37X), SDK name - Maruko
   urlname: ssc377qe
@@ -1217,6 +1225,8 @@ socs:
   sdk: null
   kernel: null
   uboot_filename: u-boot-ssc378de-nor.bin
+  nor_split: true
+  nor_split_only: true
   linux_filename: openipc.ssc378de-nor-lite.tgz
   notes: Infinity6c (SSC37X), SDK name - Maruko
   urlname: ssc378de
@@ -1255,6 +1265,8 @@ socs:
   sdk: null
   kernel: null
   uboot_filename: u-boot-ssc378qe-nor.bin
+  nor_split: true
+  nor_split_only: true
   linux_filename: openipc.ssc378qe-nor-lite.tgz
   notes: Infinity6c (SSC37X), SDK name - Maruko
   urlname: ssc378qe

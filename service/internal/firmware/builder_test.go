@@ -116,15 +116,31 @@ func TestFPVMap(t *testing.T) {
 		{Name: "u-boot-ssc30kq-nor.bin"},
 		{Name: "openipc.ssc30kq-nor-lite.tgz"},
 		{Name: "openipc.ssc30kq-nor-apfpv.tgz"},
+		// Split only: builder's plain stack is installed in fixed slots, and
+		// a split one is installed split.
+		{Name: "u-boot-ssc377-nor.bin"},
+		{Name: "openipc.ssc377-nor-lite-split.tgz"},
+		{Name: "openipc.ssc377-nor-apfpv.tgz", Repo: RepoBuilder},
+		{Name: "u-boot-ssc377de-nor.bin"},
+		{Name: "openipc.ssc377de-nor-apfpv-split.tgz", Repo: RepoBuilder},
+		// Split only, and firmware's stale plain package is no builder stack.
+		{Name: "u-boot-ssc377d-nor.bin"},
+		{Name: "openipc.ssc377d-nor-lite-split.tgz"},
+		{Name: "openipc.ssc377d-nor-apfpv.tgz"},
 	}, nil, nil)
 	got := FPVMap(cat, idx)
+	for _, soc := range []string{"ssc377", "ssc377de"} {
+		if !slices.Equal(got[soc], []string{"apfpv"}) {
+			t.Errorf("%s: %v", soc, got[soc])
+		}
+	}
 	if !slices.Equal(got["ssc338q"], []string{"fpv", "rubyfpv", "apfpv"}) {
 		t.Errorf("ssc338q: %v", got["ssc338q"])
 	}
 	if _, ok := got["ssc378qe"]; ok {
 		t.Errorf("ssc378qe is listed with no bootloader published: %v", got["ssc378qe"])
 	}
-	if len(got) != 1 {
+	if len(got) != 3 {
 		t.Errorf("%v", got)
 	}
 }
