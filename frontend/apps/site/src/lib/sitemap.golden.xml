@@ -1157,6 +1157,48 @@
     <xhtml:link rel="alternate" hreflang="x-default" href="https://openipc.org/cameras/vendors/anyka/socs/ak3918ev330"/>
   </url>
   <url>
+    <loc>https://openipc.org/cameras/vendors/anyka/socs/ak3919ev300</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://openipc.org/cameras/vendors/anyka/socs/ak3919ev300"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://openipc.org/ru/cameras/vendors/anyka/socs/ak3919ev300"/>
+    <xhtml:link rel="alternate" hreflang="zh" href="https://openipc.org/zh/cameras/vendors/anyka/socs/ak3919ev300"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://openipc.org/cameras/vendors/anyka/socs/ak3919ev300"/>
+  </url>
+  <url>
+    <loc>https://openipc.org/ru/cameras/vendors/anyka/socs/ak3919ev300</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://openipc.org/cameras/vendors/anyka/socs/ak3919ev300"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://openipc.org/ru/cameras/vendors/anyka/socs/ak3919ev300"/>
+    <xhtml:link rel="alternate" hreflang="zh" href="https://openipc.org/zh/cameras/vendors/anyka/socs/ak3919ev300"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://openipc.org/cameras/vendors/anyka/socs/ak3919ev300"/>
+  </url>
+  <url>
+    <loc>https://openipc.org/zh/cameras/vendors/anyka/socs/ak3919ev300</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://openipc.org/cameras/vendors/anyka/socs/ak3919ev300"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://openipc.org/ru/cameras/vendors/anyka/socs/ak3919ev300"/>
+    <xhtml:link rel="alternate" hreflang="zh" href="https://openipc.org/zh/cameras/vendors/anyka/socs/ak3919ev300"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://openipc.org/cameras/vendors/anyka/socs/ak3919ev300"/>
+  </url>
+  <url>
+    <loc>https://openipc.org/cameras/vendors/anyka/socs/ak3919ev330</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://openipc.org/cameras/vendors/anyka/socs/ak3919ev330"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://openipc.org/ru/cameras/vendors/anyka/socs/ak3919ev330"/>
+    <xhtml:link rel="alternate" hreflang="zh" href="https://openipc.org/zh/cameras/vendors/anyka/socs/ak3919ev330"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://openipc.org/cameras/vendors/anyka/socs/ak3919ev330"/>
+  </url>
+  <url>
+    <loc>https://openipc.org/ru/cameras/vendors/anyka/socs/ak3919ev330</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://openipc.org/cameras/vendors/anyka/socs/ak3919ev330"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://openipc.org/ru/cameras/vendors/anyka/socs/ak3919ev330"/>
+    <xhtml:link rel="alternate" hreflang="zh" href="https://openipc.org/zh/cameras/vendors/anyka/socs/ak3919ev330"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://openipc.org/cameras/vendors/anyka/socs/ak3919ev330"/>
+  </url>
+  <url>
+    <loc>https://openipc.org/zh/cameras/vendors/anyka/socs/ak3919ev330</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://openipc.org/cameras/vendors/anyka/socs/ak3919ev330"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://openipc.org/ru/cameras/vendors/anyka/socs/ak3919ev330"/>
+    <xhtml:link rel="alternate" hreflang="zh" href="https://openipc.org/zh/cameras/vendors/anyka/socs/ak3919ev330"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://openipc.org/cameras/vendors/anyka/socs/ak3919ev330"/>
+  </url>
+  <url>
     <loc>https://openipc.org/cameras/vendors/fullhan/socs/fh8626v100</loc>
     <xhtml:link rel="alternate" hreflang="en" href="https://openipc.org/cameras/vendors/fullhan/socs/fh8626v100"/>
     <xhtml:link rel="alternate" hreflang="ru" href="https://openipc.org/ru/cameras/vendors/fullhan/socs/fh8626v100"/>

@@ -1,4 +1,4 @@
-# Anyka — 8 SoC(s).
+# Anyka — 10 SoC(s).
 #
 # Exported from the catalogue table (#161). This file is the source of
 # truth for the hardware pages: edit it in a pull request, not in the
@@ -111,5 +111,31 @@ socs:
   linux_filename: openipc.ak3918ev330-nor-lite.tgz
   notes: ''
   urlname: ak3918ev330
+  featured: false
+  segment: null
+- family: AK3918EV300
+  model: AK3919EV300
+  version: ''
+  status: wip
+  load_address: '0x82000000'
+  sdk: ''
+  kernel: ''
+  uboot_filename: u-boot-ak3919ev300-nor.bin
+  linux_filename: openipc.ak3918ev300-nor-lite.tgz
+  notes: 'AnyCloud39EV300 with 128 MiB. OpenIPC''s ak3918ev300 image runs it (BR2_OPENIPC_SOC_ALIASES), its U-Boot is its own.'
+  urlname: ak3919ev300
+  featured: false
+  segment: null
+- family: null
+  model: AK3919EV330
+  version: ''
+  status: wip
+  load_address: '0x82000000'
+  sdk: ''
+  kernel: ''
+  uboot_filename: u-boot-ak3919ev330-nor.bin
+  linux_filename: openipc.ak3918ev330-nor-lite.tgz
+  notes: 'AnyCloud V500 with 128 MiB. OpenIPC''s ak3918ev330 image runs it (BR2_OPENIPC_SOC_ALIASES), its U-Boot is its own.'
+  urlname: ak3919ev330
   featured: false
   segment: null

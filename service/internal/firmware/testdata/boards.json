@@ -99,6 +99,24 @@
     "nand_lite": "openipc.ak3918ev330-nand-lite.tgz"
   },
   {
+    "urlname": "ak3919ev300",
+    "vendor": "Anyka",
+    "model": "AK3919EV300",
+    "board": "ak3918ev300",
+    "uboot": "u-boot-ak3919ev300-nor.bin",
+    "nor_lite": "openipc.ak3918ev300-nor-lite.tgz",
+    "nand_lite": "openipc.ak3918ev300-nand-lite.tgz"
+  },
+  {
+    "urlname": "ak3919ev330",
+    "vendor": "Anyka",
+    "model": "AK3919EV330",
+    "board": "ak3918ev330",
+    "uboot": "u-boot-ak3919ev330-nor.bin",
+    "nor_lite": "openipc.ak3918ev330-nor-lite.tgz",
+    "nand_lite": "openipc.ak3918ev330-nand-lite.tgz"
+  },
+  {
     "urlname": "fh8626v100",
     "vendor": "Fullhan",
     "model": "FH8626V100",
