@@ -43,12 +43,10 @@ func sum(b []byte) string { h := sha256.Sum256(b); return hex.EncodeToString(h[:
 
 // A maintainer mints a token in /club and sees it once; a member who is not
 // one cannot. With it, the maintainer's tools list the dumps owners sent
-// and fetch one the backup scan read whole and found clean. One holding a
-// Wi-Fi password in plain text is sent as a redacted copy, which a header
-// names; one holding it inside a gzip, which no redaction takes out, is
-// withheld, saying what kind of thing is in it and never what. All are
-// written down, and what is written down stays.
-func TestAMaintainersTokenReadsTheDumpsTheScanFoundClean(t *testing.T) {
+// and fetch each as it was sent: a Wi-Fi password in plain text or inside
+// a gzip included, since the token is a maintainer's. All are written
+// down, and what is written down stays.
+func TestAMaintainersTokenReadsTheDumpsAsSent(t *testing.T) {
 	e := newEnv(t)
 	ctx := context.Background()
 	ivan := e.signedIn(t, 777, "ivan_k", "198.51.100.1")
@@ -56,7 +54,7 @@ func TestAMaintainersTokenReadsTheDumpsTheScanFoundClean(t *testing.T) {
 	// a power of two, as a programmer reads a chip, with a Wi-Fi network in it
 	secret := bytes.Repeat([]byte{0x5a}, 1<<20)
 	copy(secret[4096:], "network={\n\tssid=\"TestNet\"\n\tpsk=\"not-a-real-passphrase\"\n}\n")
-	// the same network, gzipped: what a redaction cannot take out
+	// the same network, gzipped
 	var gz bytes.Buffer
 	zw := gzip.NewWriter(&gz)
 	zw.Write([]byte("network={\n\tssid=\"TestNet\"\n\tpsk=\"not-a-real-passphrase\"\n}\n"))
@@ -109,36 +107,21 @@ func TestAMaintainersTokenReadsTheDumpsTheScanFoundClean(t *testing.T) {
 		t.Errorf("the first dump: %v", list.Dumps[0])
 	}
 
-	rec = e.withToken(t, token, "203.0.113.9", "/api/v1/maint/dumps/"+sum(clean))
-	if rec.Code != 200 || rec.Header().Get("X-Accel-Redirect") != "/report-files/sha256/"+sum(clean)[:2]+"/"+sum(clean) ||
-		!strings.Contains(rec.Header().Get("Cache-Control"), "no-store") {
-		t.Errorf("the clean dump: %d %v", rec.Code, rec.Header())
-	}
-	rec = e.withToken(t, token, "203.0.113.9", "/api/v1/maint/dumps/"+sum(secret))
-	red := rec.Header().Get("X-Dump-Redacted")
-	if rec.Code != 200 || len(red) != 64 || red == sum(secret) ||
-		rec.Header().Get("X-Accel-Redirect") != "/report-files/sha256/"+red[:2]+"/"+red ||
-		rec.Header().Get("X-Dump-Redacted-Kinds") != "wifi_psk" {
-		t.Errorf("the dump with a password, redacted: %d %v", rec.Code, rec.Header())
-	}
-	if again := e.withToken(t, token, "203.0.113.9", "/api/v1/maint/dumps/"+sum(secret)); again.Header().Get("X-Dump-Redacted") != red {
-		t.Errorf("the redacted copy made again: %v", again.Header())
-	}
-	rec = e.withToken(t, token, "203.0.113.9", "/api/v1/maint/dumps/"+sum(packed))
-	if rec.Code != http.StatusConflict || rec.Header().Get("X-Accel-Redirect") != "" ||
-		!strings.Contains(rec.Body.String(), "wifi_psk") || strings.Contains(rec.Body.String(), "not-a-real") {
-		t.Errorf("the dump with a password in a gzip: %d %s %v", rec.Code, rec.Body, rec.Header())
+	for _, d := range [][]byte{clean, secret, packed} {
+		rec = e.withToken(t, token, "203.0.113.9", "/api/v1/maint/dumps/"+sum(d))
+		if rec.Code != 200 || rec.Header().Get("X-Accel-Redirect") != "/report-files/sha256/"+sum(d)[:2]+"/"+sum(d) ||
+			rec.Header().Get("X-Dump-Redacted") != "" || !strings.Contains(rec.Header().Get("Cache-Control"), "no-store") {
+			t.Errorf("the dump %s: %d %v", sum(d)[:12], rec.Code, rec.Header())
+		}
 	}
 	if rec := e.withToken(t, token, "203.0.113.9", "/api/v1/maint/dumps/"+strings.Repeat("0", 64)); rec.Code != 404 {
 		t.Errorf("no such dump: %d", rec.Code)
 	}
 
-	var served, redacted, withheld int
-	if err := e.pool.QueryRow(ctx, `SELECT count(*) FILTER (WHERE outcome = 'served'),
-		count(*) FILTER (WHERE outcome = 'redacted' AND reasons = '{wifi_psk}'),
-		count(*) FILTER (WHERE outcome = 'withheld' AND reasons = '{wifi_psk}')
-		FROM dump_access WHERE ip = '203.0.113.9'`).Scan(&served, &redacted, &withheld); err != nil || served != 1 || redacted != 2 || withheld != 1 {
-		t.Errorf("dump_access: %d served, %d redacted, %d withheld, %v", served, redacted, withheld, err)
+	var served int
+	if err := e.pool.QueryRow(ctx, `SELECT count(*) FILTER (WHERE outcome = 'served' AND sha256 IS NOT NULL)
+		FROM dump_access WHERE ip = '203.0.113.9'`).Scan(&served); err != nil || served != 3 {
+		t.Errorf("dump_access: %d served, %v", served, err)
 	}
 	for _, sql := range []string{`UPDATE dump_access SET outcome = 'served'`, `DELETE FROM dump_access`, `TRUNCATE dump_access`} {
 		if _, err := e.pool.Exec(ctx, sql); err == nil {
@@ -304,8 +287,8 @@ func TestATokenMadeToCorrectNamesAReportsChip(t *testing.T) {
 	}
 }
 
-// A redacted copy goes with its dump when the report is taken down: its
-// row and its file.
+// A redacted copy made before dumps were sent as they are goes with its
+// dump when the report is taken down: its row and its file.
 func TestARedactedCopyGoesWithItsReport(t *testing.T) {
 	e := newEnv(t)
 	ctx := context.Background()
@@ -314,14 +297,15 @@ func TestARedactedCopyGoesWithItsReport(t *testing.T) {
 	copy(secret[4096:], "network={\n\tssid=\"TestNet\"\n\tpsk=\"not-a-real-passphrase\"\n}\n")
 	_, out := ivan.send(t, map[string]string{"channel": "web", "model": "anjoy-ms-j10"}, map[string][]byte{"backup": secret})
 	id := out["id"].(string)
-	maint := e.maintainer(t)
-	_, out = maint.mint(t, map[string]any{"name": "t"})
-	rec := e.withToken(t, out["token"].(string), "203.0.113.9", "/api/v1/maint/dumps/"+sum(secret))
-	red := rec.Header().Get("X-Dump-Redacted")
-	if red == "" {
-		t.Fatalf("no redacted copy: %d %v", rec.Code, rec.Header())
-	}
 	files := e.api.Reports.Files
+	red, kinds, err := files.RedactDump(sum(secret), nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := e.pool.Exec(ctx, `INSERT INTO report_dump_redactions (sha256, redacted_sha256, kinds) VALUES ($1, $2, $3)`,
+		sum(secret), red, kinds); err != nil {
+		t.Fatal(err)
+	}
 	if ok, _ := files.Has(red); !ok {
 		t.Fatal("the redacted copy is not stored")
 	}

@@ -598,7 +598,7 @@ zh:
       maintainer_lapsed: '你的维护者权限已过期：它从你最后一次用 GitHub 登录起有效一周，期间用其他方式登录不会延长。'
       maintainer_renew: '再次使用 GitHub 登录'
       tokens_link: '供你的工具使用的令牌'
-      tokens_about: '令牌让你自己的工具（代理、你机器上的脚本）无需登录即可在 /api/v1/maint/dumps 读取用户提交的闪存转储。只有当备份检查完整读取了转储且未发现任何属于用户的私密信息时才会发送；每次请求转储都会被记录。'
+      tokens_about: '令牌让你自己的工具（代理、你机器上的脚本）无需登录即可在 /api/v1/maint/dumps 读取用户提交的闪存转储。转储按用户提交时的原样发送，包括 Wi-Fi 密码和云密钥：请勿将令牌和转储放在共享机器上。每次请求转储都会被记录。'
       tokens_once: '请立即复制：它不会再次显示。'
       tokens_name: '用途'
       tokens_days: '天数'

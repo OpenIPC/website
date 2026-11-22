@@ -2,20 +2,15 @@ package reports
 
 import (
 	"context"
-	"errors"
 	"net/http"
-	"slices"
-	"strings"
 	"time"
 
 	"github.com/jackc/pgx/v5"
 )
 
 // The maintainers' own tools read the flash dumps owners sent (internal/club
-// checks the token, /api/v1/maint/dumps). A dump leaves the host only when
-// the backup scan read the whole of it and found nothing of its owner's
-// (ScanBackupWhole), read again on every request, so a rule added to the
-// scan applies to every dump at once. Anything else is withheld, with why.
+// checks the token, /api/v1/maint/dumps), as they were sent: a token is a
+// maintainer's, and a maintainer reads every dump in /club/review too.
 
 // Dump is one flash dump an owner sent, as the maintainers' tools list it.
 type Dump struct {
@@ -73,65 +68,23 @@ func (s *Store) dumpListed(ctx context.Context, sum string) (bool, error) {
 	return ok, err
 }
 
-// ErrDumpWithheld is a dump the maintainers' tools are not sent: the
-// kinds of what the scan found, and what of it the scan could not read.
-type ErrDumpWithheld struct{ Reasons []string }
-
-func (e ErrDumpWithheld) Error() string { return "the dump holds what its owner did not share" }
-
-// CheckDump decides what the maintainers' tools get of dump sum: the dump
-// itself when the scan reads all of it and finds nothing; when it finds
-// only what a redaction takes out, the redacted copy (redact_dump.go), its
-// sum and the kinds taken out; else ErrDumpWithheld, or ErrNotFound when
-// it is no dump Dumps lists.
-func (s *Store) CheckDump(ctx context.Context, sum string) (served string, redacted []string, err error) {
+// CheckDump is ErrNotFound unless sum is a dump Dumps lists, which the
+// maintainers' tools are sent as it was sent.
+func (s *Store) CheckDump(ctx context.Context, sum string) error {
 	if !hexSum.MatchString(sum) {
-		return "", nil, ErrNotFound
+		return ErrNotFound
 	}
 	ok, err := s.dumpListed(ctx, sum)
 	if err != nil {
-		return "", nil, err
+		return err
 	}
 	if !ok {
-		return "", nil, ErrNotFound
+		return ErrNotFound
 	}
-	if s.Files == nil {
-		return "", nil, errors.New("reports: no file store to read the dump from")
-	}
-	scan, err := s.Files.scanWhole(sum)
-	if err != nil {
-		return "", nil, err
-	}
-	var unread []string
-	for k := range scan.unread {
-		unread = append(unread, k)
-	}
-	slices.Sort(unread)
-	reasons := append(Kinds(scan.found), unread...)
-	if len(reasons) == 0 {
-		return sum, nil, nil
-	}
-	if len(unread) == 0 {
-		red, kinds, err := s.redactedCopy(ctx, sum, scan)
-		if err == nil {
-			return red, kinds, nil
-		}
-		if !errors.Is(err, ErrNotRedactable) {
-			return "", nil, err
-		}
-	}
-	return "", nil, ErrDumpWithheld{Reasons: reasons}
+	return nil
 }
 
-// ServeDump hands nginx what CheckDump said dump sum may be sent as:
-// served, the dump itself or its redacted copy, which X-Dump-Redacted
-// names (its sha256, what the bytes hash to) with the kinds taken out.
-func (a *API) ServeDump(w http.ResponseWriter, sum, served string, kinds []string) {
-	name := sum + ".bin"
-	if served != sum {
-		name = sum + ".redacted.bin"
-		w.Header().Set("X-Dump-Redacted", served)
-		w.Header().Set("X-Dump-Redacted-Kinds", strings.Join(kinds, ","))
-	}
-	a.send(w, "dump", served, name, "application/octet-stream", "backup", "private, no-store")
+// ServeDump hands nginx dump sum, which CheckDump found listed.
+func (a *API) ServeDump(w http.ResponseWriter, sum string) {
+	a.send(w, "dump", sum, sum+".bin", "application/octet-stream", "backup", "private, no-store")
 }

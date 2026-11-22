@@ -1,9 +1,8 @@
 /**
  * A maintainer's tokens for their own tools: the agents and the analysis on
  * their machine read the flash dumps owners sent at /api/v1/maint/dumps
- * with one, instead of a browser session. A dump is sent only when the
- * backup scan read all of it and found nothing of its owner's; every dump
- * asked for is written down. The token is shown once, when it is made.
+ * with one, instead of a browser session. A dump is sent as it was sent;
+ * every dump asked for is written down. The token is shown once, when it is made.
  */
 import { useEffect, useState } from 'preact/hooks';
 import type { BoardsT } from '../../lib/boards-i18n';

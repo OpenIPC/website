@@ -299,8 +299,7 @@ func (a *API) audit(r *http.Request, m *Member, token *bearerToken, sum, outcome
 var hexSHA = regexp.MustCompile(`^[0-9a-f]{64}$`)
 
 // dumps is GET /api/v1/maint/dumps: every flash dump owners sent and did
-// not withdraw, oldest first (reports.Store.Dumps). Whether one is sent is
-// decided when it is asked for.
+// not withdraw, oldest first (reports.Store.Dumps).
 func (a *API) dumps(w http.ResponseWriter, r *http.Request) {
 	m, token, ok := a.bearer(w, r)
 	if !ok {
@@ -322,30 +321,23 @@ func (a *API) dumps(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]any{"dumps": list})
 }
 
-// dump is GET /api/v1/maint/dumps/{sha256}: the dump, when the backup scan
-// read all of it and found nothing of its owner's; 409 with why when not.
-// Either way it is written down in dump_access first.
+// dump is GET /api/v1/maint/dumps/{sha256}: the dump as it was sent,
+// written down in dump_access first.
 func (a *API) dump(w http.ResponseWriter, r *http.Request) {
 	m, token, ok := a.bearer(w, r)
 	if !ok {
 		return
 	}
 	sum := r.PathValue("sha256")
-	served, redacted, err := a.Reports.Store().CheckDump(r.Context(), sum)
-	var withheld reports.ErrDumpWithheld
-	outcome, reasons := "served", []string{}
+	err := a.Reports.Store().CheckDump(r.Context(), sum)
+	outcome := "served"
 	switch {
 	case errors.Is(err, reports.ErrNotFound):
 		outcome = "not_found"
-	case errors.As(err, &withheld):
-		outcome, reasons = "withheld", withheld.Reasons
 	case err != nil:
 		outcome = "failed"
-	case served != sum:
-		// the redacted copy, the kinds taken out as the reasons
-		outcome, reasons = "redacted", redacted
 	}
-	if aerr := a.audit(r, m, token, sum, outcome, reasons); aerr != nil {
+	if aerr := a.audit(r, m, token, sum, outcome, nil); aerr != nil {
 		a.fail(w, "the dump's record", aerr)
 		return
 	}
@@ -357,13 +349,8 @@ func (a *API) dump(w http.ResponseWriter, r *http.Request) {
 		a.fail(w, "the dump", err)
 		return
 	}
-	a.Log.Info("club: dump asked for with a token", "sha256", sum, "member", m.ID, "token", token.id, "outcome", outcome, "reasons", reasons)
-	if outcome == "withheld" {
-		writeJSON(w, http.StatusConflict, map[string]any{"error": "the dump holds what its owner did not share, or what the scan cannot read",
-			"withheld": reasons})
-		return
-	}
-	a.Reports.ServeDump(w, sum, served, redacted)
+	a.Log.Info("club: dump asked for with a token", "sha256", sum, "member", m.ID, "token", token.id)
+	a.Reports.ServeDump(w, sum)
 }
 
 // correctChip is POST /api/v1/maint/reports/{id}/chip {"vendor", "model",

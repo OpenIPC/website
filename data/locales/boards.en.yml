@@ -603,7 +603,7 @@ en:
       maintainer_lapsed: 'Your maintainer access lapsed: it lasts a week from your last GitHub sign-in, whichever way you sign in meanwhile.'
       maintainer_renew: 'Sign in with GitHub again'
       tokens_link: 'Tokens for your tools'
-      tokens_about: 'A token lets your own tools -- an agent, a script on your machine -- read the flash dumps owners sent, at /api/v1/maint/dumps, without signing in. A dump is sent only when the backup scan read all of it and found nothing of its owner''s in it; every dump asked for is recorded.'
+      tokens_about: 'A token lets your own tools -- an agent, a script on your machine -- read the flash dumps owners sent, at /api/v1/maint/dumps, without signing in. Each dump is sent as its owner sent it, Wi-Fi passwords and cloud keys included: keep the token and the dumps off shared machines. Every dump asked for is recorded.'
       tokens_once: 'Copy it now: it is not shown again.'
       tokens_name: 'Where it is used'
       tokens_days: 'Days'
