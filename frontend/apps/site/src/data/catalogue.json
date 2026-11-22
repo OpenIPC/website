@@ -131,6 +131,26 @@
           "load_address": "0x82000000",
           "featured": false,
           "segment": null
+        },
+        {
+          "model": "AK3919EV300",
+          "family": "AK3918EV300",
+          "version": "",
+          "urlname": "ak3919ev300",
+          "status": "wip",
+          "load_address": "0x82000000",
+          "featured": false,
+          "segment": null
+        },
+        {
+          "model": "AK3919EV330",
+          "family": null,
+          "version": "",
+          "urlname": "ak3919ev330",
+          "status": "wip",
+          "load_address": "0x82000000",
+          "featured": false,
+          "segment": null
         }
       ]
     },
