@@ -8,6 +8,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"net/http"
+	"os"
 	"net/http/httptest"
 	"slices"
 	"strconv"
@@ -113,6 +114,18 @@ func TestAMaintainersTokenReadsTheDumpsAsSent(t *testing.T) {
 			rec.Header().Get("X-Dump-Redacted") != "" || !strings.Contains(rec.Header().Get("Cache-Control"), "no-store") {
 			t.Errorf("the dump %s: %d %v", sum(d)[:12], rec.Code, rec.Header())
 		}
+	}
+	// listed, its file gone from the store: a failure, never a 404 a
+	// mirror takes for a withdrawn dump
+	stored := e.api.Reports.Files.Root + "/sha256/" + sum(packed)[:2] + "/" + sum(packed)
+	if err := os.Rename(stored, stored+".away"); err != nil {
+		t.Fatal(err)
+	}
+	if rec := e.withToken(t, token, "203.0.113.9", "/api/v1/maint/dumps/"+sum(packed)); rec.Code != http.StatusInternalServerError {
+		t.Errorf("a listed dump whose file is gone: %d", rec.Code)
+	}
+	if err := os.Rename(stored+".away", stored); err != nil {
+		t.Fatal(err)
 	}
 	if rec := e.withToken(t, token, "203.0.113.9", "/api/v1/maint/dumps/"+strings.Repeat("0", 64)); rec.Code != 404 {
 		t.Errorf("no such dump: %d", rec.Code)

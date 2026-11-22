@@ -2,6 +2,8 @@ package reports
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"net/http"
 	"time"
 
@@ -69,7 +71,8 @@ func (s *Store) dumpListed(ctx context.Context, sum string) (bool, error) {
 }
 
 // CheckDump is ErrNotFound unless sum is a dump Dumps lists, which the
-// maintainers' tools are sent as it was sent.
+// maintainers' tools are sent as it was sent; an error when its file is
+// not in the store, so it is not taken for a withdrawn one.
 func (s *Store) CheckDump(ctx context.Context, sum string) error {
 	if !hexSum.MatchString(sum) {
 		return ErrNotFound
@@ -80,6 +83,14 @@ func (s *Store) CheckDump(ctx context.Context, sum string) error {
 	}
 	if !ok {
 		return ErrNotFound
+	}
+	if s.Files == nil {
+		return errors.New("reports: no file store to read the dump from")
+	}
+	if ok, err := s.Files.Has(sum); err != nil {
+		return err
+	} else if !ok {
+		return fmt.Errorf("reports: dump %s is listed but not in the file store", sum)
 	}
 	return nil
 }
