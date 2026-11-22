@@ -14,33 +14,13 @@ The dumps land in `~/openipc-dumps/<chip>/<report>-<position>-<sha12>.bin`. That
 directory is 0700, and everything in it is 0600. `index.jsonl` describes each
 dump: its report, chip, sensor, flash size, board and when it was received.
 
-The site sends a dump only when its backup scan
-(`service/internal/reports/backupscan.go`) read all of it and found nothing of
-its owner's: no Wi-Fi password, no cloud key or ID, no private key. A dump with
-any of those is **withheld**. So is a dump the scan cannot read all of:
-- a JFFS2 compressed with LZO, LZMA or rubin, or whose nodes are damaged
-- any UBIFS
-- outside the firmware's own images, a zstd, lz4 or 7z stream; an xz, LZMA or
-  gzip stream cut short; a zip entry that is encrypted, packed other than stored
-  or deflated, cut short, or fails its CRC. gzip, bzip2, xz and LZMA streams,
-  and unencrypted stored or deflated zip entries, are inflated and read.
+The site sends each dump as its owner sent it. Every dump asked for is
+recorded on the site in `dump_access`, which is append-only.
 
-When what the scan found can be taken out -- a Wi-Fi password, a cloud ID, a
-password hash, in plain text or in a JFFS2 file -- the site sends a **redacted
-copy** instead: each value overwritten with as many `X`s, everything else where
-it was. The mirror checks it against the sha256 the site names
-(`X-Dump-Redacted`), saves it as `<report>-<position>-<sha12>.redacted.bin`, and
-`index.jsonl` says `redacted_sha256` and `redacted_kinds`. A U-Boot environment a
-value was taken out of fails its CRC, so U-Boot starts from its defaults.
-
-A withheld dump is answered 409 with the kinds of what is in it, never the
-values. The mirror remembers it in `state.json` and asks again after
-`--retry-days`, because the scan learns to read more.
-
-A dump kept here is asked for again at the same interval. It is deleted from
-here if the site now withholds it (a rule added since) or no longer lists it
-(its report withdrawn). Every dump asked for is recorded on the site in
-`dump_access`, which is append-only.
+A dump kept here is asked for again after `--retry-days`. It is deleted from
+here if the site no longer lists it (its report withdrawn). A dump withheld or
+sent redacted before is fetched whole on its next retry; `sync --retry-days 0`
+asks for all of them now.
 
 The token is sent only to an https site, and a redirect is refused rather
 than followed. Two syncs never run at once.

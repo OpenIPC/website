@@ -192,22 +192,10 @@ restores the image but never the schema, so keep migrations additive.
   a photo it cannot walk is refused at upload.
   A maintainer's own tools (agents, analysis on their machine) read the
   dumps with a token made in `/club` (`club_tokens`, migration 050; Bearer,
-  at `/api/v1/maint/dumps`, never a cookie). A dump is sent only when
-  `reports.ScanBackupWhole` read all of it and found nothing of its owner's,
-  rescanned on every request: JFFS2 with LZO/LZMA or damaged nodes, UBIFS,
-  and compressed streams outside the factory's images (squashfs, cramfs,
-  uImage, FIT, zImage) other than gzip and bzip2, which it inflates, are
-  unread. Any other dump is withheld with the kinds found. Every request
-  is a row in append-only `dump_access`.
-  A dump withheld only for findings a
-  redaction can take out is sent as a redacted copy instead
-  (`reports/redact_dump.go`, `report_dump_redactions`, migration 053):
-  each value overwritten with as many 'X's, in place, in plain text and
-  inside zlib or rtime JFFS2 nodes (compressed again into their space,
-  CRCs made again); the copy is scanned again and sent only if clean, its
-  sum in `X-Dump-Redacted`; it goes with the dump at takedown. A value in
-  an archive stream, across JFFS2 fragments, a file known by its name or a
-  binary key keeps the dump withheld. `tools/dump-mirror` is the puller. A token made with "may correct"
+  at `/api/v1/maint/dumps`, never a cookie), each as it was sent: a token
+  is a maintainer's. Every request is a row in append-only `dump_access`.
+  The redacted copies sent before (`report_dump_redactions`, migration 053)
+  go with their dump at takedown. `tools/dump-mirror` is the puller. A token made with "may correct"
   (scope `dumps:read reports:correct`, migration 052) also names a report's
   chip at `POST /api/v1/maint/reports/{id}/chip`, as `reports chip` does.
 - `internal/club` -- **the OpenIPC Club**: signing in with Telegram (the bot

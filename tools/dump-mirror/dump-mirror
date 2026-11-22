@@ -2,12 +2,9 @@
 """Mirror the flash dumps owners sent to openipc.org onto a maintainer's machine.
 
 Reads /api/v1/maint/dumps with a maintainer's token (made in /club, "Tokens
-for your tools") and fetches each dump not yet here. The site sends a dump
-only when its backup scan read all of it and found nothing of its owner's
-(service/internal/reports/dumps.go); one it withholds is remembered with why
-and asked for again after --retry-days, as the scan learns to read more.
-A dump kept here is asked for again at the same interval, and deleted if
-the site now withholds it or no longer lists it.
+for your tools") and fetches each dump not yet here, as its owner sent it.
+A dump kept here, or withheld or sent redacted before, is asked for again
+after --retry-days, and deleted if the site no longer lists it.
 Every request is recorded on the site (dump_access).
 
     dump-mirror sync [--site URL] [--dest DIR] [--retry-days N]
