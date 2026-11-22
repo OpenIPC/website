@@ -134,8 +134,8 @@ socs:
   sdk: ''
   kernel: ''
   uboot_filename: u-boot-ak3919ev330-nor.bin
-  linux_filename: openipc.ak3918ev330-nor-lite.tgz
-  notes: 'AnyCloud V500 with 128 MiB. OpenIPC''s ak3918ev330 image runs it (BR2_OPENIPC_SOC_ALIASES), its U-Boot is its own.'
+  linux_filename: openipc.ak3918ev331-nor-lite.tgz
+  notes: 'AnyCloud V500 with 128 MiB: OpenIPC''s 128 MB ak3918ev331 image runs it (BR2_OPENIPC_SOC_ALIASES, OpenIPC/firmware#2933), its U-Boot is its own.'
   urlname: ak3919ev330
   featured: false
   segment: null

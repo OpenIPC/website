@@ -111,10 +111,10 @@
     "urlname": "ak3919ev330",
     "vendor": "Anyka",
     "model": "AK3919EV330",
-    "board": "ak3918ev330",
+    "board": "ak3918ev331",
     "uboot": "u-boot-ak3919ev330-nor.bin",
-    "nor_lite": "openipc.ak3918ev330-nor-lite.tgz",
-    "nand_lite": "openipc.ak3918ev330-nand-lite.tgz"
+    "nor_lite": "openipc.ak3918ev331-nor-lite.tgz",
+    "nand_lite": "openipc.ak3918ev331-nand-lite.tgz"
   },
   {
     "urlname": "fh8626v100",
