@@ -308,6 +308,10 @@ type backupScan struct {
 	// compressed outside the factory's images (backupstreams.go).
 	whole  bool
 	images []extent
+	// serialNamed, serialHeld: the inodes a dirent names xmSerialFile, at
+	// the dirent's offset, and the inodes whose data is a serial's sixteen
+	// hex digits, at the node's. Both, one inode, is the serial file.
+	serialNamed, serialHeld map[uint32]int64
 }
 
 // edgeLen is how much of a node's data either end of it keeps for the
@@ -554,6 +558,12 @@ func scanBackup(r io.ReaderAt, size int64, whole bool) (*backupScan, error) {
 		}
 	}
 	raw.end()
+	for ino, off := range s.serialNamed {
+		if _, ok := s.serialHeld[ino]; ok {
+			s.add("cloud_id", off, "jffs2")
+			s.unredactable = true
+		}
+	}
 	return s, nil
 }
 
@@ -575,6 +585,11 @@ func jffs2CRC(b []byte) uint32 { return ^crc32.Update(^uint32(0), crc32.IEEETabl
 
 // tangeFile holds a Tange Cloud camera's serial and key (/config).
 const tangeFile = "tange_sn.txt"
+
+// xmSerialFile is where a Xiongmai keeps its cloud serial (/mnt/mtd/Config):
+// the sixteen hex digits alone, which no pattern tells from any other
+// number (r-jpkarre8). A file of that name holding anything else is not it.
+const xmSerialFile = "SerialNumber"
 
 // certificateName is a Gwell camera's device certificate and key.
 var certificateName = regexp.MustCompile(`^Certificate(?:_[A-Za-z0-9_-]+)?\.bin$`)
@@ -634,6 +649,12 @@ func (s *backupScan) node(off int64) error {
 			s.add("cloud_secret", off, "jffs2")
 			s.unredactable = true
 		}
+		if string(name) == xmSerialFile {
+			if s.serialNamed == nil {
+				s.serialNamed = map[uint32]int64{}
+			}
+			s.serialNamed[e.Uint32(h[20:])] = off
+		}
 	case jffs2Inode:
 		csize, dsize, compr := e.Uint32(h[48:]), e.Uint32(h[52:]), h[56]
 		if e.Uint32(h[64:]) != jffs2CRC(h[:60]) || csize == 0 {
@@ -668,6 +689,7 @@ func (s *backupScan) node(off int64) error {
 			// still starts a line. The whole-line forms a fragment's end
 			// could pass for are not read in a dump (tangeSerial). Its
 			// joins with the fragments beside it are read as well.
+			s.serialData(e.Uint32(h[12:]), e.Uint32(h[44:]), data, off)
 			s.nodeAt, s.nodeIn = off, "jffs2 none"
 			s.inflated.feed(data, 0)
 			s.inflated.end()
@@ -687,6 +709,7 @@ func (s *backupScan) node(off int64) error {
 			// was not read.
 			s.unread[UnreadJFFS2Damaged] = true
 		}
+		s.serialData(e.Uint32(h[12:]), e.Uint32(h[44:]), out, off)
 		s.nodeAt, s.nodeIn = off, in
 		s.inflated.feed(out, 0)
 		s.inflated.end()
@@ -694,6 +717,19 @@ func (s *backupScan) node(off int64) error {
 		s.joinEdges(e.Uint32(h[12:]), e.Uint32(h[16:]), e.Uint32(h[44:]), out, off)
 	}
 	return nil
+}
+
+// serialData keeps inode ino when its data, from the file's start, is a
+// Xiongmai serial: sixteen hex digits, not all zeros.
+func (s *backupScan) serialData(ino, at uint32, data []byte, off int64) {
+	v := string(bytes.TrimRight(data, "\x00\r\n \t"))
+	if at != 0 || !xmDigits.MatchString(v) || zeroish(v) {
+		return
+	}
+	if s.serialHeld == nil {
+		s.serialHeld = map[uint32]int64{}
+	}
+	s.serialHeld[ino] = off
 }
 
 // joinEdges reads, with the fragments of the same file on either side of

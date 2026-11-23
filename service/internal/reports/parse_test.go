@@ -352,6 +352,8 @@ func TestADahuaATuyaAndATPLinkIdentifiersAreRedacted(t *testing.T) {
 		{"Serial number: " + serial + "-XYZ", "XYZ"},
 		{"serial_no=" + serial + "_rev2", "rev2"},
 		{"ID=" + id + "\r", id},
+		{"- `BSN=" + bsn + "`, `ID=" + id + "`, `ethaddr=<mac:1>`", bsn},
+		{"- `BSN=" + bsn + "`, `ID=" + id + "`, `ethaddr=<mac:1>`", id},
 		{"AUTHKEY=" + authkey, authkey},
 		{`authKey: "` + authkey + `"`, authkey},
 		{`  dot_serial_num: "` + serial + `"`, serial},
@@ -622,6 +624,56 @@ func TestAMACAsHexBytesIsRedacted(t *testing.T) {
 	}
 	if line := "efuse data is [0x0:0x0:0x0:0x0:0x0:0x0]"; Redact(line, Facts{}, "k") != line {
 		t.Error("a zero MAC was redacted")
+	}
+}
+
+// A MAC as twelve bare hex digits is known by the name before it
+// (r-km7w3b8i's log), with the mark of the MAC written out; a number of
+// that length named nothing so is not taken for one.
+func TestANamedBareMACIsRedacted(t *testing.T) {
+	const mac = "02:12:07:7c:d6:0b"
+	mark := "<mac:" + Keyed("k", "mac", mac) + ">"
+	for _, line := range []string{
+		"[INFO][SWOVD ovd_client_init 2312][852] ---------mac-------0212077CD60B",
+		"macID 0212077cd60b Match SUCCESS.",
+		"mac_addr=0212077cd60b",
+		"MAC ID 0212077CD60B",
+		"MAC Address: 0212077cd60b",
+	} {
+		if got := Redact(line, Facts{}, "k"); !strings.Contains(got, mark) || strings.Contains(strings.ToLower(got), "077cd60b") {
+			t.Errorf("%q became %q", line, got)
+		}
+	}
+	for _, line := range []string{
+		"hmac 0212077cd60b",
+		"crc 0212077cd60b",
+		"mac=000000000000",
+		"mac 0212077cd60b0c0d",
+		"machine 0212077cd60b",
+	} {
+		if got := Redact(line, Facts{}, "k"); got != line {
+			t.Errorf("%q became %q", line, got)
+		}
+	}
+}
+
+// An SSID as wpa_supplicant's SME quotes it and as an AltoBeam driver
+// brackets it (r-s3mztw34's log), however short.
+func TestAnSSIDQuotedSinglyOrBracketedIsRedacted(t *testing.T) {
+	log := strings.Join([]string{
+		"[    7.565328] [atbm_log]:authen:(<mac:1>),ssid(HOMENET)",
+		"SME: Trying to authenticate with <mac:1> (SSID='HOMENET' freq=2447 MHz)",
+		"eth3: Trying to associate with <mac:1> (SSID='Home Net 5' freq=2447 MHz)",
+	}, "\n")
+	got := Redact(log, Facts{}, "k")
+	if strings.Contains(got, "HOMENET") || strings.Contains(got, "Home Net") ||
+		!strings.Contains(got, "ssid(<wifi_ssid>)") || !strings.Contains(got, "(SSID='<wifi_ssid>' freq=2447 MHz)") {
+		t.Errorf("redacted:\n%s", got)
+	}
+	for _, line := range []string{"ssid()", "SSID='' freq=2447", "ssids->ssid_len:8"} {
+		if got := Redact(line, Facts{}, "k"); got != line {
+			t.Errorf("%q became %q", line, got)
+		}
 	}
 }
 

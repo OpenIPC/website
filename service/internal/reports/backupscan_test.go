@@ -560,6 +560,43 @@ func TestTheBackupCheckFindsATangeSerialFile(t *testing.T) {
 	}
 }
 
+// A Xiongmai keeps its cloud serial in /mnt/mtd/Config/SerialNumber, the
+// sixteen hex digits alone (r-jpkarre8): the backup check knows the file by
+// its name.
+func TestTheBackupCheckFindsAXiongmaiSerialFile(t *testing.T) {
+	e := binary.LittleEndian
+	for _, compr := range []byte{jffs2None, jffs2Zlib} {
+		part := append(append(noise(4096, 23), direntNode(e, 23, "SerialNumber")...),
+			inodeNode(e, 23, []byte("0123456789abcdef"), compr)...)
+		fs := scan(t, append(part, bytes.Repeat([]byte{0xff}, 4096)...))
+		if k := Kinds(fs); !slices.Equal(k, []string{"cloud_id"}) {
+			t.Errorf("compr %d: %v", compr, k)
+		}
+	}
+	// Another file's name, a file of that name holding something else, and
+	// a serial in an inode no SerialNumber names.
+	for _, c := range []struct {
+		name string
+		ino  uint32
+		data string
+	}{
+		{"SerialNumbers.txt", 24, "0123456789abcdef"},
+		{"SerialNumber", 25, "not a serial at all"},
+		{"SerialNumber", 26, "0000000000000000"},
+	} {
+		part := append(append(noise(4096, 24), direntNode(e, c.ino, c.name)...),
+			inodeNode(e, c.ino, []byte(c.data), jffs2None)...)
+		if fs := scan(t, append(part, bytes.Repeat([]byte{0xff}, 4096)...)); len(fs) != 0 {
+			t.Errorf("%s holding %q taken for the serial: %+v", c.name, c.data, fs)
+		}
+	}
+	part := append(append(noise(4096, 25), direntNode(e, 27, "SerialNumber")...),
+		inodeNode(e, 28, []byte("0123456789abcdef"), jffs2None)...)
+	if fs := scan(t, append(part, bytes.Repeat([]byte{0xff}, 4096)...)); len(fs) != 0 {
+		t.Errorf("another inode's data taken for the serial: %+v", fs)
+	}
+}
+
 // A secret repeated all over a dump -- the same Wi-Fi network in every
 // node of a JFFS2 -- keeps a few findings of its kind and does not stop the
 // scan: a different secret after them is still found, so a review that
