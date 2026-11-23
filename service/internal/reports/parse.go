@@ -417,8 +417,9 @@ var anyMAC = []struct {
 
 // namedBareMAC is a MAC as twelve hex digits with no separator, which only
 // the name before it tells from any other number: a Sunniwell camera's
-// "---------mac-------<mac>" and "macID <mac> Match SUCCESS." (r-km7w3b8i).
-var namedBareMAC = regexp.MustCompile(`(?i)\bmac(?:_?(?:id|addr(?:ess)?))?[ \t:=_-]*([0-9a-f]{12})\b`)
+// "---------mac-------<mac>" and "macID <mac> Match SUCCESS." (r-km7w3b8i),
+// or "MAC Address: <mac>".
+var namedBareMAC = regexp.MustCompile(`(?i)\bmac(?:[ \t_]?(?:id|addr(?:ess)?))?[ \t:=_-]*([0-9a-f]{12})\b`)
 
 // hexByteMAC is a MAC as a driver prints its bytes, each with its 0x and no
 // leading zero: AltoBeam's "efuse data is [...,0x0,0x12:0x41:0x7:...]".

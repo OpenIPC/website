@@ -637,6 +637,8 @@ func TestANamedBareMACIsRedacted(t *testing.T) {
 		"[INFO][SWOVD ovd_client_init 2312][852] ---------mac-------0212077CD60B",
 		"macID 0212077cd60b Match SUCCESS.",
 		"mac_addr=0212077cd60b",
+		"MAC ID 0212077CD60B",
+		"MAC Address: 0212077cd60b",
 	} {
 		if got := Redact(line, Facts{}, "k"); !strings.Contains(got, mark) || strings.Contains(strings.ToLower(got), "077cd60b") {
 			t.Errorf("%q became %q", line, got)
