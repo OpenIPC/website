@@ -576,6 +576,11 @@ func jffs2CRC(b []byte) uint32 { return ^crc32.Update(^uint32(0), crc32.IEEETabl
 // tangeFile holds a Tange Cloud camera's serial and key (/config).
 const tangeFile = "tange_sn.txt"
 
+// xmSerialFile is where a Xiongmai keeps its cloud serial (/mnt/mtd/Config):
+// the sixteen hex digits alone, which no pattern tells from any other
+// number (r-jpkarre8).
+const xmSerialFile = "SerialNumber"
+
 // certificateName is a Gwell camera's device certificate and key.
 var certificateName = regexp.MustCompile(`^Certificate(?:_[A-Za-z0-9_-]+)?\.bin$`)
 
@@ -632,6 +637,10 @@ func (s *backupScan) node(off int64) error {
 		if string(name) == tangeFile {
 			s.add("device_id", off, "jffs2")
 			s.add("cloud_secret", off, "jffs2")
+			s.unredactable = true
+		}
+		if string(name) == xmSerialFile {
+			s.add("cloud_id", off, "jffs2")
 			s.unredactable = true
 		}
 	case jffs2Inode:

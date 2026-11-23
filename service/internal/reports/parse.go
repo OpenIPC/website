@@ -373,6 +373,18 @@ func Redact(text string, f Facts, key string) string {
 		}
 		text = spellings(id).ReplaceAllString(text, mark)
 	}
+	text = namedBareMAC.ReplaceAllStringFunc(text, func(m string) string {
+		g := namedBareMAC.FindStringSubmatchIndex(m)
+		var parts []string
+		for i := g[2]; i < g[3]; i += 2 {
+			parts = append(parts, strings.ToLower(m[i:i+2]))
+		}
+		mac := strings.Join(parts, ":")
+		if zeroish(mac) {
+			return m
+		}
+		return m[:g[2]] + "<mac:" + Keyed(key, "mac", mac) + ">"
+	})
 	for _, m := range anyMAC {
 		text = replaceMACs(text, m.re, m.sep, func(s string) string {
 			s = strings.ToLower(s)
@@ -402,6 +414,11 @@ var anyMAC = []struct {
 	// for ...&mac_address=e4%3Af1%3A...
 	{regexp.MustCompile(`(?i)\b(?:[0-9a-f]{2}%3a){5}[0-9a-f]{2}\b`), "%3a"},
 }
+
+// namedBareMAC is a MAC as twelve hex digits with no separator, which only
+// the name before it tells from any other number: a Sunniwell camera's
+// "---------mac-------<mac>" and "macID <mac> Match SUCCESS." (r-km7w3b8i).
+var namedBareMAC = regexp.MustCompile(`(?i)\bmac(?:_?(?:id|addr(?:ess)?))?[ \t:=_-]*([0-9a-f]{12})\b`)
 
 // hexByteMAC is a MAC as a driver prints its bytes, each with its 0x and no
 // leading zero: AltoBeam's "efuse data is [...,0x0,0x12:0x41:0x7:...]".
@@ -498,6 +515,11 @@ var secretForms = []secretForm{
 	// runs past an escaped quote (\").
 	{regexp.MustCompile(`(?i)\be?ssid["']?\s*[:=]\s*"((?:[^"\\\r\n]|\\.)+)"`), []string{"wifi_ssid"}},
 	{regexp.MustCompile(`(?i)\be?ssid["']?\s*[:=][ \t]*([^\s"',<][^\s"',]*)`), []string{"wifi_ssid"}},
+	// wpa_supplicant's SME quotes it singly, "(SSID='<net>' freq=2447
+	// MHz)", and an AltoBeam driver in brackets, "authen:(...),ssid(<net>)"
+	// (r-s3mztw34).
+	{regexp.MustCompile(`(?i)\be?ssid\s*[:=]\s*'((?:[^'\\\r\n]|\\.)+)'`), []string{"wifi_ssid"}},
+	{regexp.MustCompile(`(?i)\bssid\(([^()\r\n]+)\)`), []string{"wifi_ssid"}},
 	{regexp.MustCompile(`(?i)\b(?:wpa_)?(?:psk|passphrase)["']?\s*[:=]\s*"((?:[^"\\\r\n]|\\.)+)"`), []string{"wifi_password"}},
 	{regexp.MustCompile(`(?i)\b(?:wpa_)?psk\s*[:=]\s*([0-9a-f]{64})\b`), []string{"wifi_password"}},
 	{regexp.MustCompile(`(?im)\b(?:wpa_passphrase|sae_password)[ \t]*=[ \t]*([^"\s<][^\r\n]*?)[ \t]*$`), []string{"wifi_password"}},
@@ -634,6 +656,10 @@ var deviceForms = []*regexp.Regexp{
 	// A board serial as short as eight, as the backup check reads it.
 	regexp.MustCompile(`(?m)^BSN=([A-Za-z0-9]{8,32})[ \t]*\r?$`),
 	regexp.MustCompile(`(?m)^ID=([A-Za-z0-9]{10,32})[ \t]*\r?$`),
+	// Or quoted as code in a Markdown write-up, "- `BSN=...`, `ID=...`"
+	// (r-rzb4byak's REPORT.md): the backticks fence the value as a line does.
+	regexp.MustCompile("`BSN=([A-Za-z0-9]{8,32})`"),
+	regexp.MustCompile("`ID=([A-Za-z0-9]{10,32})`"),
 	// A TP-Link's cloud identity: its device ID (40 hex digits) and hardware
 	// ID (32), as its identity block and what is read out of it name them
 	// (deviceId, dev_id, hwId; r-zia9bn65).

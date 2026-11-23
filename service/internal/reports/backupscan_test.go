@@ -560,6 +560,26 @@ func TestTheBackupCheckFindsATangeSerialFile(t *testing.T) {
 	}
 }
 
+// A Xiongmai keeps its cloud serial in /mnt/mtd/Config/SerialNumber, the
+// sixteen hex digits alone (r-jpkarre8): the backup check knows the file by
+// its name.
+func TestTheBackupCheckFindsAXiongmaiSerialFile(t *testing.T) {
+	e := binary.LittleEndian
+	for _, compr := range []byte{jffs2None, jffs2Zlib} {
+		part := append(append(noise(4096, 23), direntNode(e, 23, "SerialNumber")...),
+			inodeNode(e, 23, []byte("0123456789abcdef"), compr)...)
+		fs := scan(t, append(part, bytes.Repeat([]byte{0xff}, 4096)...))
+		if k := Kinds(fs); !slices.Equal(k, []string{"cloud_id"}) {
+			t.Errorf("compr %d: %v", compr, k)
+		}
+	}
+	part := append(append(noise(4096, 24), direntNode(e, 24, "SerialNumbers.txt")...),
+		inodeNode(e, 24, []byte("0123456789abcdef"), jffs2None)...)
+	if fs := scan(t, append(part, bytes.Repeat([]byte{0xff}, 4096)...)); len(fs) != 0 {
+		t.Errorf("another file taken for SerialNumber: %+v", fs)
+	}
+}
+
 // A secret repeated all over a dump -- the same Wi-Fi network in every
 // node of a JFFS2 -- keeps a few findings of its kind and does not stop the
 // scan: a different secret after them is still found, so a review that
