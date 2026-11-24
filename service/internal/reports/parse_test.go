@@ -708,11 +708,15 @@ func TestAJooanLogsNetworkIsRedacted(t *testing.T) {
 func TestANamedMACIsRedactedInAUUID(t *testing.T) {
 	mark := "<mac:" + Keyed("k", "mac", "02:cf:89:1d:e9:79") + ">"
 	const ble = "00001800-0000-1000-8000-00805f9b34fb"
-	for _, named := range []string{"mac = 02cf891de979", "ethaddr=02:CF:89:1D:E9:79", "02-cf-89-1d-e9-79"} {
+	for _, named := range []string{"mac = 02cf891de979", "ethaddr=02:CF:89:1D:E9:79", "02-cf-89-1d-e9-79", "efuse [0x2:0xcf:0x89:0x1d:0xe9:0x79]"} {
 		got := Redact("uuid is 1df2e14e-1dd2-11b2-8323-02CF891de979 and "+named+"\nservice "+ble+"\n", Facts{}, "k")
 		if !strings.Contains(got, "uuid is 1df2e14e-1dd2-11b2-8323-"+mark+" and") || strings.Count(got, mark) != 2 || !strings.Contains(got, ble) {
 			t.Errorf("%q: redacted:\n%s", named, got)
 		}
+	}
+	// Six groups of a longer identifier are no MAC.
+	if line := "id 2d0:200:02:cf:89:1d:e9:79 1df2e14e-1dd2-11b2-8323-02cf891de979"; Redact(line, Facts{}, "k") != line {
+		t.Errorf("%q became %q", line, Redact(line, Facts{}, "k"))
 	}
 	if line := "service " + ble; Redact(line, Facts{}, "k") != line {
 		t.Error("a UUID alone was changed")
