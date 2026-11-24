@@ -373,6 +373,7 @@ func Redact(text string, f Facts, key string) string {
 		}
 		text = spellings(id).ReplaceAllString(text, mark)
 	}
+	text = redactUUIDNodes(text, key)
 	text = namedBareMAC.ReplaceAllStringFunc(text, func(m string) string {
 		g := namedBareMAC.FindStringSubmatchIndex(m)
 		var parts []string
@@ -420,6 +421,39 @@ var anyMAC = []struct {
 // "---------mac-------<mac>" and "macID <mac> Match SUCCESS." (r-km7w3b8i),
 // or "MAC Address: <mac>".
 var namedBareMAC = regexp.MustCompile(`(?i)\bmac(?:[ \t_]?(?:id|addr(?:ess)?))?[ \t:=_-]*([0-9a-f]{12})\b`)
+
+// uuidNode is a UUID, its node -- a version 1 UUID's last twelve digits are
+// the MAC of who made it -- in a group.
+var uuidNode = regexp.MustCompile(`(?i)\b[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}([0-9a-f]{12})\b`)
+
+// redactUUIDNodes takes out of a UUID the MAC the text itself names, as
+// "uuid is ...-<mac> and mac = <mac>" does (r-4s8ue3kz). Any other node is
+// left: a Bluetooth service's or a partition type's is the same everywhere.
+func redactUUIDNodes(text, key string) string {
+	if !uuidNode.MatchString(text) {
+		return text
+	}
+	named := map[string]bool{}
+	for _, m := range namedBareMAC.FindAllStringSubmatch(text, -1) {
+		named[strings.ToLower(m[1])] = true
+	}
+	for _, m := range anyMAC {
+		for _, s := range m.re.FindAllString(text, -1) {
+			named[strings.NewReplacer(":", "", "-", "", "%3a", "").Replace(strings.ToLower(s))] = true
+		}
+	}
+	return uuidNode.ReplaceAllStringFunc(text, func(m string) string {
+		node := strings.ToLower(m[len(m)-12:])
+		if !named[node] || zeroish(node) {
+			return m
+		}
+		var parts []string
+		for i := 0; i < 12; i += 2 {
+			parts = append(parts, node[i:i+2])
+		}
+		return m[:len(m)-12] + "<mac:" + Keyed(key, "mac", strings.Join(parts, ":")) + ">"
+	})
+}
 
 // hexByteMAC is a MAC as a driver prints its bytes, each with its 0x and no
 // leading zero: AltoBeam's "efuse data is [...,0x0,0x12:0x41:0x7:...]".

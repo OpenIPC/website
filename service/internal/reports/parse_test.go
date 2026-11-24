@@ -703,6 +703,22 @@ func TestAJooanLogsNetworkIsRedacted(t *testing.T) {
 	}
 }
 
+// A MAC the text names is taken out of a UUID that ends in it, whichever
+// way it is named (r-4s8ue3kz's log); another UUID stays.
+func TestANamedMACIsRedactedInAUUID(t *testing.T) {
+	mark := "<mac:" + Keyed("k", "mac", "02:cf:89:1d:e9:79") + ">"
+	const ble = "00001800-0000-1000-8000-00805f9b34fb"
+	for _, named := range []string{"mac = 02cf891de979", "ethaddr=02:CF:89:1D:E9:79", "02-cf-89-1d-e9-79"} {
+		got := Redact("uuid is 1df2e14e-1dd2-11b2-8323-02CF891de979 and "+named+"\nservice "+ble+"\n", Facts{}, "k")
+		if !strings.Contains(got, "uuid is 1df2e14e-1dd2-11b2-8323-"+mark+" and") || strings.Count(got, mark) != 2 || !strings.Contains(got, ble) {
+			t.Errorf("%q: redacted:\n%s", named, got)
+		}
+	}
+	if line := "service " + ble; Redact(line, Facts{}, "k") != line {
+		t.Error("a UUID alone was changed")
+	}
+}
+
 // A MAC percent-encoded in a URL (r-bxuf57u3's updater request) has the
 // same mark as the MAC written out.
 func TestAPercentEncodedMACIsRedacted(t *testing.T) {
