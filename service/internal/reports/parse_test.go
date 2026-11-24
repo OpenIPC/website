@@ -677,6 +677,32 @@ func TestAnSSIDQuotedSinglyOrBracketedIsRedacted(t *testing.T) {
 	}
 }
 
+// A Jooan camera's log names its network in hex, XORed with a constant, and
+// plainly beside it (r-t2uz8x6m's log).
+func TestAJooanLogsNetworkIsRedacted(t *testing.T) {
+	log := strings.Join([]string{
+		"[check_wifi_connect:2499]It's have wifi security,so don't scanning,security=WPA-PSK [2A0D0F07420C0716] [120303115216] ",
+		"[check_wifi_connect:2517]wifi ssid(Home (5G) net) (pa(ss) w0rd) secrity(WPA-PSK) sMac()",
+		"[_JOA_NETWORK_ScanAroundWifi:3952](0) ssid:(Next Door) mac:(XX:XX:XX:XX:XX:XX) security:2 channel:3 signal:-36",
+	}, "\n")
+	got := Redact(log, Facts{}, "k")
+	for _, gone := range []string{"2A0D0F", "120303", "Home", "5G", "net)", "pa(ss", "w0rd", "Next", "Door"} {
+		if strings.Contains(got, gone) {
+			t.Errorf("%q is still in:\n%s", gone, got)
+		}
+	}
+	for _, kept := range []string{"security=WPA-PSK [<wifi_ssid>] [<wifi_password>]", "wifi ssid(<wifi_ssid>) (<wifi_password>) secrity(WPA-PSK)", "ssid:<wifi_ssid> mac:("} {
+		if !strings.Contains(got, kept) {
+			t.Errorf("no %q in:\n%s", kept, got)
+		}
+	}
+	for _, line := range []string{"security=0 [ok]", "security:2 channel:3", "wifi ssid() () secrity()"} {
+		if got := Redact(line, Facts{}, "k"); got != line {
+			t.Errorf("%q became %q", line, got)
+		}
+	}
+}
+
 // A MAC percent-encoded in a URL (r-bxuf57u3's updater request) has the
 // same mark as the MAC written out.
 func TestAPercentEncodedMACIsRedacted(t *testing.T) {

@@ -509,6 +509,13 @@ var secretForms = []secretForm{
 	// SSID=<net> , EncType=2, Password=<password> ", the password to the end
 	// of the line, spaces and all.
 	{regexp.MustCompile(`(?m)\bSSID=([^\r\n]*?)\s*,\s*EncType=\d+\s*,\s*Password=([^\r\n]*?)[ \t]*$`), []string{"wifi_ssid", "wifi_password"}},
+	// A Jooan camera's network as it connects, the name and the password
+	// XORed with a constant and printed in hex, "security=WPA-PSK [<net>]
+	// [<password>]", then plainly, "wifi ssid(<net>) (<password>) secrity(",
+	// and what it scans, "ssid:(<net>) mac:(" (r-t2uz8x6m).
+	{regexp.MustCompile(`\bsecurity=[^\s\[\]]*\s*\[([0-9A-Fa-f]+)\]\s*\[([0-9A-Fa-f]*)\]`), []string{"wifi_ssid", "wifi_password"}},
+	{regexp.MustCompile(`\bwifi ssid\(([^\r\n]*?)\) \(([^\r\n]*?)\) secrity\(`), []string{"wifi_ssid", "wifi_password"}},
+	{regexp.MustCompile(`\bssid:(\([^\r\n]*?\)) mac:\(`), []string{"wifi_ssid"}},
 	// wpa_supplicant's and hostapd's ssid="<net>", psk="<passphrase>" or
 	// psk=<64 hex digits>, wpa_passphrase=, sae_password=; and a network as
 	// a Wi-Fi driver or iwconfig names it (ssid:<net>, SSID:"<net>",
