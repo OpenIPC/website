@@ -373,6 +373,7 @@ func Redact(text string, f Facts, key string) string {
 		}
 		text = spellings(id).ReplaceAllString(text, mark)
 	}
+	text = redactUUIDNodes(text, key)
 	text = namedBareMAC.ReplaceAllStringFunc(text, func(m string) string {
 		g := namedBareMAC.FindStringSubmatchIndex(m)
 		var parts []string
@@ -391,17 +392,7 @@ func Redact(text string, f Facts, key string) string {
 			return strings.NewReplacer("-", ":", "%3a", ":").Replace(s)
 		}, key)
 	}
-	return replaceMACs(text, hexByteMAC, ":", func(s string) string {
-		var b []string
-		for _, p := range strings.Split(strings.ToLower(s), ":") {
-			p = strings.TrimPrefix(p, "0x")
-			if len(p) == 1 {
-				p = "0" + p
-			}
-			b = append(b, p)
-		}
-		return strings.Join(b, ":")
-	}, key)
+	return replaceMACs(text, hexByteMAC, ":", hexByteNorm, key)
 }
 
 var anyMAC = []struct {
@@ -421,9 +412,64 @@ var anyMAC = []struct {
 // or "MAC Address: <mac>".
 var namedBareMAC = regexp.MustCompile(`(?i)\bmac(?:[ \t_]?(?:id|addr(?:ess)?))?[ \t:=_-]*([0-9a-f]{12})\b`)
 
+// uuidNode is a UUID, its node -- a version 1 UUID's last twelve digits are
+// the MAC of who made it -- in a group.
+var uuidNode = regexp.MustCompile(`(?i)\b[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}([0-9a-f]{12})\b`)
+
+// redactUUIDNodes takes out of a UUID the MAC the text itself names, as
+// "uuid is ...-<mac> and mac = <mac>" does (r-4s8ue3kz). Any other node is
+// left: a Bluetooth service's or a partition type's is the same everywhere,
+// version 1 too, and nothing but the MAC named beside it tells them apart.
+func redactUUIDNodes(text, key string) string {
+	if !uuidNode.MatchString(text) {
+		return text
+	}
+	named := map[string]bool{}
+	for _, m := range namedBareMAC.FindAllStringSubmatch(text, -1) {
+		named[strings.ToLower(m[1])] = true
+	}
+	name := func(re *regexp.Regexp, sep string, norm func(string) string) {
+		for _, at := range re.FindAllStringIndex(text, -1) {
+			if groupsBefore(text[:at[0]], sep)+groupsAfter(text[at[1]:], sep) >= 2 {
+				continue // part of something longer, as in replaceMACs
+			}
+			mac := norm(text[at[0]:at[1]])
+			named[strings.NewReplacer(":", "", "-", "", "%3a", "").Replace(mac)] = true
+		}
+	}
+	for _, m := range anyMAC {
+		name(m.re, m.sep, strings.ToLower)
+	}
+	name(hexByteMAC, ":", hexByteNorm)
+	return uuidNode.ReplaceAllStringFunc(text, func(m string) string {
+		node := strings.ToLower(m[len(m)-12:])
+		if !named[node] || zeroish(node) {
+			return m
+		}
+		var parts []string
+		for i := 0; i < 12; i += 2 {
+			parts = append(parts, node[i:i+2])
+		}
+		return m[:len(m)-12] + "<mac:" + Keyed(key, "mac", strings.Join(parts, ":")) + ">"
+	})
+}
+
 // hexByteMAC is a MAC as a driver prints its bytes, each with its 0x and no
 // leading zero: AltoBeam's "efuse data is [...,0x0,0x12:0x41:0x7:...]".
 var hexByteMAC = regexp.MustCompile(`(?i)\b0x[0-9a-f]{1,2}(?::0x[0-9a-f]{1,2}){5}\b`)
+
+// hexByteNorm is such a MAC as any other is written: 0x2:0x12:... is 02:12:...
+func hexByteNorm(s string) string {
+	var b []string
+	for _, p := range strings.Split(strings.ToLower(s), ":") {
+		p = strings.TrimPrefix(p, "0x")
+		if len(p) == 1 {
+			p = "0" + p
+		}
+		b = append(b, p)
+	}
+	return strings.Join(b, ":")
+}
 
 // replaceMACs replaces what re finds with its MAC's mark, the MAC spelled
 // as norm spells it. Six groups the same separator joins to two more
