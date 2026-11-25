@@ -1136,7 +1136,7 @@ func TestARuisionBoardIsFiledUnderItsMaker(t *testing.T) {
 
 // SMTSEC's modules: a new maker with the name its Chinese one reads as, a
 // module's chip linked to its SoC, its code answering without the SIP- prefix
-//, and a chip the catalogue does not list
+// , and a chip the catalogue does not list
 // (SSD3403) kept as the page gives it.
 func TestASMTSECModuleIsFiledUnderItsMaker(t *testing.T) {
 	pool, root := imported(t)
@@ -1281,6 +1281,53 @@ func TestAHikvisionCameraFromAReportIsFoundByTheImport(t *testing.T) {
 	}
 	if s.Existing != id {
 		t.Errorf("the PCB marking finds %q, want %q", s.Existing, id)
+	}
+}
+
+// Migration 056 makes the IPC8232SWC-WE a camera, moves the markings of
+// C1L-2WN-G to the board it is, and says on each whose camera it is (#618).
+func TestMigration056PutsTheRostelecomCamerasInOrder(t *testing.T) {
+	pool, _ := imported(t)
+	ctx := context.Background()
+	sql, err := os.ReadFile("../db/migrations/056_board_uniview_rostelecom.sql")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, q := range []string{
+		`INSERT INTO board_manufacturers (id, name) VALUES ('uniview', 'Uniview')`,
+		`INSERT INTO board_sources (id, name, url, note, ref, position) VALUES ('contributor', 'Board owners', 'https://x', '', '', 90) ON CONFLICT DO NOTHING`,
+		`INSERT INTO board_models (id, manufacturer_id, model) VALUES ('uniview-ipc8232swc-we', 'uniview', 'IPC8232SWC-WE'),
+			('uniview-ipc8232swc-we-b', 'uniview', 'IPC8232SWC-WE-B'), ('uniview-c1l-2wn-g', 'uniview', 'C1L-2WN-G')`,
+		`INSERT INTO board_model_aliases (maker_id, code_norm, model_id, source, code_as_printed) VALUES
+			('uniview', 'C1L-2WN-G', 'uniview-c1l-2wn-g', 'club', 'C1L-2WN-G'),
+			('uniview', 'C1L-2WN-G-RU', 'uniview-ipc8232swc-we', 'club', 'C1L-2WN-G-RU'),
+			('uniview', 'C1L-2WN', 'uniview-ipc8232swc-we', 'club', 'C1L-2WN')`,
+		string(sql), string(sql),
+	} {
+		if _, err := pool.Exec(ctx, q); err != nil {
+			t.Fatal(err)
+		}
+	}
+	for q, want := range map[string]string{
+		`SELECT kind FROM board_models WHERE id = 'uniview-ipc8232swc-we'`:                                                                "camera",
+		`SELECT string_agg(code_norm, ',' ORDER BY code_norm) FROM board_model_aliases WHERE model_id = 'uniview-ipc8232swc-we-b'`:        "C1L-2WN-G,C1L-2WN-G-RU",
+		`SELECT string_agg(code_norm, ',' ORDER BY code_norm) FROM board_model_aliases WHERE model_id = 'uniview-ipc8232swc-we'`:          "C1L-2WN",
+		`SELECT string_agg(model_id || ' ' || locale, ',' ORDER BY model_id, locale) FROM board_model_texts WHERE source = 'contributor'`: "uniview-ipc8232swc-we en,uniview-ipc8232swc-we ru,uniview-ipc8232swc-we zh,uniview-ipc8232swc-we-b en,uniview-ipc8232swc-we-b ru,uniview-ipc8232swc-we-b zh",
+		`SELECT count(*)::text FROM board_model_texts WHERE source = 'contributor' AND text NOT LIKE '%' || chr(10) || '%'`:               "0",
+	} {
+		var got string
+		if err := pool.QueryRow(ctx, q).Scan(&got); err != nil || got != want {
+			t.Errorf("%s: %q (%v), want %q", q, got, err, want)
+		}
+	}
+	// The last contributed unit goes, and the source stays while it says this.
+	im := &Importer{Pool: pool, Log: quiet(), Root: t.TempDir(), Resolve: supported}
+	if err := im.prune(ctx, nil, true); err != nil {
+		t.Fatal(err)
+	}
+	var kept bool
+	if err := pool.QueryRow(ctx, `SELECT EXISTS (SELECT 1 FROM board_sources WHERE id = 'contributor')`).Scan(&kept); err != nil || !kept {
+		t.Errorf("the source is gone (%v), and its texts with no name to show", err)
 	}
 }
 
