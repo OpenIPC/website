@@ -178,8 +178,8 @@ type summaryJSON struct {
 // board, and a shop's description, which says what the board is for. Every
 // other source follows, so its words fill a card only where theirs are
 // missing: the makers' own catalogues, then the archives of Xiongmai's
-// documents. Every source is in both (TestEverySourceCanSummariseACard).
-var summaryTail = []string{"jftech", "anjoy", "herospeed", "longse", "haixin", "ruision", "hikvision", "smtsec", "tehno32", "xmupdates"}
+// documents, then owners. Every source is in both (TestEverySourceCanSummariseACard).
+var summaryTail = []string{"jftech", "anjoy", "herospeed", "longse", "haixin", "ruision", "hikvision", "smtsec", "tehno32", "xmupdates", Contributors}
 var nameOrder = append([]string{"xiongmai", "cctvsp", "openhisiipcam"}, summaryTail...)
 var leadOrder = append([]string{"cctvsp", "xiongmai", "openhisiipcam"}, summaryTail...)
 

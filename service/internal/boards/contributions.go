@@ -374,7 +374,9 @@ func (im *Importer) prune(ctx context.Context, keep []string, fromReports bool) 
 			return err
 		}
 		if !any {
-			_, err = tx.Exec(ctx, `DELETE FROM board_sources WHERE id = $1`, Contributors)
+			// Unless it says something of a board still (migration 056).
+			_, err = tx.Exec(ctx, `DELETE FROM board_sources WHERE id = $1
+				AND NOT EXISTS (SELECT 1 FROM board_model_texts WHERE source = $1)`, Contributors)
 			return err
 		}
 		_, err = tx.Exec(ctx, `
