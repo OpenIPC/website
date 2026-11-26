@@ -389,7 +389,8 @@ func TestSigmaStarHasNoNANDFullImage(t *testing.T) {
 
 // The Goke SoCs on OpenIPC/u-boot's bootloaders install the split package
 // of their own board behind their own -nor.bin, in the fixture index as in
-// firmware's latest: GK7102C is the GK7102S die, GK7206V12A its own build.
+// firmware's latest: GK7102C is the GK7102S die, and GK7206V12A runs the
+// GK7206V11A build, as firmware's own board aliases say.
 func TestGokeOpenIPCBootloadersInstallSplit(t *testing.T) {
 	cat := loadCatalogue(t)
 	raw, err := os.ReadFile("testdata/release-index.json")
@@ -405,7 +406,7 @@ func TestGokeOpenIPCBootloadersInstallSplit(t *testing.T) {
 		{"gk7102s", "u-boot-gk7102s-nor.bin", "gk7102s"},
 		{"gk7102c", "u-boot-gk7102s-nor.bin", "gk7102s"},
 		{"gk7206v11a", "u-boot-gk7206v11a-nor.bin", "gk7206v11a"},
-		{"gk7206v12a", "u-boot-gk7206v12a-nor.bin", "gk7206v12a"},
+		{"gk7206v12a", "u-boot-gk7206v12a-nor.bin", "gk7206v11a"},
 	} {
 		soc := cat.SoC(tc.soc)
 		if got := Availability(soc, idx); got != "wizard" {

@@ -1527,18 +1527,6 @@
       "updated_at": "2026-11-17T19:13:44Z",
       "release": "nightly-20261117-03d1125"
     },
-    "openipc.gk7206v12a-nor-lite-split.tgz": {
-      "size": 5379245,
-      "digest": "sha256:9d0c42ee024cbbed63f6ab8a880e58e842f28d249aaeb03c3abe41df0e2ee849",
-      "updated_at": "2026-11-16T19:22:18Z",
-      "release": "nightly-20261117-03d1125"
-    },
-    "openipc.gk7206v12a-nor-lite.tgz": {
-      "size": 5379248,
-      "digest": "sha256:42650da5a2f6475f99f33336b9ce2cbadf15a9af6d8ecda6baf3618d114fba33",
-      "updated_at": "2026-11-16T19:22:23Z",
-      "release": "nightly-20261117-03d1125"
-    },
     "openipc.gk7201v200-nor-lite-split.tgz": {
       "size": 7000000,
       "digest": "sha256:f0f4d168aceaeb7b577a6895bfc0415e0faeba7aff84b48ad512f95a24c68556",

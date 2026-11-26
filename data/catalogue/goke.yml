@@ -298,7 +298,7 @@ socs:
   kernel: null
   uboot_filename: u-boot-gk7206v12a-nor.bin
   nor_split: true
-  linux_filename: openipc.gk7206v12a-nor-lite.tgz
+  linux_filename: openipc.gk7206v11a-nor-lite.tgz
   notes: 2Gb DDR3L in the package; XMedia Lotus SDK, kernel 5.10
   urlname: gk7206v12a
   featured: false
