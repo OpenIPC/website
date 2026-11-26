@@ -25,11 +25,17 @@ var norLayouts = map[int]norLayout{
 	16: {KernelOffset: 0x50000, RootfsOffset: 0x350000, OverlayOffset: 0xD50000},
 }
 
-// SigmaStar and Ingenic boot with fixed mtdparts: their 16 MB layout keeps the
-// 8 MB kernel partition, so the rootfs sits at 0x250000, not 0x350000. An
-// image built from the other table was shipped once and panicked on root
-// mount. The vendor decides, not the chip.
+// SigmaStar's and Ingenic's vendor U-Boots boot with fixed mtdparts: their
+// 16 MB layout keeps the 8 MB kernel partition, so the rootfs sits at
+// 0x250000, not 0x350000. An image built from the other table was shipped once
+// and panicked on root mount. The bootloader decides, not the chip: a
+// SigmaStar SoC whose -nor.bin is OpenIPC/u-boot's openipc-sigmastar finds the
+// layout at boot (ScansNORLayout, FixedMtdparts).
 var fixedMtdpartsVendors = []string{"SigmaStar", "Ingenic"}
+
+// vendorNORBootloaders are the vendors whose -nor.bin is still their vendor's
+// tree: Ingenic's T10 to T40 come from OpenIPC/u-boot-ingenic.
+var vendorNORBootloaders = []string{"Ingenic"}
 
 var fixedMtdpartsLayouts = map[int]norLayout{
 	8:  {KernelOffset: 0x50000, RootfsOffset: 0x250000, OverlayOffset: 0x750000},
@@ -148,11 +154,18 @@ func (s Spec) nand() bool { return s.FlashType == "nand" }
 
 // ScansNORLayout says whether a SoC's NOR bootloader is a per-flash-type
 // OpenIPC U-Boot (-nor.bin) that finds the kernel and rootfs at boot, so it
-// boots the split layout's firmware.bin as well as the fixed slots. SigmaStar
-// and Ingenic keep their fixed mtdparts.
+// boots the split layout's firmware.bin as well as the fixed slots. Ingenic's
+// -nor.bin keeps its fixed mtdparts.
 func ScansNORLayout(soc *catalogue.SoC) bool {
 	return strings.HasSuffix(soc.Bootloader("nor"), "-nor.bin") &&
-		!slices.Contains(fixedMtdpartsVendors, soc.Vendor.Name)
+		!slices.Contains(vendorNORBootloaders, soc.Vendor.Name)
+}
+
+// FixedMtdparts says whether a SoC's NOR install runs on a vendor U-Boot with
+// one mtdparts string (fixedMtdpartsLayouts): SigmaStar and Ingenic, unless
+// the bootloader named is one that finds the layout.
+func FixedMtdparts(soc *catalogue.SoC) bool {
+	return slices.Contains(fixedMtdpartsVendors, soc.Vendor.Name) && !ScansNORLayout(soc)
 }
 
 // NANDInstallable says whether a SoC has a bootloader that can drive NAND:
@@ -166,7 +179,7 @@ func NANDInstallable(soc *catalogue.SoC) bool {
 
 func (s Spec) nor() norLayout {
 	table := norLayouts
-	if slices.Contains(fixedMtdpartsVendors, s.SoC.Vendor.Name) {
+	if FixedMtdparts(s.SoC) {
 		table = fixedMtdpartsLayouts
 	}
 	return table[NaturalLayout(s.LayoutMB)]
@@ -256,8 +269,8 @@ func SplitEdition(soc *catalogue.SoC, idx *Index, edition string) bool {
 	// own, or an older one with fixed partitions, does not boot firmware.bin,
 	// so a SoC that names no -nor.bin keeps listing the plain package it
 	// installs. SigmaStar's and Ingenic's kernels divide firmware.bin
-	// themselves, as on a split-only SoC, so their vendor U-Boots boot the
-	// split package too.
+	// themselves, as on a split-only SoC, so a camera still on a vendor
+	// U-Boot boots the split package too.
 	if !ScansNORLayout(soc) && !kernelSplits(soc) {
 		return false
 	}

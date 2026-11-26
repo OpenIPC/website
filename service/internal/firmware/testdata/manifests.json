@@ -496,11 +496,11 @@
     "layout": null,
     "filename": "openipc-ssc30kd-nor-lite-16mb.bin",
     "bytes": 16777216,
-    "sha256": "3c288e6e8f04ae9f0b7c62860b8c3d6e4c19b3e2f46d72df529b10239a2f4afc",
+    "sha256": "c5cf2b4a3dd413646526069b4eae6b2ae21257ddd932297e97ba7503be586a54",
     "offsets": {
       "u-boot": 0,
       "kernel": 327680,
-      "rootfs": 2424832
+      "rootfs": 3473408
     }
   },
   {
@@ -528,11 +528,11 @@
     "layout": null,
     "filename": "openipc-ssc30kd-nor-lite-32mb.bin",
     "bytes": 33554432,
-    "sha256": "c1e62ebf81b328ea6bd73d2de391e9e339e8366dc504f44d5962d00877a005c7",
+    "sha256": "fdb82740d7214df60cee7db5b839df1cf73d27798683de4a4244ec88f336ffff",
     "offsets": {
       "u-boot": 0,
       "kernel": 327680,
-      "rootfs": 2424832
+      "rootfs": 3473408
     }
   },
   {
@@ -586,11 +586,11 @@
     "layout": null,
     "filename": "openipc-ssc30kd-nor-big-16mb.bin",
     "bytes": 16777216,
-    "sha256": "777dea88ca9babea57f5116bd40c6440fa7ca34c280afb155ecfc15e6dcdf58f",
+    "sha256": "373f19c89b58cad0ffe4071a69fc5f7fab688957f8a09c3af8bfc4f1948bd0ad",
     "offsets": {
       "u-boot": 0,
       "kernel": 327680,
-      "rootfs": 2424832
+      "rootfs": 3473408
     }
   }
 ]
