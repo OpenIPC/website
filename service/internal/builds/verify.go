@@ -62,6 +62,8 @@ var pushers = map[string][]string{
 		"OpenIPC/u-boot/.github/workflows/build-grainmedia.yml@refs/heads/openipc",
 		// Its openipc-ingenic images (T10 to T41), likewise.
 		"OpenIPC/u-boot/.github/workflows/build-ingenic.yml@refs/heads/openipc",
+		// Its openipc-sigmastar images (Infinity3 to Infinity6C), likewise.
+		"OpenIPC/u-boot/.github/workflows/build-sigmastar.yml@refs/heads/openipc",
 	},
 	"xmupdates": {"OpenIPC/xmupdates/.github/workflows/weekly-update.yml@refs/heads/main"},
 	"coupler":   {"OpenIPC/coupler/.github/workflows/xm.yml@refs/heads/main"},
