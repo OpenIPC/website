@@ -209,8 +209,6 @@ var socShorthand = map[string]string{
 	// SigmaStar's parts as MStar's name marks them, as module makers still write them.
 	"msc339g": "ssc339g", "msc359g": "ssc359g",
 	"msc335": "ssc335", "msc30kq": "ssc30kq",
-	// The recorder part is SSR621Q; Anjoy Vision prints it with the cameras' prefix.
-	"ssc621q": "ssr621q",
 	// MStar's own parts, written with its name in place of the MSC prefix.
 	"mstar313e": "msc313e", "mstar316dm": "msc316dm",
 	// Hi3516CV610 as its package is marked (RNCV610-10B): the catalogue names

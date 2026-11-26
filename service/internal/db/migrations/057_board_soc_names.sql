@@ -7,7 +7,6 @@
 UPDATE board_models SET soc = CASE lower(replace(soc_label, ' ', ''))
         WHEN 'msc335' THEN 'ssc335'
         WHEN 'msc30kq' THEN 'ssc30kq'
-        WHEN 'ssc621q' THEN 'ssr621q'
         WHEN 'mstar313e' THEN 'msc313e'
         WHEN 'mstar316dm' THEN 'msc316dm'
         WHEN 'ambarellas2l' THEN 's2l'
@@ -15,5 +14,5 @@ UPDATE board_models SET soc = CASE lower(replace(soc_label, ' ', ''))
         WHEN 'xiongmaixm530' THEN 'xm530'
     END
 WHERE soc IS NULL
-  AND lower(replace(soc_label, ' ', '')) IN ('msc335', 'msc30kq', 'ssc621q', 'mstar313e', 'mstar316dm',
+  AND lower(replace(soc_label, ' ', '')) IN ('msc335', 'msc30kq', 'mstar313e', 'mstar316dm',
       'ambarellas2l', 'fullhanfh8852v200', 'xiongmaixm530');

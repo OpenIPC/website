@@ -159,7 +159,7 @@ func TestSoCShorthandResolves(t *testing.T) {
 		"Hi3516D": "hi3516dv100", "Hi3536C": "hi3536cv100", "Hi3536D": "hi3536dv100",
 		"HI3536E": "hi3536dv100", "Hi3536DV100": "hi3536dv100", "Hi3536": "",
 		"MSC339G": "ssc339g", "MSC359G": "ssc359g",
-		"MSC335": "ssc335", "MSC30KQ": "ssc30kq", "SSC621Q": "ssr621q",
+		"MSC335": "ssc335", "MSC30KQ": "ssc30kq", "SSC621Q": "",
 		"MStar 313E": "msc313e", "MStar 316DM": "msc316dm", "MSC313E": "msc313e", "MSC316DM": "msc316dm",
 		"Ambarella S2L": "s2l", "Fullhan FH8852V200": "fh8852v200", "Xiongmai XM530": "xm530",
 		"Grain Media GM8136": "gm8136", "HiSilicon Hi3516D": "hi3516dv100", "sigmastar  SSC335": "ssc335",
