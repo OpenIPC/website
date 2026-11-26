@@ -57,6 +57,9 @@ type Report struct {
 	// Answers: the report waiting for review this one answers -- sent from
 	// its receipt, when its sender was asked for something.
 	Answers string
+	// Claim: the code that makes a report stored without a member a
+	// member's later (claims.go), set by Insert and shown once.
+	Claim string
 }
 
 // Proposal is a camera the catalogue does not have yet, as its sender names
@@ -210,6 +213,12 @@ func (s *Store) Insert(ctx context.Context, r *Report, limit int, place func() e
 		}
 		if r.Code != "" {
 			if err := markUsed(ctx, tx, r); err != nil {
+				return err
+			}
+		}
+		if r.Member == "" {
+			r.Claim = newClaimCode()
+			if _, err := tx.Exec(ctx, `INSERT INTO report_claims (report_id, code_sha256) VALUES ($1, $2)`, r.ID, claimSum(r.Claim)); err != nil {
 				return err
 			}
 		}

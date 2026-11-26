@@ -92,6 +92,7 @@ func (a *API) Handlers() map[string]http.Handler {
 		"POST /api/v1/club/reports":                             a.post(a.send),
 		"GET /api/v1/club/reports":                              http.HandlerFunc(a.mine),
 		"POST /api/v1/club/reports/code":                        a.post(a.reportCode),
+		"POST /api/v1/club/reports/claim":                       a.post(a.claimReport),
 		"POST /api/v1/club/reports/{id}/edit":                   a.post(a.editReport),
 		"GET /api/v1/club/reports/{id}/files/{position}":        http.HandlerFunc(a.file),
 		"GET /api/v1/club/reports/{id}/files/{position}/public": http.HandlerFunc(a.publicCopy),
@@ -580,6 +581,40 @@ func (a *API) reportCode(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusOK, map[string]any{"code": code})
+}
+
+// claimReport is POST /api/v1/club/reports/claim {"code": "claim-..."}: the
+// report sent signed out that was given the code becomes the member's
+// (reports.Store.Claim), paid its stars at once when already published.
+func (a *API) claimReport(w http.ResponseWriter, r *http.Request) {
+	m, ok := a.signedIn(w, r)
+	if !ok {
+		return
+	}
+	var in struct {
+		Code string `json:"code"`
+	}
+	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 1024)).Decode(&in); err != nil {
+		a.refuse(w, http.StatusBadRequest, `send {"code": "claim-XXXX-XXXX-XXXX"}`)
+		return
+	}
+	c, err := a.Reports.Store().Claim(r.Context(), m.ID, in.Code)
+	switch {
+	case errors.Is(err, reports.ErrNotAClaim):
+		a.refuse(w, http.StatusBadRequest, err.Error())
+		return
+	case errors.Is(err, reports.ErrBadClaim):
+		a.refuse(w, http.StatusNotFound, err.Error())
+		return
+	case errors.Is(err, reports.ErrClaimed):
+		a.refuse(w, http.StatusConflict, err.Error())
+		return
+	case err != nil:
+		a.fail(w, "the claim", err)
+		return
+	}
+	a.Log.Info("club: report claimed", "report", c.ID, "member", m.ID, "points", c.Points)
+	writeJSON(w, http.StatusOK, c)
 }
 
 // mine is GET /api/v1/club/reports: what the member sent, its state and

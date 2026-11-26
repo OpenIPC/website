@@ -132,6 +132,7 @@ board (`model`, or `maker` and `board` with a photo), or answers another
 | `firmware` (file, repeatable) | the vendor's stock firmware as downloaded: its update archive, or each file in it. Kept for OpenIPC's maintainers, never published. | 128 MB each |
 | `channel` | `agent` | |
 | `tool` | your name and version, e.g. `claude-code 2.x` | 200 chars |
+| `club` | the owner's one-time OpenIPC Club code, `club-XXXX-XXXX`, when they give you one (from https://openipc.org/club/): the report is then theirs in the Club | |
 | `note` (text, not a file) | a line of text: where the camera came from, what it is sold as. Longer text goes in the file above. | 4000 chars |
 
 All the files of one report together: at most 300 MB, the most the server takes in one request.
@@ -160,12 +161,17 @@ the receipt does not repeat the note, so nothing would tell you.
 ```json
 {"id": "r-7k2m9q4d", "status": "pending",
  "receipt_url": "https://openipc.org/cameras/report/?id=r-7k2m9q4d",
+ "claim_code": "claim-8F3K-W2QD-7MZT",
  "files": [{"kind": "photo", "name": "front.jpg", "bytes": 812345, "sha256": "…"}],
  "identify": {"soc": "hi3516ev300", "known": false, "matches": []}}
 ```
 
 Give the owner the `receipt_url`. It shows the report's state until a
 maintainer files it under its board, and then links there.
+
+A report sent without `club` comes with a `claim_code`. Give it to the owner
+too, and to nobody else: signed in at https://openipc.org/club/, they claim
+the report with it and it becomes theirs, as if sent with their code.
 
 `"marking_wanted": true` means nothing in the report says which board it is:
 ipctool read no board code, and no `model`, proposal or photo came with it.

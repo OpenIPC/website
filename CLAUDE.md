@@ -244,7 +244,10 @@ restores the image but never the schema, so keep migrations additive.
   (`report_codes`, migration 029), in the note because every ipctool in the
   field can send one: `ipctool upload --note club-XXXX-XXXX`. A code may
   join one of the member's reports, and the new one takes its board or
-  proposal, so ipctool's report and the photos land on one board.
+  proposal, so ipctool's report and the photos land on one board. A report
+  sent without a member is answered with a claim code (`report_claims`,
+  migration 058, only its sha256 kept), which a member enters on `/club` to
+  make it theirs (`reports.Store.Claim`), paid at once if already published.
 - `internal/wallstars` -- **stars for keeping a camera on the Open Wall**
   (migration 024). A member links a camera by making it upload a one-time
   code from `/club`: pasted at the end of the WebUI's OpenWall caption on

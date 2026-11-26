@@ -399,6 +399,14 @@ func (a *API) Submit(w http.ResponseWriter, r *http.Request, member string) {
 	if rep.Member != "" {
 		out["receipt_url"] = clubURL(r)
 	}
+	if rep.Claim != "" {
+		// Shown once, to the sender: ipctool prints next, an agent hands
+		// the code to the camera's owner.
+		out["claim_code"] = rep.Claim
+		out["next"] = out["next"].(string) + " To make this report yours in the OpenIPC Club -- listed with its state, " +
+			"earning stars -- sign in at " + clubURL(r) + " and claim it with " + rep.Claim +
+			". Keep the code to yourself: whoever has it can claim the report."
+	}
 	if rep.Joins != "" {
 		out["joins"] = rep.Joins
 	}

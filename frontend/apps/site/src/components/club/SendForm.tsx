@@ -19,6 +19,7 @@ import type { BoardsT } from '../../lib/boards-i18n';
 import { pathFor, type Locale } from '../../lib/i18n';
 import { MAX_SEND_MB, STARS, fetchMe, remembered, sendReport, tooLarge, type Member, type Sent } from '../../lib/club';
 import IpctoolCode from './IpctoolCode';
+import { SentClaim } from './ClaimReport';
 import PhotoChecks from './PhotoChecks';
 
 export type SendKind = 'boot_log' | 'uboot_env' | 'photo' | 'backup' | 'firmware';
@@ -96,6 +97,7 @@ export default function SendForm({ model, answers, kind, locale, t, note }: {
           </button>
         </p>
         {state.sent.marking_wanted && <p class="m-0 text-[#8a4b00]">{t('club.sent_marking')}</p>}
+        {state.sent.claim_code && <SentClaim code={state.sent.claim_code} t={t} />}
         {member && (
           <div class="text-body">
             <IpctoolCode joins={id} locale={locale} t={t} label={t('club.code_add_ipctool')} />
