@@ -717,7 +717,7 @@
     "vendor": "HiSilicon",
     "model": "HI3536DV100",
     "board": "hi3536dv100",
-    "uboot": "u-boot-hi3536dv100-original.bin",
+    "uboot": "u-boot-hi3536dv100-nor.bin",
     "nor_lite": "openipc.hi3536dv100-nor-lite.tgz",
     "nand_lite": "openipc.hi3536dv100-nand-lite.tgz"
   },

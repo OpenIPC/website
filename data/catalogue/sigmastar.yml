@@ -502,6 +502,7 @@ socs:
   sdk: ''
   kernel: ''
   uboot_filename: ''
+  nor_split: true
   linux_filename: ''
   notes: 'Infinity6 (SSC32X) with 128 MB of DDR in the package; OpenIPC builds it (nor and nand lite, a NAND U-Boot), untested by the team. The Dahua IPC-HDW2230TP-AS boots it from SPI NAND'
   urlname: ssc325de

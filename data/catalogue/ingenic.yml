@@ -17,6 +17,7 @@ socs:
   sdk: ''
   kernel: ''
   uboot_filename: u-boot-t10-nor.bin
+  nor_split: true
   linux_filename: openipc.t10-nor-lite.tgz
   notes: ar0130 ar0230 ar0237 bf3115 bg0806 gc1024 gc1064 gc2023 imx291 imx322 imx323 jxf22 jxh42 jxh61
     jxh62 ncu_os02b10 os02b10 os05a10 ov2710 ov2735 ov2735b ov4689 ov9712 ov9732 ov9750 sc1035 sc1045
@@ -32,6 +33,7 @@ socs:
   sdk: ''
   kernel: ''
   uboot_filename: u-boot-t20-nor.bin
+  nor_split: true
   linux_filename: openipc.t20-nor-lite.tgz
   notes: ''
   urlname: t20
@@ -45,6 +47,7 @@ socs:
   sdk: ''
   kernel: ''
   uboot_filename: u-boot-t21n-nor.bin
+  nor_split: true
   linux_filename: openipc.t21-nor-lite.tgz
   notes: ''
   urlname: t21
@@ -58,6 +61,7 @@ socs:
   sdk: null
   kernel: null
   uboot_filename: u-boot-t23n-nor.bin
+  nor_split: true
   linux_filename: openipc.t23-nor-lite.tgz
   notes: ''
   urlname: t23n
@@ -71,6 +75,7 @@ socs:
   sdk: null
   kernel: null
   uboot_filename: u-boot-t30l-nor.bin
+  nor_split: true
   linux_filename: openipc.t30-nor-lite.tgz
   notes: ''
   urlname: t30l
@@ -84,6 +89,7 @@ socs:
   sdk: null
   kernel: null
   uboot_filename: u-boot-t31a-nor.bin
+  nor_split: true
   linux_filename: openipc.t31-nor-lite.tgz
   notes: ''
   urlname: t31a
@@ -97,6 +103,7 @@ socs:
   sdk: ''
   kernel: ''
   uboot_filename: u-boot-t31al-nor.bin
+  nor_split: true
   linux_filename: openipc.t31-nor-lite.tgz
   notes: ''
   urlname: t31al
@@ -110,6 +117,7 @@ socs:
   sdk: null
   kernel: null
   uboot_filename: u-boot-t31l-nor.bin
+  nor_split: true
   linux_filename: openipc.t31-nor-lite.tgz
   notes: ''
   urlname: t31l
@@ -123,6 +131,7 @@ socs:
   sdk: null
   kernel: null
   uboot_filename: u-boot-t31lc-nor.bin
+  nor_split: true
   linux_filename: openipc.t31-nor-lite.tgz
   notes: ''
   urlname: t31lc
@@ -136,6 +145,7 @@ socs:
   sdk: null
   kernel: null
   uboot_filename: u-boot-t31n-nor.bin
+  nor_split: true
   linux_filename: openipc.t31-nor-lite.tgz
   notes: ''
   urlname: t31n
@@ -149,6 +159,7 @@ socs:
   sdk: null
   kernel: null
   uboot_filename: u-boot-t31x-nor.bin
+  nor_split: true
   linux_filename: openipc.t31-nor-lite.tgz
   notes: ''
   urlname: t31x
@@ -162,6 +173,7 @@ socs:
   sdk: null
   kernel: null
   uboot_filename: u-boot-t31l-nor.bin
+  nor_split: true
   linux_filename: openipc.t31-nor-lite.tgz
   notes: ''
   urlname: t31zl
@@ -175,6 +187,7 @@ socs:
   sdk: null
   kernel: null
   uboot_filename: u-boot-t31x-nor.bin
+  nor_split: true
   linux_filename: openipc.t31-nor-lite.tgz
   notes: ''
   urlname: t31zx
@@ -188,6 +201,7 @@ socs:
   sdk: null
   kernel: null
   uboot_filename: u-boot-t40a-universal.bin
+  nor_split: true
   linux_filename: openipc.t40-nor-lite.tgz
   notes: ''
   urlname: t40a
@@ -201,6 +215,7 @@ socs:
   sdk: null
   kernel: null
   uboot_filename: u-boot-t40n-universal.bin
+  nor_split: true
   linux_filename: openipc.t40-nor-lite.tgz
   notes: ''
   urlname: t40n
@@ -214,6 +229,7 @@ socs:
   sdk: null
   kernel: null
   uboot_filename: u-boot-t40n-universal.bin
+  nor_split: true
   linux_filename: openipc.t40-nor-lite.tgz
   notes: ''
   urlname: t40nn
@@ -227,6 +243,7 @@ socs:
   sdk: null
   kernel: null
   uboot_filename: u-boot-t40xp-universal.bin
+  nor_split: true
   linux_filename: openipc.t40-nor-lite.tgz
   notes: ''
   urlname: t40xp
@@ -240,6 +257,7 @@ socs:
   sdk: null
   kernel: null
   uboot_filename: u-boot-t41a-nor.bin
+  nor_split: true
   linux_filename: openipc.t41-nor-lite.tgz
   notes: ''
   urlname: t41a
@@ -253,6 +271,7 @@ socs:
   sdk: null
   kernel: null
   uboot_filename: u-boot-t41l-nor.bin
+  nor_split: true
   linux_filename: openipc.t41-nor-lite.tgz
   notes: ''
   urlname: t41l
@@ -266,6 +285,7 @@ socs:
   sdk: null
   kernel: null
   uboot_filename: ''
+  nor_split: true
   linux_filename: openipc.t41-nor-lite.tgz
   notes: ''
   urlname: t41lc
@@ -279,6 +299,7 @@ socs:
   sdk: null
   kernel: null
   uboot_filename: u-boot-t41lq-nor.bin
+  nor_split: true
   linux_filename: openipc.t41-nor-lite.tgz
   notes: ''
   urlname: t41lq
@@ -292,6 +313,7 @@ socs:
   sdk: null
   kernel: null
   uboot_filename: u-boot-t41n-nor.bin
+  nor_split: true
   linux_filename: openipc.t41-nor-lite.tgz
   notes: ''
   urlname: t41n
@@ -305,6 +327,7 @@ socs:
   sdk: null
   kernel: null
   uboot_filename: u-boot-t41nq-nor.bin
+  nor_split: true
   linux_filename: openipc.t41-nor-lite.tgz
   notes: ''
   urlname: t41nq
@@ -318,6 +341,7 @@ socs:
   sdk: null
   kernel: null
   uboot_filename: u-boot-t41xq-nor.bin
+  nor_split: true
   linux_filename: openipc.t41-nor-lite.tgz
   notes: ''
   urlname: t41xq
@@ -331,6 +355,7 @@ socs:
   sdk: null
   kernel: null
   uboot_filename: ''
+  nor_split: true
   linux_filename: openipc.t41-nor-lite.tgz
   notes: ''
   urlname: t41zl
@@ -344,6 +369,7 @@ socs:
   sdk: null
   kernel: null
   uboot_filename: ''
+  nor_split: true
   linux_filename: openipc.t41-nor-lite.tgz
   notes: ''
   urlname: t41zn
@@ -357,6 +383,7 @@ socs:
   sdk: null
   kernel: null
   uboot_filename: u-boot-t41zx-nor.bin
+  nor_split: true
   linux_filename: openipc.t41-nor-lite.tgz
   notes: ''
   urlname: t41zx

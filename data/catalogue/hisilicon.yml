@@ -428,7 +428,8 @@ socs:
   load_address: '0x82000000'
   sdk: ''
   kernel: ''
-  uboot_filename: u-boot-hi3536dv100-original.bin
+  uboot_filename: u-boot-hi3536dv100-nor.bin
+  nor_split: true
   linux_filename: openipc.hi3536dv100-nor-lite.tgz
   notes: ''
   urlname: hi3536dv100
