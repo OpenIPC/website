@@ -133,6 +133,12 @@ func NewSpec(soc *catalogue.SoC, flashType, rel string, size, layout int) (Spec,
 		if !NANDInstallable(soc) {
 			return s, ErrInvalid{fmt.Sprintf("%s has no NAND bootloader", soc.Model)}
 		}
+		// SigmaStar's NAND goes through its own page, on the vendor NAND
+		// U-Boot. Its -nor.bin, which a NAND image would otherwise carry, is
+		// OpenIPC/u-boot's NOR-only build.
+		if soc.Vendor.Name == "SigmaStar" {
+			return s, ErrInvalid{fmt.Sprintf("%s has no NAND full image: its NAND install has its own procedure", soc.Model)}
+		}
 		return s, nil
 	case "nor":
 	default:

@@ -554,22 +554,6 @@
   {
     "urlname": "ssc30kd",
     "vendor": "SigmaStar",
-    "flash_type": "nand",
-    "release": "lite",
-    "size": null,
-    "layout": null,
-    "filename": "openipc-ssc30kd-nand-lite.bin",
-    "bytes": 7194624,
-    "sha256": "1537a8a397f396be11cea70b9a1971360afb0f9cf06def13bf0358291190e7ac",
-    "offsets": {
-      "u-boot": 0,
-      "kernel": 1048576,
-      "rootfs": 4194304
-    }
-  },
-  {
-    "urlname": "ssc30kd",
-    "vendor": "SigmaStar",
     "flash_type": "nor",
     "release": "big",
     "size": 8,
