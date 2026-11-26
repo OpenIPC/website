@@ -402,8 +402,9 @@ socs:
   load_address: '0x82000000'
   sdk: ''
   kernel: ''
-  uboot_filename: ''
-  linux_filename: ''
+  uboot_filename: u-boot-hi3520dv200-nor.bin
+  nor_split: true
+  linux_filename: openipc.hi3520dv200-nor-lite.tgz
   notes: ''
   urlname: hi3520dv200
   featured: false
@@ -415,7 +416,8 @@ socs:
   load_address: '0x82000000'
   sdk: ''
   kernel: ''
-  uboot_filename: ''
+  uboot_filename: u-boot-hi3536cv100-nor.bin
+  nor_split: true
   linux_filename: openipc.hi3536cv100-nor-lite.tgz
   notes: ''
   urlname: hi3536cv100
