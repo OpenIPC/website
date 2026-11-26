@@ -1689,6 +1689,18 @@
       "updated_at": "2026-11-17T08:26:21Z",
       "release": "latest"
     },
+    "u-boot-hi3520dv200-nor.bin": {
+      "size": 121096,
+      "digest": "sha256:66331939ab4c529df2e54181e6b8715be5c9132882435cdbe410b7dfcf411969",
+      "updated_at": "2026-11-26T22:40:35Z",
+      "release": "latest"
+    },
+    "u-boot-hi3536cv100-nor.bin": {
+      "size": 142572,
+      "digest": "sha256:d95c87779f0d19be384605a68a65a52f001d07002c06600db8eadb0de1caecc6",
+      "updated_at": "2026-11-26T22:40:35Z",
+      "release": "latest"
+    },
     "u-boot-hi3536dv100-nor.bin": {
       "size": 200000,
       "digest": "sha256:26c2504fe4df2dc7290572ca03caa20be926f2a6200bd344dfd367c8f5114af6",

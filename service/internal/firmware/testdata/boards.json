@@ -699,7 +699,7 @@
     "vendor": "HiSilicon",
     "model": "HI3520DV200",
     "board": "hi3520dv200",
-    "uboot": "",
+    "uboot": "u-boot-hi3520dv200-nor.bin",
     "nor_lite": "openipc.hi3520dv200-nor-lite.tgz",
     "nand_lite": "openipc.hi3520dv200-nand-lite.tgz"
   },
@@ -708,7 +708,7 @@
     "vendor": "HiSilicon",
     "model": "HI3536CV100",
     "board": "hi3536cv100",
-    "uboot": "",
+    "uboot": "u-boot-hi3536cv100-nor.bin",
     "nor_lite": "openipc.hi3536cv100-nor-lite.tgz",
     "nand_lite": "openipc.hi3536cv100-nand-lite.tgz"
   },
