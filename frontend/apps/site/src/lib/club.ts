@@ -287,7 +287,14 @@ export interface Sent {
   marking_wanted?: boolean;
   /** The report it was sent to answer. */
   answers?: string;
+  /** Sent signed out: the code that makes it a member's at /club. */
+  claim_code?: string;
 }
+
+/** A report sent signed out, made the member's by its claim code. */
+export interface Claimed { id: string; points: number; total: number }
+
+export const claimReport = (code: string) => post<Claimed>('/reports/claim', { code: code.trim() });
 
 /** A member's change to a report of theirs; pending again if it had been decided. */
 export async function editReport(id: string, form: FormData): Promise<{ status: ReportState; rereview: boolean }> {

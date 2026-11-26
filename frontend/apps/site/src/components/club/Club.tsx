@@ -20,6 +20,7 @@ import { size, waiting } from '../../lib/reports';
 import Cameras from './Cameras';
 import Crashes from './Crashes';
 import IpctoolCode from './IpctoolCode';
+import ClaimReport from './ClaimReport';
 import Tokens from './Tokens';
 import EditReport from './EditReport';
 import { PartStars, STATUS_TONE, Stars } from './parts';
@@ -348,6 +349,7 @@ function MemberPage({ member, ways, locale, t, onChange }: {
           <span class="flex flex-wrap items-baseline gap-x-4 gap-y-1 text-sm">
             <a href={`${pathFor(locale, '/cameras/report')}#new`}>{t('club.new_link')}</a>
             <IpctoolCode locale={locale} t={t} label={t('club.code_get')} />
+            <ClaimReport t={t} onClaimed={() => { void loadReports(); onChange(); }} />
           </span>
         </div>
         {error && <p class="m-4 text-sm text-[#9a5b00]" role="alert">{t('club.load_failed')}</p>}

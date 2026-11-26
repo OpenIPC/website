@@ -52,6 +52,7 @@ export default function IpctoolCode({ joins, locale, t, label }: {
         {t('club.code_valid', { time: new Date(code.expires_at).toLocaleString(locale, { dateStyle: 'medium', timeStyle: 'short' }) })}{' '}
         {t('club.code_stock')} <a href={pathFor(locale, '/cameras/report')}>{t('club.code_stock_link')}</a>
       </p>
+      <p class="m-0 text-[12.5px] text-body-secondary">{t('club.code_agent')}</p>
     </div>
   );
 }

@@ -609,6 +609,19 @@ func (s *Store) Decide(ctx context.Context, id, decision, by, note string, model
 		if _, err := tx.Exec(ctx, `SELECT pg_advisory_xact_lock(hashtextextended('report-stars:' || $1, 0))`, id); err != nil {
 			return err
 		}
+		if owner == "" {
+			// A claim (Store.Claim, under this lock) may have made the
+			// report a member's since it was read: decided as nobody's, it
+			// would pay them nothing.
+			var now *string
+			err := tx.QueryRow(ctx, `SELECT member_id FROM report_submissions WHERE report_id = $1`, id).Scan(&now)
+			if err != nil && !errors.Is(err, pgx.ErrNoRows) {
+				return err
+			}
+			if now != nil {
+				return ErrChanged
+			}
+		}
 		var book *cameraBook
 		if owner != "" {
 			first, err := s.camera(ctx, tx, id)
@@ -724,74 +737,7 @@ func (s *Store) Decide(ctx context.Context, id, decision, by, note string, model
 		if owner == "" {
 			return nil
 		}
-		// Each report whose stars change keeps what makes it the camera's,
-		// for after a takedown (cameraBook.keep).
-		kept := map[string]bool{}
-		write := func(report string, pos, diff int, reason string) error {
-			kind := "award"
-			if diff < 0 {
-				kind = "revoke"
-			}
-			if _, err := tx.Exec(ctx, `
-				INSERT INTO report_stars (member_id, report_id, position, points, kind, reason)
-				VALUES ($1, $2, $3, $4, $5, $6)`, owner, report, pos, diff, kind, reason); err != nil {
-				return err
-			}
-			d.Points += diff
-			if !kept[report] {
-				kept[report] = true
-				return book.keep(ctx, tx, report)
-			}
-			return nil
-		}
-		want := map[int]int{}
-		if decision == "publish" {
-			why := map[string]bool{}
-			for pos, p := range book.want(id) {
-				want[pos] = p.Points
-				why[p.Reason] = true
-			}
-			for _, r := range []string{ReasonKnown, ReasonCamera} {
-				if why[r] {
-					d.Reasons = append(d.Reasons, r)
-				}
-			}
-		}
-		net := book.net[id]
-		all := map[int]bool{}
-		for p := range want {
-			all[p] = true
-		}
-		for p := range net {
-			all[p] = true
-		}
-		for _, pos := range positions(all) {
-			diff := want[pos] - net[pos]
-			if diff == 0 {
-				continue
-			}
-			reason := "published by " + by
-			if diff < 0 {
-				reason = decision + "ed by " + by
-			}
-			if err := write(id, pos, diff, reason); err != nil {
-				return err
-			}
-		}
-		// What this report no longer holds of the camera's share goes to
-		// its siblings still published.
-		book.net[id] = want
-		book.state[id] = states[decision]
-		raises := book.raises(id)
-		for _, r := range book.order {
-			up := raises[r]
-			for _, pos := range positions(up) {
-				if err := write(r, pos, up[pos], "camera's share, after "+id+" was "+decision+"ed by "+by); err != nil {
-					return err
-				}
-			}
-		}
-		return nil
+		return settle(ctx, tx, book, owner, id, decision == "publish", states[decision], decision+"ed by "+by, &d)
 	})
 	if err != nil {
 		d.Board, d.Points, d.Reasons = "", 0, nil
@@ -802,6 +748,79 @@ func (s *Store) Decide(ctx context.Context, id, decision, by, note string, model
 	}
 	err = s.DB.QueryRow(ctx, `SELECT coalesce(sum(points), 0) FROM report_stars WHERE member_id = $1`, owner).Scan(&d.Total)
 	return d, err
+}
+
+// settle writes owner's ledger for report id once it is published (publish)
+// or not, its state then being state: each part brought to what it earns
+// now, and what the report no longer holds of its camera's share raised on
+// its siblings still published. done says what happened, for the rows'
+// reasons ("published by ...", "claimed by its sender"). It adds what it
+// wrote to d.Points, and why a part earned less than alone to d.Reasons.
+// The transaction holds the member's lock and every report's of the
+// camera, and book was read under them.
+func settle(ctx context.Context, tx pgx.Tx, book *cameraBook, owner, id string, publish bool, state, done string, d *Decided) error {
+	// Each report whose stars change keeps what makes it the camera's,
+	// for after a takedown (cameraBook.keep).
+	kept := map[string]bool{}
+	write := func(report string, pos, diff int, reason string) error {
+		kind := "award"
+		if diff < 0 {
+			kind = "revoke"
+		}
+		if _, err := tx.Exec(ctx, `
+			INSERT INTO report_stars (member_id, report_id, position, points, kind, reason)
+			VALUES ($1, $2, $3, $4, $5, $6)`, owner, report, pos, diff, kind, reason); err != nil {
+			return err
+		}
+		d.Points += diff
+		if !kept[report] {
+			kept[report] = true
+			return book.keep(ctx, tx, report)
+		}
+		return nil
+	}
+	want := map[int]int{}
+	if publish {
+		why := map[string]bool{}
+		for pos, p := range book.want(id) {
+			want[pos] = p.Points
+			why[p.Reason] = true
+		}
+		for _, r := range []string{ReasonKnown, ReasonCamera} {
+			if why[r] {
+				d.Reasons = append(d.Reasons, r)
+			}
+		}
+	}
+	net := book.net[id]
+	all := map[int]bool{}
+	for p := range want {
+		all[p] = true
+	}
+	for p := range net {
+		all[p] = true
+	}
+	for _, pos := range positions(all) {
+		if diff := want[pos] - net[pos]; diff != 0 {
+			if err := write(id, pos, diff, done); err != nil {
+				return err
+			}
+		}
+	}
+	// What this report no longer holds of the camera's share goes to
+	// its siblings still published.
+	book.net[id] = want
+	book.state[id] = state
+	raises := book.raises(id)
+	for _, r := range book.order {
+		up := raises[r]
+		for _, pos := range positions(up) {
+			if err := write(r, pos, up[pos], "camera's share, after "+id+" was "+done); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
 }
 
 // MaxQuestion is the longest question a reviewer may ask, in characters.

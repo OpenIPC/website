@@ -15,6 +15,7 @@ import { useBoardsTranslations } from '../../lib/boards-i18n';
 import { pathFor, type Locale } from '../../lib/i18n';
 import { MAX_SEND_MB, STARS, fetchMe, remembered, sendReport, tooLarge, type Member, type Sent } from '../../lib/club';
 import IpctoolCode from './IpctoolCode';
+import { SentClaim } from './ClaimReport';
 import PhotoChecks from './PhotoChecks';
 
 const field = 'rounded-md border border-hairline px-2.5 py-1.5 text-sm text-body';
@@ -92,6 +93,7 @@ export default function NewCameraForm({ locale }: { locale: Locale }) {
             : <a href={`${pathFor(locale, '/cameras/report')}?id=${id}`}>{t('club.receipt')}</a>}
         </p>
         {state.sent.marking_wanted && <p class="m-0 text-[#8a4b00]">{t('club.sent_marking')}</p>}
+        {state.sent.claim_code && <SentClaim code={state.sent.claim_code} t={t} />}
         {member && (
           <div class="text-body">
             <IpctoolCode joins={id} locale={locale} t={t} label={t('club.code_add_ipctool')} />
