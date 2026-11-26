@@ -125,7 +125,8 @@
         "link": "下载 OpenIPC 固件 ({name})",
         "mac_note_html": "完整镜像不包含环境变量，因此你在上面填写的地址正是用在这里。只有在想保留摄像机原有地址（即标签上那个）时才需要它。如果留空，摄像机会在首次启动时为自己选择一个固定的唯一地址并保留它，这里无需设置，之后也不会再向你索要。如果引导程序回答 <code>Can't overwrite \"ethaddr\"</code>，说明地址已经设置，这里无需再做任何事。",
         "nand_caveat": "在 NAND 上，该镜像只包含引导程序、内核和 UBI 根文件系统，并非整片闪存，也不适合用编程器烧录——它不含 OOB/ECC 字节，也没有出厂坏块标记。请从 U-Boot 写入，或使用下面的分区命令。",
-        "title": "烧录完整的 OpenIPC 固件"
+        "title": "烧录完整的 OpenIPC 固件",
+        "word_swap_caveat_html": "GK710x 的闪存控制器以字节顺序颠倒的方式存储每个 32 位字。按下面的方式从 U-Boot 写入时，镜像按原样写入；若用编程器烧录，需先颠倒每个字的字节顺序：<code>objcopy -I binary -O binary --reverse-bytes=4 firmware.bin firmware-swapped.bin</code>。"
       },
       "flashing_uboot": {
         "continue": "摄像机将引导到新烧写的引导加载程序中。 注意准备中断并进入引导程序的命令行。",

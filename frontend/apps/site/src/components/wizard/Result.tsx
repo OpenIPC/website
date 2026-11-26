@@ -65,6 +65,15 @@ function moveFirst<T extends [string, ...unknown[]]>(rooms: T[], key: string): T
   return [...rooms.filter((room) => room[0] === key), ...rooms.filter((room) => room[0] !== key)];
 }
 
+/**
+ * GK710x's flash controller stores every 32-bit word byte-reversed, so the
+ * full image -- right for U-Boot's `sf write` -- needs its words swapped
+ * before a programmer writes it.
+ */
+function wordSwappedFlash(soc: string): boolean {
+  return /^gk710[12]/.test(soc);
+}
+
 function Html({ as: Tag = 'p', class: className, html }:
 { as?: 'p' | 'div' | 'h2'; class?: string; html: string }) {
   return <Tag class={className} dangerouslySetInnerHTML={{ __html: html }} />;
@@ -303,6 +312,12 @@ export default function Result({
                         <p class="mt-2 mb-0 text-[.875em] text-body-secondary">
                           {install('flashing_full.nand_caveat')}
                         </p>
+                      )}
+                      {!nand && wordSwappedFlash(doc.soc) && (
+                        <Html
+                          class="mt-2 mb-0 text-[.875em] text-body-secondary"
+                          html={install('flashing_full.word_swap_caveat_html')}
+                        />
                       )}
                     </div>
                   </div>

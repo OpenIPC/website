@@ -75,17 +75,17 @@
       "updated_at": "2026-09-23T18:31:07Z",
       "release": "nightly-20260923-830fa4c"
     },
-    "openipc.gk7102-nor-lite.tgz": {
-      "size": 5456228,
-      "digest": "sha256:9b8c9cf30a56a41f3a1d6c7a4979fe60822ef4fd1c8bb3353373cc38bfca5e8a",
-      "updated_at": "2026-09-23T18:31:09Z",
-      "release": "nightly-20260923-830fa4c"
+    "openipc.gk7102-nor-lite-split.tgz": {
+      "size": 7000000,
+      "digest": "sha256:36920c8a9111a6544e96e09d81e2c4108820e16ffd8aa8706e69807fb62a693f",
+      "updated_at": "2026-11-17T19:13:44Z",
+      "release": "nightly-20261117-03d1125"
     },
-    "openipc.gk7102s-nor-lite.tgz": {
-      "size": 5445797,
-      "digest": "sha256:ecc0539de00baa8ef33282d7627547a9837aa2a33e00f2bdd5615329d4c2c4c5",
-      "updated_at": "2026-09-23T18:31:12Z",
-      "release": "nightly-20260923-830fa4c"
+    "openipc.gk7102s-nor-lite-split.tgz": {
+      "size": 7000000,
+      "digest": "sha256:e3771b7e01188bc247096a0accbac526c950ac53e7f9166cdb947a16ffdf0b04",
+      "updated_at": "2026-11-17T19:13:44Z",
+      "release": "nightly-20261117-03d1125"
     },
     "openipc.gk7201v200-nor-lite.tgz": {
       "size": 6453780,
@@ -1497,22 +1497,22 @@
       "updated_at": "2026-11-17T19:13:44Z",
       "release": "nightly-20261117-03d1125"
     },
-    "openipc.gk7102-nor-lite-split.tgz": {
-      "size": 7000000,
-      "digest": "sha256:36920c8a9111a6544e96e09d81e2c4108820e16ffd8aa8706e69807fb62a693f",
-      "updated_at": "2026-11-17T19:13:44Z",
-      "release": "nightly-20261117-03d1125"
-    },
-    "openipc.gk7102s-nor-lite-split.tgz": {
-      "size": 7000000,
-      "digest": "sha256:e3771b7e01188bc247096a0accbac526c950ac53e7f9166cdb947a16ffdf0b04",
-      "updated_at": "2026-11-17T19:13:44Z",
-      "release": "nightly-20261117-03d1125"
-    },
     "openipc.gk7206v11a-nor-lite-split.tgz": {
       "size": 7000000,
       "digest": "sha256:14b30f52dc250ebe95e87467f081d44977b8fde9f55a2590dbfc870235a90558",
       "updated_at": "2026-11-17T19:13:44Z",
+      "release": "nightly-20261117-03d1125"
+    },
+    "openipc.gk7206v12a-nor-lite-split.tgz": {
+      "size": 5379245,
+      "digest": "sha256:9d0c42ee024cbbed63f6ab8a880e58e842f28d249aaeb03c3abe41df0e2ee849",
+      "updated_at": "2026-11-16T19:22:18Z",
+      "release": "nightly-20261117-03d1125"
+    },
+    "openipc.gk7206v12a-nor-lite.tgz": {
+      "size": 5379248,
+      "digest": "sha256:42650da5a2f6475f99f33336b9ce2cbadf15a9af6d8ecda6baf3618d114fba33",
+      "updated_at": "2026-11-16T19:22:23Z",
       "release": "nightly-20261117-03d1125"
     },
     "openipc.gk7201v200-nor-lite-split.tgz": {

@@ -229,7 +229,7 @@
     "vendor": "Goke",
     "model": "GK7102",
     "board": "gk7102",
-    "uboot": "",
+    "uboot": "u-boot-gk7102-nor.bin",
     "nor_lite": "openipc.gk7102-nor-lite.tgz",
     "nand_lite": "openipc.gk7102-nand-lite.tgz"
   },
@@ -237,10 +237,10 @@
     "urlname": "gk7102c",
     "vendor": "Goke",
     "model": "GK7102C",
-    "board": "gk7102",
-    "uboot": "",
-    "nor_lite": "openipc.gk7102-nor-lite.tgz",
-    "nand_lite": "openipc.gk7102-nand-lite.tgz"
+    "board": "gk7102s",
+    "uboot": "u-boot-gk7102s-nor.bin",
+    "nor_lite": "openipc.gk7102s-nor-lite.tgz",
+    "nand_lite": "openipc.gk7102s-nand-lite.tgz"
   },
   {
     "urlname": "gk7102ca",
@@ -274,7 +274,7 @@
     "vendor": "Goke",
     "model": "GK7102S",
     "board": "gk7102s",
-    "uboot": "",
+    "uboot": "u-boot-gk7102s-nor.bin",
     "nor_lite": "openipc.gk7102s-nor-lite.tgz",
     "nand_lite": "openipc.gk7102s-nand-lite.tgz"
   },
@@ -399,7 +399,7 @@
     "vendor": "Goke",
     "model": "GK7206V11A",
     "board": "gk7206v11a",
-    "uboot": "",
+    "uboot": "u-boot-gk7206v11a-nor.bin",
     "nor_lite": "openipc.gk7206v11a-nor-lite.tgz",
     "nand_lite": "openipc.gk7206v11a-nand-lite.tgz"
   },
@@ -416,10 +416,10 @@
     "urlname": "gk7206v12a",
     "vendor": "Goke",
     "model": "GK7206V12A",
-    "board": "gk7206v11a",
-    "uboot": "",
-    "nor_lite": "openipc.gk7206v11a-nor-lite.tgz",
-    "nand_lite": "openipc.gk7206v11a-nand-lite.tgz"
+    "board": "gk7206v12a",
+    "uboot": "u-boot-gk7206v12a-nor.bin",
+    "nor_lite": "openipc.gk7206v12a-nor-lite.tgz",
+    "nand_lite": "openipc.gk7206v12a-nand-lite.tgz"
   },
   {
     "urlname": "gk7605v100",
