@@ -126,35 +126,43 @@ func (s *Store) Claim(ctx context.Context, member, code string) (Claimed, error)
 		if err != nil {
 			return err
 		}
-		if st.State != "published" {
-			return nil
-		}
-		// Paid as Decide pays: the camera's other reports locked, in order,
-		// and the camera read again under the locks.
-		first, err := s.camera(ctx, tx, c.ID)
-		if err != nil {
-			return err
-		}
-		same := append([]string{}, first.order...)
-		sort.Strings(same)
-		for _, r := range same {
-			if r == c.ID {
-				continue
-			}
-			if _, err := tx.Exec(ctx, `SELECT pg_advisory_xact_lock(hashtextextended('report-stars:' || $1, 0))`, r); err != nil {
+		if st.State == "published" {
+			if err := s.payClaimed(ctx, tx, member, c.ID, &d); err != nil {
 				return err
 			}
 		}
-		book, err := s.camera(ctx, tx, c.ID)
-		if err != nil {
-			return err
-		}
-		return settle(ctx, tx, book, member, c.ID, true, "published", "claimed by its sender", &d)
+		// Read inside the claim: a total that cannot be read leaves the
+		// claim undone, to be tried again, not done and answered as failed.
+		return tx.QueryRow(ctx, `SELECT coalesce(sum(points), 0) FROM report_stars WHERE member_id = $1`, member).Scan(&c.Total)
 	})
 	if err != nil {
 		return Claimed{}, err
 	}
 	c.Points = d.Points
-	err = s.DB.QueryRow(ctx, `SELECT coalesce(sum(points), 0) FROM report_stars WHERE member_id = $1`, member).Scan(&c.Total)
-	return c, err
+	return c, nil
+}
+
+// payClaimed pays a published report its claimer's stars, as Decide pays:
+// the camera's other reports locked, in order, and the camera read again
+// under the locks.
+func (s *Store) payClaimed(ctx context.Context, tx pgx.Tx, member, id string, d *Decided) error {
+	first, err := s.camera(ctx, tx, id)
+	if err != nil {
+		return err
+	}
+	same := append([]string{}, first.order...)
+	sort.Strings(same)
+	for _, r := range same {
+		if r == id {
+			continue
+		}
+		if _, err := tx.Exec(ctx, `SELECT pg_advisory_xact_lock(hashtextextended('report-stars:' || $1, 0))`, r); err != nil {
+			return err
+		}
+	}
+	book, err := s.camera(ctx, tx, id)
+	if err != nil {
+		return err
+	}
+	return settle(ctx, tx, book, member, id, true, "published", "claimed by its sender", d)
 }
