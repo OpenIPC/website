@@ -371,3 +371,18 @@ func TestInfinity6CBuilderStackKeepsFixedSlots(t *testing.T) {
 		}
 	}
 }
+
+// A SigmaStar NAND full image would carry the -nor.bin, OpenIPC/u-boot's
+// NOR-only build: it is refused, though the NAND menu stays for its own page.
+func TestSigmaStarHasNoNANDFullImage(t *testing.T) {
+	cat := loadCatalogue(t)
+	for _, soc := range []string{"ssc337de", "ssc338q"} {
+		if !NANDInstallable(cat.SoC(soc)) {
+			t.Errorf("%s: the NAND menu went", soc)
+		}
+		var inv ErrInvalid
+		if _, err := NewSpec(cat.SoC(soc), "nand", "ultimate", 0, 0); !errors.As(err, &inv) {
+			t.Errorf("%s: NAND full image not refused (%v)", soc, err)
+		}
+	}
+}

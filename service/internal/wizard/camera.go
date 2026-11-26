@@ -55,8 +55,8 @@ const (
 
 type norTable struct{ kernelOffset, kernelMax, rootfsOffset, rootfsMax, overlayOffset int64 }
 
-// FlashLayout: keyed on the layout's size, and on the vendor for the two
-// whose bootloader has one mtdparts string.
+// FlashLayout: keyed on the layout's size, and on whether the bootloader has
+// one mtdparts string (firmware.FixedMtdparts).
 var (
 	norLayouts = map[int]norTable{
 		8:  {0x50000, 0x200000, 0x250000, 0x500000, 0x750000},
@@ -66,7 +66,6 @@ var (
 		8:  {0x50000, 0x200000, 0x250000, 0x500000, 0x750000},
 		16: {0x50000, 0x200000, 0x250000, 0xA00000, 0xC50000},
 	}
-	fixedMtdpartsVendors = []string{"SigmaStar", "Ingenic"}
 )
 
 // camera is one configuration of the form.
@@ -231,7 +230,7 @@ func (c *camera) layoutSize() int {
 }
 
 func (c *camera) fixedMtdparts() bool {
-	return !c.nand() && slices.Contains(fixedMtdpartsVendors, c.soc.Vendor.Name)
+	return !c.nand() && firmware.FixedMtdparts(c.soc)
 }
 
 func (c *camera) bootloaderMacroSuffix() string {
@@ -264,7 +263,7 @@ func (c *camera) postFlashCommands() []string {
 // boot and pass the partitions that layout has to Linux, and they define none
 // of the uknor8m/urnor8m/setnor16m macros the older bootloaders carried: the
 // install writes each image at its offset itself and sets nothing.
-// SigmaStar and Ingenic keep their fixed mtdparts (fixedMtdparts).
+// A vendor U-Boot keeps its fixed mtdparts (fixedMtdparts).
 func (c *camera) scansLayout() bool {
 	return !c.nand() && firmware.ScansNORLayout(c.soc)
 }
@@ -310,7 +309,7 @@ func (c *camera) bootloaderVariables() []string {
 
 func (c *camera) nor() norTable {
 	table := norLayouts
-	if slices.Contains(fixedMtdpartsVendors, c.soc.Vendor.Name) {
+	if firmware.FixedMtdparts(c.soc) {
 		table = fixedLayouts
 	}
 	if c.layoutSize() <= 8 {
