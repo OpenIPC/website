@@ -323,6 +323,7 @@ socs:
   sdk: null
   kernel: null
   uboot_filename: u-boot-ssc30kd-nor.bin
+  nor_split: true
   linux_filename: openipc.ssc30kd-nor-lite.tgz
   notes: Infinity6e (SSC33X), SDK name - Pudding
   urlname: ssc30kd
@@ -364,6 +365,7 @@ socs:
   sdk: null
   kernel: null
   uboot_filename: u-boot-ssc30kq-nor.bin
+  nor_split: true
   linux_filename: openipc.ssc30kq-nor-lite.tgz
   notes: ''
   urlname: ssc30kq
@@ -464,6 +466,7 @@ socs:
   sdk: ''
   kernel: ''
   uboot_filename: u-boot-ssc325-nor.bin
+  nor_split: true
   linux_filename: openipc.ssc325-nor-lite.tgz
   notes: ''
   urlname: ssc325
@@ -603,6 +606,7 @@ socs:
   sdk: null
   kernel: null
   uboot_filename: u-boot-ssc333-nor.bin
+  nor_split: true
   linux_filename: openipc.ssc333-nor-lite.tgz
   notes: ''
   urlname: ssc333
@@ -639,6 +643,7 @@ socs:
   sdk: ''
   kernel: ''
   uboot_filename: u-boot-ssc335-nor.bin
+  nor_split: true
   linux_filename: openipc.ssc335-nor-lite.tgz
   notes: ''
   urlname: ssc335
@@ -674,6 +679,7 @@ socs:
   sdk: ''
   kernel: ''
   uboot_filename: u-boot-ssc335de-nor.bin
+  nor_split: true
   linux_filename: openipc.ssc335de-nor-lite.tgz
   notes: ''
   urlname: ssc335de
@@ -725,6 +731,7 @@ socs:
   sdk: ''
   kernel: ''
   uboot_filename: u-boot-ssc337-nor.bin
+  nor_split: true
   linux_filename: openipc.ssc337-nor-lite.tgz
   notes: ''
   urlname: ssc337
@@ -750,6 +757,7 @@ socs:
   sdk: ''
   kernel: ''
   uboot_filename: u-boot-ssc337de-nor.bin
+  nor_split: true
   linux_filename: openipc.ssc337de-nor-lite.tgz
   notes: ''
   urlname: ssc337de
@@ -835,6 +843,7 @@ socs:
   sdk: null
   kernel: null
   uboot_filename: u-boot-ssc338q-nor.bin
+  nor_split: true
   linux_filename: openipc.ssc338q-nor-lite.tgz
   notes: ''
   urlname: ssc338q
