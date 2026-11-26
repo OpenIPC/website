@@ -143,10 +143,12 @@ func TestASuggestedIdFitsTheCatalogue(t *testing.T) {
 	}
 }
 
-// A shop's short SoC name, Hi3536E, and a SigmaStar part under MStar's
-// name resolve to the catalogue's slug.
+// A shop's short SoC name, Hi3536E, a SigmaStar part under MStar's name and
+// a part after its maker's name resolve to the catalogue's slug.
 func TestSoCShorthandResolves(t *testing.T) {
-	known := map[string]bool{"hi3516dv100": true, "hi3536cv100": true, "hi3536dv100": true, "ssc339g": true, "ssc359g": true}
+	known := map[string]bool{"hi3516dv100": true, "hi3536cv100": true, "hi3536dv100": true, "ssc339g": true, "ssc359g": true,
+		"ssc335": true, "ssc30kq": true, "msc313e": true, "msc316dm": true, "ssr621q": true,
+		"s2l": true, "fh8852v200": true, "xm530": true, "gm8136": true}
 	resolve := func(s string) string {
 		if known[s] {
 			return s
@@ -157,6 +159,11 @@ func TestSoCShorthandResolves(t *testing.T) {
 		"Hi3516D": "hi3516dv100", "Hi3536C": "hi3536cv100", "Hi3536D": "hi3536dv100",
 		"HI3536E": "hi3536dv100", "Hi3536DV100": "hi3536dv100", "Hi3536": "",
 		"MSC339G": "ssc339g", "MSC359G": "ssc359g",
+		"MSC335": "ssc335", "MSC30KQ": "ssc30kq", "SSC621Q": "",
+		"MStar 313E": "msc313e", "MStar 316DM": "msc316dm", "MSC313E": "msc313e", "MSC316DM": "msc316dm",
+		"Ambarella S2L": "s2l", "Fullhan FH8852V200": "fh8852v200", "Xiongmai XM530": "xm530",
+		"Grain Media GM8136": "gm8136", "HiSilicon Hi3516D": "hi3516dv100", "sigmastar  SSC335": "ssc335",
+		"Xiongmai": "", "Ambarella": "", "MStar 999X": "",
 	} {
 		if got := socSlug(label, resolve); got != want {
 			t.Errorf("socSlug(%q) = %q, want %q", label, got, want)

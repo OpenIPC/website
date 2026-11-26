@@ -67,10 +67,20 @@ var (
 	modelID = regexp.MustCompile(`^[a-z0-9][a-z0-9-]{0,127}$`)
 )
 
-// socKey is a SoC as sent, lower-case, its shorthand written out (Hi3516D is
-// hi3516dv100): what the catalogue's slug is when it knows the chip.
+// socVendor is a chip maker's name written before its part (Ambarella S2L,
+// Fullhan FH8852V200). Only before a part that starts with a letter: in
+// "MStar 313E" the name stands for the part's own prefix (socShorthand).
+var socVendor = regexp.MustCompile(`(?i)^(allwinner|ambarella|anyka|fullhan|goke|grain ?media|hisilicon|ingenic|mstar|novatek|rockchip|sigmastar|xiongmai)\s+([a-z].*)$`)
+
+// socKey is a SoC as sent, lower-case, its maker's name dropped and its
+// shorthand written out (Hi3516D is hi3516dv100): what the catalogue's slug
+// is when it knows the chip.
 func socKey(label string) string {
-	l := strings.ToLower(strings.ReplaceAll(strings.TrimSpace(label), " ", ""))
+	l := strings.TrimSpace(label)
+	if m := socVendor.FindStringSubmatch(l); m != nil {
+		l = m[2]
+	}
+	l = strings.ToLower(strings.ReplaceAll(l, " ", ""))
 	if full, ok := socShorthand[l]; ok {
 		l = full
 	}
