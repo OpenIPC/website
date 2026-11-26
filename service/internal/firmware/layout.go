@@ -255,8 +255,9 @@ func SplitEdition(soc *catalogue.SoC, idx *Index, edition string) bool {
 	// Otherwise only behind a bootloader that finds the layout: a camera's
 	// own, or an older one with fixed partitions, does not boot firmware.bin,
 	// so a SoC that names no -nor.bin keeps listing the plain package it
-	// installs. SigmaStar's kernels divide firmware.bin themselves, as on a
-	// split-only SoC, so its vendor U-Boot boots the split package too.
+	// installs. SigmaStar's and Ingenic's kernels divide firmware.bin
+	// themselves, as on a split-only SoC, so their vendor U-Boots boot the
+	// split package too.
 	if !ScansNORLayout(soc) && !kernelSplits(soc) {
 		return false
 	}
@@ -267,9 +268,11 @@ func SplitEdition(soc *catalogue.SoC, idx *Index, edition string) bool {
 // kernelSplits says whether the SoC's firmware finds the split layout's
 // partitions in firmware.bin and ignores the bootloader's mtdparts=
 // (drivers/mtd/split_layout.c), so the fixed-mtdparts vendor U-Boot, which
-// bootm's the uImage at the firmware offset, boots the split package.
+// bootm's the uImage at the firmware offset, boots the split package:
+// SigmaStar's Infinity6 to 6C kernels and Ingenic's T10 to T41 all have
+// CONFIG_MTD_SPLIT_LAYOUT.
 func kernelSplits(soc *catalogue.SoC) bool {
-	return soc.Vendor.Name == "SigmaStar"
+	return soc.Vendor.Name == "SigmaStar" || soc.Vendor.Name == "Ingenic"
 }
 
 // NORReleases are the NOR editions a SoC installs from. A split-only SoC

@@ -43,6 +43,7 @@ socs:
   sdk: ''
   kernel: ''
   uboot_filename: u-boot-ak3918av100-nor.bin
+  nor_split: true
   linux_filename: openipc.ak3918av100-nor-lite.tgz
   notes: 'AK3918AV100N/P and KM01N, 64 MB, on the AnyCloud39AV100 SDK''s 4.4.282 kernel.'
   urlname: ak3918av100
@@ -56,6 +57,7 @@ socs:
   sdk: ''
   kernel: ''
   uboot_filename: u-boot-ak3918av100x-nor.bin
+  nor_split: true
   linux_filename: openipc.ak3918av100x-nor-lite.tgz
   notes: 'AK3918AV100X/XP and KM01D, 128 MB, on the AnyCloud39AV100 SDK''s 4.4.282 kernel.'
   urlname: ak3918av100x
@@ -95,6 +97,7 @@ socs:
   sdk: ''
   kernel: ''
   uboot_filename: u-boot-ak3918ev300l-nor.bin
+  nor_split: true
   linux_filename: openipc.ak3918ev300l-nor-lite.tgz
   notes: 'The ASPEN generation, a sibling of the AK3918AV100 rather than an AK3918EV300 with less memory; ipctool also names the AK3918EV300W this.'
   urlname: ak3918ev300l
