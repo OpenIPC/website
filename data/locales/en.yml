@@ -158,6 +158,7 @@ en:
         mac_note_html: "The full image carries no environment, so this is where the address you entered above goes. You only need it to keep an address the camera already has — the one on its own label. Left empty, the camera picks a stable unique address for itself on first boot and keeps it, so there is nothing to set here and nothing will ask you for one later. If the bootloader answers <code>Can't overwrite \"ethaddr\"</code>, an address is already set and there is nothing to do here."
         nand_caveat: On NAND the image covers the bootloader, kernel and UBI root filesystem only, not the whole chip, and it is not suitable for a programmer -- it carries no OOB/ECC bytes and no factory bad-block markers. Write it from U-Boot, or use the per-partition commands below.
         title: Flash full OpenIPC Firmware image
+        word_swap_caveat_html: "The GK710x flash controller stores every 32-bit word with its bytes reversed. Written from U-Boot, as below, the image goes on as it is; for a programmer, reverse the bytes of each word first: <code>objcopy -I binary -O binary --reverse-bytes=4 {name} {name}.swapped</code>."
       flashing_uboot:
         continue: The camera will boot into the newly flashed bootloader. Stay focused and prepare to interrupt the booting sequence in order to get back into the bootloader shell.
         info: Download bootloader binary file and save it to the root directory of your TFTP server.

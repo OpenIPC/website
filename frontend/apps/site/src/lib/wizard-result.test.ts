@@ -5,7 +5,9 @@
  * the click opens.
  */
 import { describe, expect, test } from 'vitest';
-import { downloadStepQuery, fullImageOffered, licenceBusinessHref, reopenAfterMissing } from './wizard-result';
+import {
+  downloadStepQuery, fullImageName, fullImageOffered, licenceBusinessHref, reopenAfterMissing,
+} from './wizard-result';
 
 const links = { business: '/ru/business', lowLatency: '/ru/low-latency' };
 const query = downloadStepQuery('fpv', 'ssc338q');
@@ -88,5 +90,23 @@ describe('the full-image step', () => {
     expect(fullImageOffered(ubi, 'nand')).toBe(false);
     expect(fullImageOffered(ubi, 'nor8m')).toBe(true);
     expect(fullImageOffered({ ...ubi, bootloader_nand_published: true }, 'nand')).toBe(true);
+  });
+});
+
+describe('the full image\'s file name', () => {
+  const doc = {
+    blocks: {
+      '7': { lines: ['setenv ipaddr {{ipaddr}}', 'tftpboot 0xC1000000 openipc-gk7102-nor-lite-8mb.bin && sf erase 0x0 0x800000'], notes: [], no_paste: true },
+      '8': { lines: ['run uknor'], notes: [], no_paste: true },
+    },
+  };
+
+  test('is read from the full-image install block', () => {
+    expect(fullImageName(doc, { blocks: { flashing_everything: '7' } })).toBe('openipc-gk7102-nor-lite-8mb.bin');
+  });
+
+  test('is empty where the configuration has no such block, or it names no image', () => {
+    expect(fullImageName(doc, { blocks: {} })).toBe('');
+    expect(fullImageName(doc, { blocks: { flashing_everything: '8' } })).toBe('');
   });
 });

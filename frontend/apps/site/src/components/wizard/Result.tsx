@@ -14,7 +14,7 @@ import { fillHoles, type WizardSettings } from '../../lib/wizard-input';
 import { fromBuilder } from '../../lib/editions';
 import { toPermalink } from '../../lib/wizard-input';
 import {
-  downloadStepQuery, flashArguments, flashFamily, fullImageOffered, licenceBusinessHref, stockBootloaderOnly,
+  downloadStepQuery, flashArguments, flashFamily, fullImageName, fullImageOffered, licenceBusinessHref, stockBootloaderOnly,
   type FlashMessage,
 } from '../../lib/wizard-result';
 import SupportCount from '../SupportCount.tsx';
@@ -63,6 +63,15 @@ const CHAT_ROOMS: [key: string, url: string, label: string][] = [
 /** A locale with no room of its own (zh) matches nothing and leaves the order alone. */
 function moveFirst<T extends [string, ...unknown[]]>(rooms: T[], key: string): T[] {
   return [...rooms.filter((room) => room[0] === key), ...rooms.filter((room) => room[0] !== key)];
+}
+
+/**
+ * GK710x's flash controller stores every 32-bit word byte-reversed, so the
+ * full image -- right for U-Boot's `sf write` -- needs its words swapped
+ * before a programmer writes it.
+ */
+function wordSwappedFlash(soc: string): boolean {
+  return /^gk710[12]/.test(soc);
 }
 
 function Html({ as: Tag = 'p', class: className, html }:
@@ -303,6 +312,14 @@ export default function Result({
                         <p class="mt-2 mb-0 text-[.875em] text-body-secondary">
                           {install('flashing_full.nand_caveat')}
                         </p>
+                      )}
+                      {!nand && wordSwappedFlash(doc.soc) && fullImageName(doc, combination) !== '' && (
+                        <Html
+                          class="mt-2 mb-0 text-[.875em] text-body-secondary"
+                          html={install('flashing_full.word_swap_caveat_html', {
+                            name: fullImageName(doc, combination),
+                          })}
+                        />
                       )}
                     </div>
                   </div>

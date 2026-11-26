@@ -20,7 +20,7 @@ import {
   DEFAULTS, normalisedMac, wellFormed, type Patterns, type WizardSettings,
 } from './wizard-input';
 import { FLASH_CHIPS, PARTITION_LAYOUTS, type Availability } from './wizard-menu';
-import { bootloaderFor, type WizardDocument } from './wizard-export';
+import { bootloaderFor, type Combination, type WizardDocument } from './wizard-export';
 
 /** One flash message, as a key and its arguments rather than a sentence. */
 export interface FlashMessage {
@@ -86,6 +86,25 @@ export function fullImageOffered(
   flashType: string,
 ): boolean {
   return doc.instructable && bootloaderFor(doc, flashType).published;
+}
+
+/**
+ * The full image's file name, as the configuration's full-image install
+ * block writes it (`openipc-<soc>-nor-<edition>-<size>mb.bin`): the server
+ * names the download, so the page reads the name where the commands carry it.
+ * Empty when the configuration has no such block.
+ */
+export function fullImageName(
+  doc: Pick<WizardDocument, 'blocks'>,
+  combination: Pick<Combination, 'blocks'>,
+): string {
+  const id = combination.blocks?.flashing_everything;
+  const lines = id === undefined ? [] : doc.blocks[id]?.lines ?? [];
+  for (const line of lines) {
+    const m = /\bopenipc-[A-Za-z0-9._-]+\.bin\b/.exec(line);
+    if (m) return m[0];
+  }
+  return '';
 }
 
 /** The download step's attribution, carried by every business link it shows (#190). */

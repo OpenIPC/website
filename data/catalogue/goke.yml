@@ -16,7 +16,8 @@ socs:
   load_address: '0xC1000000'
   sdk: null
   kernel: null
-  uboot_filename: ''
+  uboot_filename: u-boot-gk7102-nor.bin
+  nor_split: true
   linux_filename: openipc.gk7102-nor-lite.tgz
   notes: ''
   urlname: gk7102
@@ -29,8 +30,9 @@ socs:
   load_address: '0xC1000000'
   sdk: null
   kernel: null
-  uboot_filename: ''
-  linux_filename: openipc.gk7102-nor-lite.tgz
+  uboot_filename: u-boot-gk7102s-nor.bin
+  nor_split: true
+  linux_filename: openipc.gk7102s-nor-lite.tgz
   notes: ''
   urlname: gk7102c
   featured: false
@@ -81,7 +83,8 @@ socs:
   load_address: '0xC1000000'
   sdk: ''
   kernel: ''
-  uboot_filename: ''
+  uboot_filename: u-boot-gk7102s-nor.bin
+  nor_split: true
   linux_filename: openipc.gk7102s-nor-lite.tgz
   notes: ''
   urlname: gk7102s
@@ -263,10 +266,11 @@ socs:
   model: GK7206V11A
   version: null
   status: wip
-  load_address: ''
+  load_address: '0x42000000'
   sdk: null
   kernel: null
-  uboot_filename: ''
+  uboot_filename: u-boot-gk7206v11a-nor.bin
+  nor_split: true
   linux_filename: openipc.gk7206v11a-nor-lite.tgz
   notes: 1Gb DDR3L in the package; XMedia Lotus SDK, kernel 5.10
   urlname: gk7206v11a
@@ -289,10 +293,11 @@ socs:
   model: GK7206V12A
   version: null
   status: wip
-  load_address: ''
+  load_address: '0x42000000'
   sdk: null
   kernel: null
-  uboot_filename: ''
+  uboot_filename: u-boot-gk7206v12a-nor.bin
+  nor_split: true
   linux_filename: openipc.gk7206v11a-nor-lite.tgz
   notes: 2Gb DDR3L in the package; XMedia Lotus SDK, kernel 5.10
   urlname: gk7206v12a
