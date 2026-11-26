@@ -386,3 +386,42 @@ func TestSigmaStarHasNoNANDFullImage(t *testing.T) {
 		}
 	}
 }
+
+// The Goke SoCs on OpenIPC/u-boot's bootloaders install the split package
+// of their own board behind their own -nor.bin, in the fixture index as in
+// firmware's latest: GK7102C is the GK7102S die, GK7206V12A its own build.
+func TestGokeOpenIPCBootloadersInstallSplit(t *testing.T) {
+	cat := loadCatalogue(t)
+	raw, err := os.ReadFile("testdata/release-index.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	idx, err := ParseIndex(raw)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, tc := range []struct{ soc, uboot, board string }{
+		{"gk7102", "u-boot-gk7102-nor.bin", "gk7102"},
+		{"gk7102s", "u-boot-gk7102s-nor.bin", "gk7102s"},
+		{"gk7102c", "u-boot-gk7102s-nor.bin", "gk7102s"},
+		{"gk7206v11a", "u-boot-gk7206v11a-nor.bin", "gk7206v11a"},
+		{"gk7206v12a", "u-boot-gk7206v12a-nor.bin", "gk7206v12a"},
+	} {
+		soc := cat.SoC(tc.soc)
+		if got := Availability(soc, idx); got != "wizard" {
+			t.Errorf("%s: availability %q", tc.soc, got)
+		}
+		spec, err := NewSpec(soc, "nor", "lite", 8, 0)
+		if err != nil {
+			t.Fatal(err)
+		}
+		in, err := Resolve(spec, idx)
+		if err != nil {
+			t.Errorf("%s: %v", tc.soc, err)
+			continue
+		}
+		if in.UBoot.Name != tc.uboot || !in.Spec.Split || in.Linux.Name != SplitName(tc.board, "lite") {
+			t.Errorf("%s: %s + %s, split %v", tc.soc, in.UBoot.Name, in.Linux.Name, in.Spec.Split)
+		}
+	}
+}

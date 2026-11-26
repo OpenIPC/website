@@ -14,7 +14,7 @@ import { fillHoles, type WizardSettings } from '../../lib/wizard-input';
 import { fromBuilder } from '../../lib/editions';
 import { toPermalink } from '../../lib/wizard-input';
 import {
-  downloadStepQuery, flashArguments, flashFamily, fullImageOffered, licenceBusinessHref, stockBootloaderOnly,
+  downloadStepQuery, flashArguments, flashFamily, fullImageName, fullImageOffered, licenceBusinessHref, stockBootloaderOnly,
   type FlashMessage,
 } from '../../lib/wizard-result';
 import SupportCount from '../SupportCount.tsx';
@@ -313,10 +313,12 @@ export default function Result({
                           {install('flashing_full.nand_caveat')}
                         </p>
                       )}
-                      {!nand && wordSwappedFlash(doc.soc) && (
+                      {!nand && wordSwappedFlash(doc.soc) && fullImageName(doc, combination) !== '' && (
                         <Html
                           class="mt-2 mb-0 text-[.875em] text-body-secondary"
-                          html={install('flashing_full.word_swap_caveat_html')}
+                          html={install('flashing_full.word_swap_caveat_html', {
+                            name: fullImageName(doc, combination),
+                          })}
                         />
                       )}
                     </div>

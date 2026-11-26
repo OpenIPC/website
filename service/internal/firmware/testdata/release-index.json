@@ -783,6 +783,18 @@
       "updated_at": "2026-06-06T23:55:56Z",
       "release": "nightly-20260606-a9329aa"
     },
+    "u-boot-gk7102-nor.bin": {
+      "size": 232992,
+      "digest": "sha256:37ecb1731081b24fd1c4cc3b73d09633cec340a975318f1ad9a301e43f89b219",
+      "updated_at": "2026-11-26T03:57:40Z",
+      "release": "latest"
+    },
+    "u-boot-gk7102s-nor.bin": {
+      "size": 223892,
+      "digest": "sha256:7026988c5d8afd9c1cc6d8ef149845566d2608bb32531801bda85169e15b9f67",
+      "updated_at": "2026-11-26T03:57:42Z",
+      "release": "latest"
+    },
     "u-boot-gk7202v300-nand.bin": {
       "size": 325533,
       "digest": "sha256:fbf43c9f19c2b4e26d7d86dbca07d06f71287fb1461a4148a90e96ea4f46aad9",
@@ -871,6 +883,18 @@
       "size": 193024,
       "digest": "sha256:05045a1404006e38c90864b809473895e1a74a1636ee71fa7e9465d9f52e9065",
       "updated_at": "2026-09-16T11:48:27Z",
+      "release": "latest"
+    },
+    "u-boot-gk7206v11a-nor.bin": {
+      "size": 212992,
+      "digest": "sha256:36e404ee513382019600210caf77a50f9bc52ae785cdc6a06a8ceae517bd686e",
+      "updated_at": "2026-11-26T12:32:09Z",
+      "release": "latest"
+    },
+    "u-boot-gk7206v12a-nor.bin": {
+      "size": 212992,
+      "digest": "sha256:fd9c4d5d00ed89195d0de6f232118b17622f72f1b98f922a3cdcea571e550a00",
+      "updated_at": "2026-11-26T12:32:15Z",
       "release": "latest"
     },
     "u-boot-gk7605v100-nand.bin": {
