@@ -16,7 +16,7 @@ import Wizard from '../wizard/Wizard.tsx';
 import KnownBoards from '../boards/KnownBoards.tsx';
 import ZoomDialog from '../ZoomDialog.astro';
 import { pathFor, type Locale } from '../../lib/i18n';
-import { STATUS_WORDS, VENDORS, fullName, socPath, vendorPath, type Soc, type Vendor } from '../../lib/hardware';
+import { STATUS_WORDS, VENDORS, fullName, installGuide, socPath, vendorPath, type Soc, type Vendor } from '../../lib/hardware';
 import { useTranslations } from '../../lib/i18n';
 import { SUPPORT_GOAL } from '../../data/support-goal';
 
@@ -88,6 +88,7 @@ const notes = soc.community_notes;
     vendorsHref: p('/supported-hardware/featured'),
     homeHref: p('/'),
     stagesHref: `${p('/supported-hardware/full-list')}#stages`,
+    installGuide: installGuide(vendor, soc),
   }}
 />
 

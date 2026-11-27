@@ -25,6 +25,8 @@ export interface SocFacts {
   vendorsHref: string;
   homeHref: string;
   stagesHref: string;
+  /** The wiki page that installs this chip (hardware.ts installGuide). */
+  installGuide: string;
 }
 
 interface Props {

@@ -159,6 +159,7 @@
       "urlname": "fullhan",
       "full_name": null,
       "website_url": null,
+      "install_guide": "https://github.com/OpenIPC/wiki/blob/master/en/install-fullhan.md",
       "socs": [
         {
           "model": "FH8626V100",
@@ -287,6 +288,7 @@
       "urlname": "goke",
       "full_name": null,
       "website_url": null,
+      "install_guide": "https://github.com/OpenIPC/wiki/blob/master/en/install-goke.md",
       "socs": [
         {
           "model": "GK7102",
@@ -543,6 +545,7 @@
       "urlname": "hisilicon",
       "full_name": null,
       "website_url": null,
+      "install_guide": "https://github.com/OpenIPC/wiki/blob/master/en/install-hisi.md",
       "socs": [
         {
           "model": "HI3516AV100",
@@ -1157,6 +1160,7 @@
       "urlname": "novatek",
       "full_name": null,
       "website_url": null,
+      "install_guide": "https://github.com/OpenIPC/wiki/blob/master/en/install-novatek.md",
       "socs": [
         {
           "model": "NT98533",
@@ -1253,6 +1257,7 @@
       "urlname": "sigmastar",
       "full_name": null,
       "website_url": null,
+      "install_guide": "https://github.com/OpenIPC/wiki/blob/master/en/install-sigmastar.md",
       "socs": [
         {
           "model": "SSC30KD",
@@ -5925,7 +5930,8 @@
           "status": "done",
           "load_address": "0x80007FC0",
           "featured": false,
-          "segment": null
+          "segment": null,
+          "install_guide": "https://github.com/OpenIPC/wiki/blob/master/en/install-xm510.md"
         },
         {
           "model": "XM530",
@@ -5935,7 +5941,8 @@
           "status": "done",
           "load_address": "0x81000000",
           "featured": false,
-          "segment": null
+          "segment": null,
+          "install_guide": "https://github.com/OpenIPC/wiki/blob/master/en/install-xm530.md"
         },
         {
           "model": "XM550",
@@ -5945,7 +5952,8 @@
           "status": "done",
           "load_address": "0x81000000",
           "featured": false,
-          "segment": null
+          "segment": null,
+          "install_guide": "https://github.com/OpenIPC/wiki/blob/master/en/install-xm530.md"
         }
       ]
     }

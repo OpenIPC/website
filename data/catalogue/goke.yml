@@ -7,6 +7,7 @@ name: Goke
 urlname: goke
 full_name: null
 website_url: null
+install_guide: https://github.com/OpenIPC/wiki/blob/master/en/install-goke.md
 notes: null
 socs:
 - family: GK710X

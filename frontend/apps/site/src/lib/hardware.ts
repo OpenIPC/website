@@ -32,6 +32,8 @@ export interface Soc {
   segment: string | null;
   /** What a community expert has said about the chip, each point with its sources. */
   community_notes?: CommunityNotes;
+  /** The wiki page that installs this chip, where it is not its vendor's (installGuide). */
+  install_guide?: string;
 }
 
 export interface CommunityNotes {
@@ -44,10 +46,24 @@ export interface Vendor {
   urlname: string;
   full_name: string | null;
   website_url: string | null;
+  /** The wiki page that installs this vendor's chips (installGuide). */
+  install_guide?: string;
   socs: Soc[];
 }
 
 export const VENDORS: Vendor[] = catalogue.vendors as Vendor[];
+
+/** The wiki's general installation page, for a chip with no guide of its own. */
+export const GENERAL_INSTALL_GUIDE = 'https://github.com/OpenIPC/wiki/blob/master/en/installation.md';
+
+/**
+ * The wiki page that installs this chip: its own (Xiongmai's are one per
+ * chip), else its vendor's (install-fullhan.md and the like), else the
+ * general one. data/catalogue's install_guide.
+ */
+export function installGuide(vendor: Vendor, soc: Soc): string {
+  return soc.install_guide ?? vendor.install_guide ?? GENERAL_INSTALL_GUIDE;
+}
 
 /** Soc#full_name: the vendor's name and the model, as the row prints it. */
 export function fullName(vendor: Vendor, soc: Soc): string {

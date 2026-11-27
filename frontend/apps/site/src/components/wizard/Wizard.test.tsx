@@ -17,6 +17,7 @@ import Wizard from './Wizard.tsx';
 const facts = {
   fullName: 'SoC', model: 'SoC', status: 'done', statusTitle: '', stageSrc: '', vendorName: 'Vendor',
   vendorHref: '/v', socHref: '/s', vendorsHref: '/vs', homeHref: '/', stagesHref: '/st', segment: 'cctv',
+  installGuide: 'https://github.com/OpenIPC/wiki/blob/master/en/installation.md',
 };
 const links = { business: '/business', donate: '/donate', wall: '/open-wall', community: '/community', lowLatency: '/low-latency' };
 const labels = { count: '', countMet: '', meter: '', monthly: '', split: '' };

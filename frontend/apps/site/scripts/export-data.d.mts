@@ -34,3 +34,5 @@ export function communityNotes<T extends Record<string, unknown>>(vendor: string
 export function familyNotes(data: Record<string, unknown>): Record<string, { label: string; by: string; points: { text: string; sources: string[] }[] }>;
 /** The SoC with its family's points appended after its own, labelled with the family. */
 export function withFamilyNotes<T extends Record<string, unknown>>(soc: T, families: Record<string, { label: string; by: string; points: { text: string; sources: string[] }[] }>): T;
+/** The hardware catalogue from data/catalogue/*.yml; throws naming the file and what is wrong. */
+export function catalogue(root?: string): { vendors: Record<string, unknown>[] };

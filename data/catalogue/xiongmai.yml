@@ -20,6 +20,7 @@ socs:
   linux_filename: openipc.xm510-nor-lite.tgz
   notes: ''
   urlname: xm510
+  install_guide: https://github.com/OpenIPC/wiki/blob/master/en/install-xm510.md
   featured: false
   segment: null
 - family: XM530
@@ -33,6 +34,7 @@ socs:
   linux_filename: openipc.xm530-nor-lite.tgz
   notes: ''
   urlname: xm530
+  install_guide: https://github.com/OpenIPC/wiki/blob/master/en/install-xm530.md
   featured: false
   segment: null
 - family: XM550
@@ -46,5 +48,6 @@ socs:
   linux_filename: openipc.xm550-nor-lite.tgz
   notes: ''
   urlname: xm550
+  install_guide: https://github.com/OpenIPC/wiki/blob/master/en/install-xm530.md
   featured: false
   segment: null
