@@ -107,6 +107,28 @@ export function fullImageName(
   return '';
 }
 
+/**
+ * What follows a full-image flash. `layout`: there are commands that set a
+ * layout other than the bootloader's default; a bootloader that finds the
+ * layout itself, a split image and UBI NAND have none, so a layout off the
+ * default (`default_bootloader_layout` false) is not by itself work at the
+ * prompt. `prompt`: the reader has something to type at the bootloader
+ * prompt, so the page asks them to stop there; a MAC that goes on from Linux
+ * (`mac_in_linux`, #544) is not that. `shown`: the post-flash part appears at
+ * all, which it does for that MAC too, to say where it goes.
+ */
+export function postFlashSteps(
+  combination: Pick<Combination, 'default_bootloader_layout' | 'layout_commands' | 'mac_in_linux'>,
+  macCommand: boolean,
+): { layout: boolean; prompt: boolean; shown: boolean } {
+  const layout = combination.default_bootloader_layout === false && combination.layout_commands === true;
+  return {
+    layout,
+    prompt: (macCommand && combination.mac_in_linux !== true) || layout,
+    shown: macCommand || layout,
+  };
+}
+
 /** The download step's attribution, carried by every business link it shows (#190). */
 export function downloadStepQuery(edition: string, soc: string): string {
   return `?edition=${encodeURIComponent(edition)}&ref=download-step&soc=${encodeURIComponent(soc)}`;
