@@ -444,7 +444,7 @@
           "version": null,
           "urlname": "gk7206v10",
           "status": "wip",
-          "load_address": "",
+          "load_address": "0x42000000",
           "featured": false,
           "segment": "cctv"
         },
@@ -454,7 +454,7 @@
           "version": null,
           "urlname": "gk7206v10b",
           "status": "wip",
-          "load_address": "",
+          "load_address": "0x42000000",
           "featured": false,
           "segment": "cctv"
         },
@@ -464,7 +464,7 @@
           "version": null,
           "urlname": "gk7206v11",
           "status": "wip",
-          "load_address": "",
+          "load_address": "0x42000000",
           "featured": false,
           "segment": "cctv"
         },
@@ -484,7 +484,7 @@
           "version": null,
           "urlname": "gk7206v11at",
           "status": "wip",
-          "load_address": "",
+          "load_address": "0x42000000",
           "featured": false,
           "segment": "cctv"
         },

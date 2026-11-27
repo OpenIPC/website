@@ -44,8 +44,9 @@ socs:
   load_address: '0xC1000000'
   sdk: null
   kernel: null
-  uboot_filename: ''
-  linux_filename: openipc.gk7102-nor-lite.tgz
+  uboot_filename: u-boot-gk7102s-nor.bin
+  nor_split: true
+  linux_filename: openipc.gk7102s-nor-lite.tgz
   notes: ''
   urlname: gk7102ca
   featured: false
@@ -57,8 +58,9 @@ socs:
   load_address: '0xC1000000'
   sdk: null
   kernel: null
-  uboot_filename: ''
-  linux_filename: openipc.gk7102-nor-lite.tgz
+  uboot_filename: u-boot-gk7102s-nor.bin
+  nor_split: true
+  linux_filename: openipc.gk7102s-nor-lite.tgz
   notes: ''
   urlname: gk7102ct
   featured: false
@@ -70,8 +72,9 @@ socs:
   load_address: '0xC1000000'
   sdk: null
   kernel: null
-  uboot_filename: ''
-  linux_filename: openipc.gk7102-nor-lite.tgz
+  uboot_filename: u-boot-gk7102s-nor.bin
+  nor_split: true
+  linux_filename: openipc.gk7102s-nor-lite.tgz
   notes: ''
   urlname: gk7102cw
   featured: false
@@ -227,10 +230,11 @@ socs:
   model: GK7206V10
   version: null
   status: wip
-  load_address: ''
+  load_address: '0x42000000'
   sdk: null
   kernel: null
-  uboot_filename: ''
+  uboot_filename: u-boot-gk7206v11a-nor.bin
+  nor_split: true
   linux_filename: openipc.gk7206v11a-nor-lite.tgz
   notes: 512Mb DDR2 in the package; XMedia Lotus SDK, kernel 5.10
   urlname: gk7206v10
@@ -240,10 +244,11 @@ socs:
   model: GK7206V10B
   version: null
   status: wip
-  load_address: ''
+  load_address: '0x42000000'
   sdk: null
   kernel: null
-  uboot_filename: ''
+  uboot_filename: u-boot-gk7206v11a-nor.bin
+  nor_split: true
   linux_filename: openipc.gk7206v11a-nor-lite.tgz
   notes: 512Mb DDR2 in the package; XMedia Lotus SDK, kernel 5.10
   urlname: gk7206v10b
@@ -253,10 +258,11 @@ socs:
   model: GK7206V11
   version: null
   status: wip
-  load_address: ''
+  load_address: '0x42000000'
   sdk: null
   kernel: null
-  uboot_filename: ''
+  uboot_filename: u-boot-gk7206v11a-nor.bin
+  nor_split: true
   linux_filename: openipc.gk7206v11a-nor-lite.tgz
   notes: 1Gb DDR3L in the package; XMedia Lotus SDK, kernel 5.10
   urlname: gk7206v11
@@ -280,10 +286,11 @@ socs:
   model: GK7206V11AT
   version: null
   status: wip
-  load_address: ''
+  load_address: '0x42000000'
   sdk: null
   kernel: null
-  uboot_filename: ''
+  uboot_filename: u-boot-gk7206v11a-nor.bin
+  nor_split: true
   linux_filename: openipc.gk7206v11a-nor-lite.tgz
   notes: 1Gb DDR3L in the package; XMedia Lotus SDK, kernel 5.10
   urlname: gk7206v11at
