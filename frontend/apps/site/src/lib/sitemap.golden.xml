@@ -4034,6 +4034,27 @@
     <xhtml:link rel="alternate" hreflang="x-default" href="https://openipc.org/cameras/vendors/sigmastar/socs/ssc378qe"/>
   </url>
   <url>
+    <loc>https://openipc.org/cameras/vendors/sigmastar/socs/ssc375</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://openipc.org/cameras/vendors/sigmastar/socs/ssc375"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://openipc.org/ru/cameras/vendors/sigmastar/socs/ssc375"/>
+    <xhtml:link rel="alternate" hreflang="zh" href="https://openipc.org/zh/cameras/vendors/sigmastar/socs/ssc375"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://openipc.org/cameras/vendors/sigmastar/socs/ssc375"/>
+  </url>
+  <url>
+    <loc>https://openipc.org/ru/cameras/vendors/sigmastar/socs/ssc375</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://openipc.org/cameras/vendors/sigmastar/socs/ssc375"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://openipc.org/ru/cameras/vendors/sigmastar/socs/ssc375"/>
+    <xhtml:link rel="alternate" hreflang="zh" href="https://openipc.org/zh/cameras/vendors/sigmastar/socs/ssc375"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://openipc.org/cameras/vendors/sigmastar/socs/ssc375"/>
+  </url>
+  <url>
+    <loc>https://openipc.org/zh/cameras/vendors/sigmastar/socs/ssc375</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://openipc.org/cameras/vendors/sigmastar/socs/ssc375"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://openipc.org/ru/cameras/vendors/sigmastar/socs/ssc375"/>
+    <xhtml:link rel="alternate" hreflang="zh" href="https://openipc.org/zh/cameras/vendors/sigmastar/socs/ssc375"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://openipc.org/cameras/vendors/sigmastar/socs/ssc375"/>
+  </url>
+  <url>
     <loc>https://openipc.org/cameras/vendors/sigmastar/socs/ssc385</loc>
     <xhtml:link rel="alternate" hreflang="en" href="https://openipc.org/cameras/vendors/sigmastar/socs/ssc385"/>
     <xhtml:link rel="alternate" hreflang="ru" href="https://openipc.org/ru/cameras/vendors/sigmastar/socs/ssc385"/>
@@ -4095,6 +4116,48 @@
     <xhtml:link rel="alternate" hreflang="ru" href="https://openipc.org/ru/cameras/vendors/sigmastar/socs/ssc387"/>
     <xhtml:link rel="alternate" hreflang="zh" href="https://openipc.org/zh/cameras/vendors/sigmastar/socs/ssc387"/>
     <xhtml:link rel="alternate" hreflang="x-default" href="https://openipc.org/cameras/vendors/sigmastar/socs/ssc387"/>
+  </url>
+  <url>
+    <loc>https://openipc.org/cameras/vendors/sigmastar/socs/ssd201</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://openipc.org/cameras/vendors/sigmastar/socs/ssd201"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://openipc.org/ru/cameras/vendors/sigmastar/socs/ssd201"/>
+    <xhtml:link rel="alternate" hreflang="zh" href="https://openipc.org/zh/cameras/vendors/sigmastar/socs/ssd201"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://openipc.org/cameras/vendors/sigmastar/socs/ssd201"/>
+  </url>
+  <url>
+    <loc>https://openipc.org/ru/cameras/vendors/sigmastar/socs/ssd201</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://openipc.org/cameras/vendors/sigmastar/socs/ssd201"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://openipc.org/ru/cameras/vendors/sigmastar/socs/ssd201"/>
+    <xhtml:link rel="alternate" hreflang="zh" href="https://openipc.org/zh/cameras/vendors/sigmastar/socs/ssd201"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://openipc.org/cameras/vendors/sigmastar/socs/ssd201"/>
+  </url>
+  <url>
+    <loc>https://openipc.org/zh/cameras/vendors/sigmastar/socs/ssd201</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://openipc.org/cameras/vendors/sigmastar/socs/ssd201"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://openipc.org/ru/cameras/vendors/sigmastar/socs/ssd201"/>
+    <xhtml:link rel="alternate" hreflang="zh" href="https://openipc.org/zh/cameras/vendors/sigmastar/socs/ssd201"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://openipc.org/cameras/vendors/sigmastar/socs/ssd201"/>
+  </url>
+  <url>
+    <loc>https://openipc.org/cameras/vendors/sigmastar/socs/ssd202d</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://openipc.org/cameras/vendors/sigmastar/socs/ssd202d"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://openipc.org/ru/cameras/vendors/sigmastar/socs/ssd202d"/>
+    <xhtml:link rel="alternate" hreflang="zh" href="https://openipc.org/zh/cameras/vendors/sigmastar/socs/ssd202d"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://openipc.org/cameras/vendors/sigmastar/socs/ssd202d"/>
+  </url>
+  <url>
+    <loc>https://openipc.org/ru/cameras/vendors/sigmastar/socs/ssd202d</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://openipc.org/cameras/vendors/sigmastar/socs/ssd202d"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://openipc.org/ru/cameras/vendors/sigmastar/socs/ssd202d"/>
+    <xhtml:link rel="alternate" hreflang="zh" href="https://openipc.org/zh/cameras/vendors/sigmastar/socs/ssd202d"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://openipc.org/cameras/vendors/sigmastar/socs/ssd202d"/>
+  </url>
+  <url>
+    <loc>https://openipc.org/zh/cameras/vendors/sigmastar/socs/ssd202d</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://openipc.org/cameras/vendors/sigmastar/socs/ssd202d"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://openipc.org/ru/cameras/vendors/sigmastar/socs/ssd202d"/>
+    <xhtml:link rel="alternate" hreflang="zh" href="https://openipc.org/zh/cameras/vendors/sigmastar/socs/ssd202d"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://openipc.org/cameras/vendors/sigmastar/socs/ssd202d"/>
   </url>
   <url>
     <loc>https://openipc.org/cameras/vendors/sigmastar/socs/ssr621q</loc>
