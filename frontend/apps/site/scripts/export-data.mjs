@@ -159,8 +159,19 @@ export function islandCatalogue(name, locale, root = REPO) {
 // Each vendor file's fields in a fixed order, vendors by name. Only the fields
 // present are written.
 
-const SOC_FIELDS = ['model', 'family', 'version', 'urlname', 'status', 'load_address', 'featured', 'segment', 'community_notes'];
-const VENDOR_FIELDS = ['name', 'urlname', 'full_name', 'website_url'];
+const SOC_FIELDS = ['model', 'family', 'version', 'urlname', 'status', 'load_address', 'featured', 'segment', 'community_notes', 'install_guide'];
+const VENDOR_FIELDS = ['name', 'urlname', 'full_name', 'website_url', 'install_guide'];
+
+// install_guide is the wiki page that installs this vendor's chips (or this
+// chip, which a SoC's own overrides). The wiki is github.com/OpenIPC/wiki;
+// wiki.openipc.org links are wrong (CLAUDE.md), and so is anything else.
+const WIKI_PAGE = /^https:\/\/github\.com\/OpenIPC\/wiki\/blob\/master\/[a-z]{2}\/[a-z0-9-]+\.md$/;
+
+function checkInstallGuide(where, value) {
+  if (value !== undefined && !WIKI_PAGE.test(String(value))) {
+    throw new Error(`${where}: install_guide ${JSON.stringify(value)} is not a page of github.com/OpenIPC/wiki`);
+  }
+}
 
 function pick(obj, fields) {
   const out = {};
@@ -176,6 +187,8 @@ export function catalogue(root = REPO) {
     .sort((a, b) => byteOrder(String(a.name), String(b.name)))
     .map((data) => {
       const families = familyNotes(data);
+      checkInstallGuide(`data/catalogue/${data.urlname}.yml`, data.install_guide);
+      for (const s of data.socs) checkInstallGuide(`data/catalogue/${data.urlname}.yml: ${s.model}`, s.install_guide);
       return { ...pick(data, VENDOR_FIELDS), socs: data.socs.map((s) => pick(withFamilyNotes(communityNotes(data.urlname, s), families), SOC_FIELDS)) };
     });
   return { vendors };

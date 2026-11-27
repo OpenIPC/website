@@ -281,7 +281,7 @@ export default function Result({
             </div>
             <Html
               class="mt-4 mb-0 text-body-secondary"
-              html={install('backup.more_info_html')}
+              html={install('backup.more_info_html', { href: facts.installGuide })}
             />
           </section>
 

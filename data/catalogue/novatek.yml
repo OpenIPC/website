@@ -7,6 +7,7 @@ name: Novatek
 urlname: novatek
 full_name: null
 website_url: null
+install_guide: https://github.com/OpenIPC/wiki/blob/master/en/install-novatek.md
 notes: null
 socs:
 - family: NT9853X

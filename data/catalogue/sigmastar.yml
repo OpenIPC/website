@@ -7,6 +7,7 @@ name: SigmaStar
 urlname: sigmastar
 full_name: null
 website_url: null
+install_guide: https://github.com/OpenIPC/wiki/blob/master/en/install-sigmastar.md
 notes: null
 family_notes:
   INFINITY6E:

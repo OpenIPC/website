@@ -7,6 +7,7 @@ name: HiSilicon
 urlname: hisilicon
 full_name: null
 website_url: null
+install_guide: https://github.com/OpenIPC/wiki/blob/master/en/install-hisi.md
 notes: null
 socs:
 - family: HI3516AV100
