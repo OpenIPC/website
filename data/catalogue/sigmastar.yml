@@ -1368,6 +1368,8 @@ socs:
   sdk: ''
   kernel: ''
   uboot_filename: ''
+  nor_split: true
+  nor_split_only: true
   linux_filename: ''
   notes: 'Infinity2M (I2m in the IPL tag), an NVR SoC; ipctool does not know it yet'
   urlname: ssr621q

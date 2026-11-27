@@ -868,3 +868,22 @@ func TestLockCaveatOffersDefibOnlyWhereItsAgentRuns(t *testing.T) {
 		}
 	}
 }
+
+// SigmaStar's and MStar's stock U-Boot have no tftpput and a tftp that takes
+// no size, so their NOR backup ends with sfbin, which reads the chip itself
+// (#627). Nobody else's, and not where the backup goes to an SD card.
+func TestNORBackupOffersSfbinOnMStarLineage(t *testing.T) {
+	cat, _ := inputs(t)
+	for soc, want := range map[string]bool{"ssc338q": true, "msc313e": true, "hi3516ev300": false, "t31x": false} {
+		c := &camera{soc: cat.SoC(soc), flashType: "nor16m", iface: "eth", sd: "nosd",
+			ip: ipaddr, server: serverip, mac: "5a:8c:a8:5f:dd:f8"}
+		line := "sfbin " + c.soc.LoadAddress + " 0x0 " + c.backupFilename()
+		if got := slices.Contains(c.firmwareBackup(), line); got != want {
+			t.Errorf("%s backup has %q: %v, want %v", soc, line, got, want)
+		}
+		c.iface, c.sd = "wifi", "sd"
+		if backup := strings.Join(c.firmwareBackup(), "\n"); strings.Contains(backup, "sfbin") {
+			t.Errorf("%s SD card backup mentions sfbin:\n%s", soc, backup)
+		}
+	}
+}

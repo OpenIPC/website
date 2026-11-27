@@ -160,8 +160,23 @@ func (c *camera) firmwareBackup() []string {
 			"# if there is no tftpput but tftp then run this instead",
 			"# (the third argument is what makes tftp upload rather than download)",
 			"tftp "+la+" "+c.backupFilename()+" "+c.flashSizeHex())
+		if c.hasSfbin() {
+			text = append(text,
+				"# if neither uploads (tftp prints its usage) but there is sfbin, run this instead:",
+				"# it reads the whole flash itself and sends it",
+				"sfbin "+la+" 0x0 "+c.backupFilename())
+		}
 	}
 	return text
+}
+
+// hasSfbin says whether the camera's stock U-Boot may have sfbin, the MStar
+// SDK's upload of the SPI flash (CONFIG_MS_ISP_FLASH: sf probe, sf read from
+// the offset to the end of the chip, then TFTP put). It is the only upload
+// SigmaStar's has: tftpput is compiled out, and tftp is tftpboot, which takes
+// no size (#627).
+func (c *camera) hasSfbin() bool {
+	return c.soc.Vendor.Name == "SigmaStar" || c.soc.Vendor.Name == "MStar"
 }
 
 // A NAND chip is backed up in nandChunks pieces of nandChunkHex: 128 MiB is
