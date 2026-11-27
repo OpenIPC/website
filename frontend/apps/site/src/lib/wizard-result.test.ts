@@ -6,7 +6,7 @@
  */
 import { describe, expect, test } from 'vitest';
 import {
-  downloadStepQuery, fullImageName, fullImageOffered, licenceBusinessHref, reopenAfterMissing,
+  downloadStepQuery, fullImageName, fullImageOffered, licenceBusinessHref, postFlashSteps, reopenAfterMissing,
 } from './wizard-result';
 
 const links = { business: '/ru/business', lowLatency: '/ru/low-latency' };
@@ -108,5 +108,26 @@ describe('the full image\'s file name', () => {
   test('is empty where the configuration has no such block, or it names no image', () => {
     expect(fullImageName(doc, { blocks: {} })).toBe('');
     expect(fullImageName(doc, { blocks: { flashing_everything: '8' } })).toBe('');
+  });
+});
+
+describe('after a full-image flash', () => {
+  const steps = postFlashSteps;
+  test('a layout off the default is set at the prompt only where there are commands for it', () => {
+    expect(steps({ default_bootloader_layout: false, layout_commands: true }, false))
+      .toEqual({ layout: true, prompt: true, shown: true });
+    // A bootloader that finds the layout, a split image, UBI NAND: nothing to type.
+    expect(steps({ default_bootloader_layout: false, layout_commands: false }, false))
+      .toEqual({ layout: false, prompt: false, shown: false });
+    expect(steps({ default_bootloader_layout: true, layout_commands: false }, false))
+      .toEqual({ layout: false, prompt: false, shown: false });
+  });
+  test('a MAC is typed at the prompt, unless it goes on from Linux', () => {
+    expect(steps({ default_bootloader_layout: false, layout_commands: false }, true))
+      .toEqual({ layout: false, prompt: true, shown: true });
+    expect(steps({ default_bootloader_layout: false, layout_commands: false, mac_in_linux: true }, true))
+      .toEqual({ layout: false, prompt: false, shown: true });
+    expect(steps({ default_bootloader_layout: false, layout_commands: true, mac_in_linux: true }, true))
+      .toEqual({ layout: true, prompt: true, shown: true });
   });
 });

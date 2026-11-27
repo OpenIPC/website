@@ -14,7 +14,8 @@ import { fillHoles, type WizardSettings } from '../../lib/wizard-input';
 import { fromBuilder } from '../../lib/editions';
 import { toPermalink } from '../../lib/wizard-input';
 import {
-  downloadStepQuery, flashArguments, flashFamily, fullImageName, fullImageOffered, licenceBusinessHref, stockBootloaderOnly,
+  downloadStepQuery, flashArguments, flashFamily, fullImageName, fullImageOffered, licenceBusinessHref, postFlashSteps,
+  stockBootloaderOnly,
   type FlashMessage,
 } from '../../lib/wizard-result';
 import SupportCount from '../SupportCount.tsx';
@@ -159,10 +160,7 @@ export default function Result({
   // the layout macros when the bootloader does not already default to this
   // layout. Both facts come from the export; only "is there a MAC" is ours.
   const macCommand = settings.networkInterface !== 'wifi' && settings.cameraMacAddress !== '';
-  const postFlash = macCommand || combination.default_bootloader_layout === false;
-  // Where the MAC goes on from Linux (mac_in_linux), it alone is no reason to
-  // stop at the bootloader prompt.
-  const atPrompt = (macCommand && !combination.mac_in_linux) || combination.default_bootloader_layout === false;
+  const after = postFlashSteps(combination, macCommand);
 
   const downloadHref = `${here}/download_full_image?flash_size=${combination.flash_size}`
     + `&flash_type=${combination.flash_family}&fw_release=${settings.firmwareVersion}`
@@ -339,9 +337,9 @@ export default function Result({
                     which is otherwise never set at all on this path, and the
                     layout, where the bootloader does not already default to it.
                   */}
-                  {postFlash && (
+                  {after.shown && (
                     <>
-                      {atPrompt && <p>{install('flashing_full.continue2')}</p>}
+                      {after.prompt && <p>{install('flashing_full.continue2')}</p>}
                       {macCommand && (
                         // The address is the reader's, as normalisedMac left it:
                         // hex digits and colons only, so nothing to escape.
@@ -350,9 +348,7 @@ export default function Result({
                           : install('flashing_full.mac_note_html')}
                         />
                       )}
-                      {combination.default_bootloader_layout === false && (
-                        <p>{install('flashing_footfs.info')}</p>
-                      )}
+                      {after.layout && <p>{install('flashing_footfs.info')}</p>}
                       <Commands
                         t={t} doc={doc} combination={combination} settings={settings}
                         name="post_flash_environment"
