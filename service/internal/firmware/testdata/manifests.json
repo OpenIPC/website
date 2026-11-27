@@ -432,22 +432,6 @@
   {
     "urlname": "msc313e",
     "vendor": "MStar",
-    "flash_type": "nand",
-    "release": "lite",
-    "size": null,
-    "layout": null,
-    "filename": "openipc-msc313e-nand-lite.bin",
-    "bytes": 7194624,
-    "sha256": "caa1e9220b1e0909318da2a1ce3ec07c5e5e0bfc68e58fa2fe8aca288c9a00b7",
-    "offsets": {
-      "u-boot": 0,
-      "kernel": 1048576,
-      "rootfs": 4194304
-    }
-  },
-  {
-    "urlname": "msc313e",
-    "vendor": "MStar",
     "flash_type": "nor",
     "release": "big",
     "size": 8,

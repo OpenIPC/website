@@ -673,8 +673,8 @@ func TestScanningBootloaderNORInstall(t *testing.T) {
 		}
 	}
 
-	old := cam("msc313e", "nor8m", "nor8m")
-	if old.scansLayout() || !strings.Contains(strings.Join(old.flashingLinux(), "\n"), "run uknor8m; run urnor8m") {
+	old := cam("t40a", "nor8m", "nor8m")
+	if old.scansLayout() || !strings.Contains(strings.Join(old.flashingLinux(), "\n"), "run uknor; run urnor") {
 		t.Errorf("a -universal bootloader lost its macros: %s\n%s", old.bootloader(), strings.Join(old.flashingLinux(), "\n"))
 	}
 }
