@@ -443,6 +443,10 @@ func (e *exporter) entry(ft string, layout *string, edition, iface, sd string) o
 	o.set("bootloader_variables", c.bootloaderVariables())
 	o.set("blocks", e.blocksFor(c))
 	o.set("mac_variant", e.macVariant(ft, layout, edition, iface, sd))
+	if c.ethaddrOnce() {
+		// The MAC goes on from Linux (set_mac), not at the U-Boot prompt.
+		o.set("mac_in_linux", true)
+	}
 	o.set("warnings", e.warnings(ft, layout, edition))
 	return o
 }

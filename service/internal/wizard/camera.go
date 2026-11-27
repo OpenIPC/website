@@ -249,7 +249,10 @@ func (c *camera) macAddressCommand() bool { return c.iface != "wifi" && c.knownM
 
 func (c *camera) postFlashCommands() []string {
 	var out []string
-	if c.macAddressCommand() {
+	switch {
+	case c.macAddressCommand() && c.ethaddrOnce():
+		out = append(out, c.setMAC()...)
+	case c.macAddressCommand():
 		out = append(out, "setenv ethaddr "+c.mac, "saveenv")
 	}
 	if !c.defaultBootloaderLayout() {

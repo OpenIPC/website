@@ -857,7 +857,7 @@ func TestLockCaveatOffersDefibOnlyWhereItsAgentRuns(t *testing.T) {
 	cat, idx := inputs(t)
 	for soc, agent := range map[string]bool{
 		"hi3516ev300": true, "gk7205v510": true, "hi3516cv500": true, "hi3516cv610-ddr3-128m": true,
-		"nt98566": false, "hi3516cv200": false, "t31a": false, "ssc338q": false,
+		"nt98566": false, "hi3516cv200": false, "t31a": false,
 	} {
 		body := string(Document(cat.SoC(soc), idx))
 		defib := strings.Contains(body, `"lock_caveat_html"`)
@@ -870,8 +870,7 @@ func TestLockCaveatOffersDefibOnlyWhereItsAgentRuns(t *testing.T) {
 }
 
 // SigmaStar's and MStar's stock U-Boot have no tftpput and a tftp that takes
-// no size, so their NOR backup ends with sfbin, which reads the chip itself
-// (#627). Nobody else's, and not where the backup goes to an SD card.
+// no size, so their NOR backup is sfbin, which reads the chip itself (#627). Nobody else's, and not where the backup goes to an SD card.
 func TestNORBackupOffersSfbinOnMStarLineage(t *testing.T) {
 	cat, _ := inputs(t)
 	for soc, want := range map[string]bool{"ssc338q": true, "msc313e": true, "hi3516ev300": false, "t31x": false} {
@@ -884,6 +883,89 @@ func TestNORBackupOffersSfbinOnMStarLineage(t *testing.T) {
 		c.iface, c.sd = "wifi", "sd"
 		if backup := strings.Join(c.firmwareBackup(), "\n"); strings.Contains(backup, "sfbin") {
 			t.Errorf("%s SD card backup mentions sfbin:\n%s", soc, backup)
+		}
+	}
+}
+
+// What runs on a SigmaStar or MStar stock U-Boot uses only what it has
+// (#544): sfbin first for the backup, sf probe without sf lock, and the
+// transfer, erase and write on lines of their own, since it has no &&.
+// HiSilicon's steps are as they were.
+func TestMStarSDKStepsRunOnTheStockUBoot(t *testing.T) {
+	cat, _ := inputs(t)
+	for _, soc := range []string{"ssc338q", "ssc378de", "msc313e"} {
+		for _, sd := range []string{"nosd", "sd"} {
+			c := &camera{soc: cat.SoC(soc), flashType: "nor16m", iface: "eth", sd: sd,
+				ip: ipaddr, server: serverip, mac: "5a:8c:a8:5f:dd:f8"}
+			if sd == "sd" {
+				c.iface = "wifi"
+			}
+			for _, steps := range [][]string{c.flashingUboot(), c.flashingEverything(), c.restoreFromBackup()} {
+				all := strings.Join(steps, "\n")
+				if strings.Contains(all, "sf lock") || !slices.Contains(steps, "sf probe 0") {
+					t.Errorf("%s/%s does not probe without sf lock:\n%s", soc, sd, all)
+				}
+				// transfer, wait, erase, write; then the one guarded line,
+				// the only one with &&, for OpenIPC's bootloader.
+				i := slices.Index(steps, stagedErase)
+				if i < 1 || strings.Contains(steps[i-1], "&&") || !strings.HasPrefix(steps[i+1], "sf erase ") ||
+					!strings.HasPrefix(steps[i+2], "sf write ") || !strings.HasPrefix(steps[i+3], "# on OpenIPC's bootloader") ||
+					steps[i+4] != steps[i-1]+" && "+steps[i+1]+" && "+steps[i+2] {
+					t.Errorf("%s/%s is not transfer, erase, write, then the guarded line:\n%s", soc, sd, all)
+				}
+				joined := 0
+				for _, l := range steps {
+					if !strings.HasPrefix(l, "#") && strings.Contains(l, "&&") {
+						joined++
+					}
+				}
+				if joined != 1 {
+					t.Errorf("%s/%s has && outside the guarded line:\n%s", soc, sd, all)
+				}
+				if notes := c.caveatsFor(steps); !slices.Contains(notes, "stock_protect_caveat_html") ||
+					slices.Contains(notes, "lock_caveat_programmer_html") {
+					t.Errorf("%s/%s notes %v", soc, sd, notes)
+				}
+			}
+			backup := c.firmwareBackup()
+			if sd == "nosd" && backup[3] != "sfbin "+c.soc.LoadAddress+" 0x0 "+c.backupFilename() {
+				t.Errorf("%s backup does not lead with sfbin:\n%s", soc, strings.Join(backup, "\n"))
+			}
+		}
+	}
+	c := &camera{soc: cat.SoC("hi3516ev300"), flashType: "nor16m", iface: "eth", sd: "nosd",
+		ip: ipaddr, server: serverip, mac: "5a:8c:a8:5f:dd:f8"}
+	if all := strings.Join(c.flashingUboot(), "\n"); !strings.Contains(all, "sf lock 0") || !strings.Contains(all, " && sf erase ") {
+		t.Errorf("hi3516ev300 U-Boot step changed:\n%s", all)
+	}
+}
+
+// OpenIPC/u-boot's SigmaStar build sets a random ethaddr at boot and will not
+// overwrite it, so the reader's MAC goes on from Linux with set_mac (#544).
+func TestMACFromLinuxOnOpenIPCSigmaStarUBoot(t *testing.T) {
+	cat, idx := inputs(t)
+	const mac = "5a:8c:a8:5f:dd:f8"
+	for soc, once := range map[string]bool{"ssc338q": true, "msc313e": true, "hi3516ev300": false} {
+		c := &camera{soc: cat.SoC(soc), flashType: "nor16m", iface: "eth", sd: "nosd",
+			ip: ipaddr, server: serverip, mac: mac}
+		for name, steps := range map[string][]string{"flashing_linux": c.flashingLinux(), "post_flash": c.postFlashCommands()} {
+			all := strings.Join(steps, "\n")
+			if got := strings.Contains(all, "setenv ethaddr"); got == once {
+				t.Errorf("%s %s has setenv ethaddr: %v:\n%s", soc, name, got, all)
+			}
+			if got := slices.Contains(steps, "# set_mac "+mac); got != once {
+				t.Errorf("%s %s points to set_mac: %v, want %v:\n%s", soc, name, got, once, all)
+			}
+		}
+		d := decode(t, Document(cat.SoC(soc), idx))
+		for _, raw := range d["combinations"].([]any) {
+			cb := raw.(map[string]any)
+			if _, page := cb["page"]; page {
+				continue
+			}
+			if got := cb["mac_in_linux"] == true; got != (once && strings.HasPrefix(cb["flash_type"].(string), "nor")) {
+				t.Errorf("%s %v mac_in_linux %v", soc, cb["flash_type"], cb["mac_in_linux"])
+			}
 		}
 	}
 }

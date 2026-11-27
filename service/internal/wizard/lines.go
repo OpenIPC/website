@@ -18,6 +18,9 @@ const doNotPaste = `<span class="text-danger"># Enter commands line by line! Do 
 var caveats = [][2]string{
 	{"printenv ethaddr", "mac_record_caveat_html"},
 	{"sf lock", "lock_caveat_html"},
+	// What the lock note says for a bootloader whose sf has no lock (the
+	// MStar SDK's, mstarSDK): its driver unlocks only the chips it knows.
+	{stagedErase, "stock_protect_caveat_html"},
 	{"&&", "compound_caveat_html"},
 }
 
@@ -89,6 +92,9 @@ func (c *camera) env() string {
 }
 
 func (c *camera) unlock(text []string) []string {
+	if c.mstarSDK() {
+		return append(text, "sf probe 0")
+	}
 	if c.flashType != "nand" {
 		text = append(text, "sf probe 0; sf lock 0;")
 	}
@@ -145,6 +151,15 @@ func (c *camera) firmwareBackup() []string {
 	if c.iface != "wifi" {
 		text = append(text, c.env())
 	}
+	if c.mstarSDK() && !c.sdWifi() {
+		// sfbin reads the chip itself; the read below is only for tftpput.
+		return append(text,
+			"sfbin "+la+" 0x0 "+c.backupFilename(),
+			"# if there is no sfbin but tftpput then run these instead",
+			"mw.b "+la+" 0xff "+c.flashSizeHex(),
+			"sf probe 0; sf read "+la+" 0x0 "+c.flashSizeHex(),
+			"tftpput "+la+" "+c.flashSizeHex()+" "+c.backupFilename())
+	}
 	text = append(text, "mw.b "+la+" 0xff "+c.flashSizeHex())
 	text = append(text, "sf probe 0; sf read "+la+" 0x0 "+c.flashSizeHex())
 	if c.sdWifi() {
@@ -160,23 +175,76 @@ func (c *camera) firmwareBackup() []string {
 			"# if there is no tftpput but tftp then run this instead",
 			"# (the third argument is what makes tftp upload rather than download)",
 			"tftp "+la+" "+c.backupFilename()+" "+c.flashSizeHex())
-		if c.hasSfbin() {
-			text = append(text,
-				"# if neither uploads (tftp prints its usage) but there is sfbin, run this instead:",
-				"# it reads the whole flash itself and sends it",
-				"sfbin "+la+" 0x0 "+c.backupFilename())
-		}
 	}
 	return text
 }
 
-// hasSfbin says whether the camera's stock U-Boot may have sfbin, the MStar
-// SDK's upload of the SPI flash (CONFIG_MS_ISP_FLASH: sf probe, sf read from
-// the offset to the end of the chip, then TFTP put). It is the only upload
-// SigmaStar's has: tftpput is compiled out, and tftp is tftpboot, which takes
-// no size (#627).
-func (c *camera) hasSfbin() bool {
-	return c.soc.Vendor.Name == "SigmaStar" || c.soc.Vendor.Name == "MStar"
+// mstarSDK is a NOR camera whose stock U-Boot is the MStar SDK's, as
+// SigmaStar's and MStar's are (#544). The steps that run on it are written
+// for what it has:
+//   - The backup is sfbin (CONFIG_MS_ISP_FLASH: sf probe, sf read from the
+//     offset to the end of the chip, then a TFTP put). tftpput is compiled
+//     out, and tftp is tftpboot, which takes no size (#627).
+//   - Its sf has probe, read, write, erase and update, no lock: the driver
+//     unlocks a chip it knows at init, and `sf lock 0` prints the usage.
+//   - It is built without the hush parser, so a line joined with && prints
+//     the usage; transfer, erase and write go on separate lines (stagedFlash).
+//
+// sfbin is in the SDK's NOR defconfig of every family these SoCs are
+// (OpenIPC/u-boot-sigmastar: infinity2m, infinity3, infinity5, infinity6,
+// infinity6b0, infinity6c, infinity6e, mercury6 all set CONFIG_MS_ISP_FLASH;
+// only some spinand ones leave it out), and a vendor's infinity6c build
+// (MC-J86, firmware#2758) lists it. tftpput stays as the fallback for a
+// vendor that built without it.
+func (c *camera) mstarSDK() bool {
+	return !c.nand() && (c.soc.Vendor.Name == "SigmaStar" || c.soc.Vendor.Name == "MStar")
+}
+
+// stagedFlash is guardedFlash on separate lines, for a bootloader with no &&
+// (mstarSDK): the erase is left to the reader once the transfer has worked.
+// The guarded line follows for a camera already on OpenIPC's bootloader,
+// which has &&, so a failed transfer there erases nothing.
+func (c *camera) stagedFlash(transfer, offset, eraseSize, writeSize string) []string {
+	return []string{
+		transfer,
+		stagedErase,
+		"sf erase " + offset + " " + eraseSize,
+		"sf write " + c.soc.LoadAddress + " " + offset + " " + writeSize,
+		"# on OpenIPC's bootloader (it has &&) this one line does the same, erasing only after the transfer worked:",
+		c.guardedFlash(transfer, offset, eraseSize, writeSize),
+	}
+}
+
+// stagedErase is the line between a transfer and the erase stagedFlash
+// leaves to the reader; it marks the steps that run on an MStar SDK stock
+// U-Boot (see caveatsFor).
+const stagedErase = "# only once that has loaded the whole file, erase and write:"
+
+// load is the start of the line that brings a file into RAM at the load
+// address: from the SD card, or over TFTP.
+func (c *camera) load() string {
+	if c.sdWifi() {
+		return "fatload mmc 0:1 " + c.soc.LoadAddress + " "
+	}
+	return "tftpboot " + c.soc.LoadAddress + " "
+}
+
+// ethaddrOnce is a camera on OpenIPC/u-boot's SigmaStar build (an mstarSDK
+// SoC whose bootloader finds the layout). Its network driver sets a random
+// ethaddr at boot (CONFIG_NET_RANDOM_ETHADDR), and without
+// CONFIG_ENV_OVERWRITE ethaddr is write-once, so `setenv ethaddr` answers
+// "Can't overwrite" and the address the reader typed is lost (#544). Linux's
+// set_mac stores it instead: fw_setenv carries no such flag.
+func (c *camera) ethaddrOnce() bool { return c.mstarSDK() && c.scansLayout() }
+
+// setMAC is where ethaddrOnce sends the reader's address: Linux, after the
+// first boot.
+func (c *camera) setMAC() []string {
+	return []string{
+		"# This bootloader keeps the MAC address it made up on its first boot.",
+		"# To give the camera yours, run this once it has booted into Linux:",
+		"# set_mac " + c.mac,
+	}
 }
 
 // A NAND chip is backed up in nandChunks pieces of nandChunkHex: 128 MiB is
@@ -294,9 +362,12 @@ func (c *camera) flashingEverything() []string {
 		}
 		return append(text, "reset")
 	}
-	if c.sdWifi() {
+	switch {
+	case c.mstarSDK():
+		text = append(text, c.stagedFlash(c.load()+fw, "0x0", c.flashSizeHex(), "${filesize}")...)
+	case c.sdWifi():
 		text = append(text, c.guardedWrite("fatload mmc 0:1 "+la+" "+fw, "0x0", c.flashSizeHex(), w, "${filesize}"))
-	} else {
+	default:
 		text = append(text,
 			c.guardedWrite("tftpboot "+la+" "+fw, "0x0", c.flashSizeHex(), w, "${filesize}"),
 			"# if there is no tftpboot but tftp then run this instead",
@@ -316,9 +387,12 @@ func (c *camera) flashingUboot() []string {
 	}
 	text = append(text, "mw.b "+la+" 0xff "+size)
 	text = c.unlock(text)
-	if c.sdWifi() {
+	switch {
+	case c.mstarSDK():
+		text = append(text, c.stagedFlash(c.load()+ub, "0x0", size, ws)...)
+	case c.sdWifi():
 		text = append(text, c.guardedFlash("fatload mmc 0:1 "+la+" "+ub, "0x0", size, ws))
-	} else {
+	default:
 		text = append(text,
 			c.guardedFlash("tftpboot "+la+" "+ub, "0x0", size, ws),
 			"# if there is no tftpboot but tftp then run this instead",
@@ -328,12 +402,22 @@ func (c *camera) flashingUboot() []string {
 }
 
 func (c *camera) flashingLinux() []string {
+	text := c.writeFirmware()
+	if c.macAddressCommand() && c.ethaddrOnce() {
+		text = append(text, c.setMAC()...)
+	}
+	return text
+}
+
+// writeFirmware is flashingLinux's U-Boot part: the kernel and rootfs, or
+// the one image that holds them, then reset.
+func (c *camera) writeFirmware() []string {
 	la := c.soc.LoadAddress
 	s := c.bootloaderMacroSuffix()
 	text := []string{doNotPaste}
 	if c.iface != "wifi" {
 		text = append(text, c.env())
-		if c.macAddressCommand() {
+		if c.macAddressCommand() && !c.ethaddrOnce() {
 			text = append(text, "setenv ethaddr "+c.mac)
 		}
 		text = append(text, "saveenv")
@@ -432,9 +516,12 @@ func (c *camera) restoreFromBackup() []string {
 	}
 	text = append(text, "mw.b "+la+" 0xff "+c.stagingSizeHex())
 	text = c.unlock(text)
-	if c.sdWifi() {
+	switch {
+	case c.mstarSDK():
+		text = append(text, c.stagedFlash(c.load()+c.backupFilename(), "0x0", c.flashSizeHex(), ws)...)
+	case c.sdWifi():
 		text = append(text, c.guardedFlash("fatload mmc 0:1 "+la+" "+c.backupFilename(), "0x0", c.flashSizeHex(), ws))
-	} else {
+	default:
 		text = append(text, c.guardedFlash("tftpboot "+la+" "+c.backupFilename(), "0x0", c.flashSizeHex(), ws))
 	}
 	return text
