@@ -341,6 +341,44 @@ func TestInfinity6CIsSplitOnly(t *testing.T) {
 	}
 }
 
+// SSR621Q has only the split package, and its catalogue entry names it: the
+// board is still read from the name, and the full image and availability
+// come from that package.
+func TestSplitOnlyNamingItsSplitPackage(t *testing.T) {
+	cat := loadCatalogue(t)
+	soc := cat.SoC("ssr621q")
+	if soc == nil {
+		t.Fatal("ssr621q: not in the catalogue")
+	}
+	if soc.LinuxFilename != "openipc.ssr621q-nor-lite-split.tgz" {
+		t.Fatalf("linux_filename %q", soc.LinuxFilename)
+	}
+	idx := NewIndex("b", []Asset{
+		{Name: "u-boot-ssr621q-nor.bin"},
+		{Name: "openipc.ssr621q-nor-lite-split.tgz"},
+	}, nil, nil)
+	if got := Board(soc, idx); got != "ssr621q" {
+		t.Errorf("board %q, want ssr621q", got)
+	}
+	if got := NORReleases(soc, idx); !slices.Equal(got, []string{"lite"}) {
+		t.Errorf("NOR releases %v, want [lite]", got)
+	}
+	if got := Availability(soc, idx); got != "wizard" {
+		t.Errorf("availability %q, want wizard", got)
+	}
+	spec, err := NewSpec(soc, "nor", "lite", 16, 16)
+	if err != nil {
+		t.Fatal(err)
+	}
+	in, err := Resolve(spec, idx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !in.Spec.Split || in.Linux.Name != "openipc.ssr621q-nor-lite-split.tgz" {
+		t.Errorf("lite 16M: %+v", in)
+	}
+}
+
 // builder's FPV stacks for ssc378qe are published only as the plain package:
 // split-only or not, the image is made from it in fixed slots, as before.
 func TestInfinity6CBuilderStackKeepsFixedSlots(t *testing.T) {

@@ -64,6 +64,9 @@ type SoC struct {
 	// slot; 0x600000 on hi3519dv500). A split firmware.bin whose uImage is
 	// larger is read short by them, so a full image is refused.
 	NORKernelRead string `yaml:"nor_kernel_read"`
+	// LinuxFilename names the SoC's firmware package, from which its board is
+	// read. A split-only SoC may name the split package, the only one it has;
+	// the installs are made from the edition's package either way.
 	LinuxFilename string `yaml:"linux_filename"`
 	// Formerly are the slugs this SoC was published under before it was
 	// renamed. The service answers an address with one by a redirect to

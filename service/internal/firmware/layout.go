@@ -88,7 +88,9 @@ var (
 	release      = regexp.MustCompile(`^[a-z0-9]+$`)
 	// The SoC's own builds: t31a, t31l and t31x all build as t31.
 	familyBuilds      = []string{"t31", "t40", "t30", "t23"}
-	boardFromFilename = regexp.MustCompile(`^openipc\.(.+)-(?:nor|nand)-[a-z0-9]+\.tgz$`)
+	// The catalogue's linux_filename: the plain package, or on a split-only
+	// SoC the split one it installs (openipc.<board>-nor-<edition>-split.tgz).
+	boardFromFilename = regexp.MustCompile(`^openipc\.(.+)-(?:nor|nand)-[a-z0-9]+(?:-split)?\.tgz$`)
 )
 
 // NaturalLayout is the partition layout a chip of this size carries.
