@@ -160,6 +160,9 @@ export default function Result({
   // layout. Both facts come from the export; only "is there a MAC" is ours.
   const macCommand = settings.networkInterface !== 'wifi' && settings.cameraMacAddress !== '';
   const postFlash = macCommand || combination.default_bootloader_layout === false;
+  // Where the MAC goes on from Linux (mac_in_linux), it alone is no reason to
+  // stop at the bootloader prompt.
+  const atPrompt = (macCommand && !combination.mac_in_linux) || combination.default_bootloader_layout === false;
 
   const downloadHref = `${here}/download_full_image?flash_size=${combination.flash_size}`
     + `&flash_type=${combination.flash_family}&fw_release=${settings.firmwareVersion}`
@@ -338,8 +341,13 @@ export default function Result({
                   */}
                   {postFlash && (
                     <>
-                      <p>{install('flashing_full.continue2')}</p>
-                      {macCommand && <Html html={install('flashing_full.mac_note_html')} />}
+                      {atPrompt && <p>{install('flashing_full.continue2')}</p>}
+                      {macCommand && (
+                        <Html html={install(combination.mac_in_linux
+                          ? 'flashing_full.mac_linux_note_html'
+                          : 'flashing_full.mac_note_html')}
+                        />
+                      )}
                       {combination.default_bootloader_layout === false && (
                         <p>{install('flashing_footfs.info')}</p>
                       )}

@@ -29,6 +29,8 @@ export interface Combination {
   warnings?: string[];
   blocks?: Record<string, string>;
   mac_variant?: Record<string, string>;
+  /** The bootloader keeps the MAC it made up; the reader's goes on from Linux with set_mac (#544). */
+  mac_in_linux?: boolean;
 }
 
 /** One pooled command block. */
