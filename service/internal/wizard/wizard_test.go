@@ -296,6 +296,11 @@ func TestHandler(t *testing.T) {
 	if w2 := get("/api/v1/wizard/hi3516ev300.json", w.Header().Get("ETag")); w2.Code != http.StatusNotModified {
 		t.Errorf("a matching ETag got %d, want 304", w2.Code)
 	}
+	// A SoC renamed since (catalogue formerly) has its document at its own name.
+	if w := get("/api/v1/wizard/hi3516cv610-ddr3-128m.json", ""); w.Code != http.StatusMovedPermanently ||
+		w.Header().Get("Location") != "/api/v1/wizard/hi3516cv610-20s.json" {
+		t.Errorf("a former slug: %d %q", w.Code, w.Header().Get("Location"))
+	}
 	for _, path := range []string{"/api/v1/wizard/no-such-soc.json", "/api/v1/wizard/hi3516ev300", "/api/v1/wizard/..json"} {
 		if w := get(path, ""); w.Code != 404 {
 			t.Errorf("%s: %d, want 404", path, w.Code)
@@ -794,20 +799,28 @@ func TestSplitNORInstall(t *testing.T) {
 // boot image (one per DDR binning).
 func TestSplitOnlySoCs(t *testing.T) {
 	cat, idx := inputs(t)
+	// HI3519DV500 names no bootloader (a demo board's DDR set-up is not a
+	// camera's); with the DMEB demo board's boot image firmware publishes,
+	// it is the case of a bootloader of 512K plus 256K of environment.
+	demo := *cat.SoC("hi3519dv500")
+	demo.UBootFilename = "boot-hi3519dv500-dmeb-nor.bin"
 	for _, tc := range []struct {
 		soc, ft, edition, board, uboot, off, erase string
 		editions                                   []string
 	}{
-		{"hi3516cv610-ddr3-128m", "nor8m", "lite", "hi3516cv6xx", "boot-hi3516cv610-20s-nor.bin",
+		{"hi3516cv610-20s", "nor8m", "lite", "hi3516cv6xx", "boot-hi3516cv610-20s-nor.bin",
 			"0x50000", "0x7b0000", []string{"lite", "ultimate"}},
 		{"hi3516cv608", "nor16m", "ultimate", "hi3516cv6xx", "boot-hi3516cv608-nor.bin",
 			"0x50000", "0xfb0000", []string{"lite", "ultimate"}},
-		{"hi3519dv500-dmeb", "nor16m", "ultimate", "hi3519dv500", "boot-hi3519dv500-dmeb-nor.bin",
+		{"demo", "nor16m", "ultimate", "hi3519dv500", "boot-hi3519dv500-dmeb-nor.bin",
 			"0xC0000", "0xf40000", []string{"ultimate"}},
-		{"hi3519dv500-dmebpro", "nor32m", "ultimate", "hi3519dv500", "boot-hi3519dv500-dmebpro-nor.bin",
+		{"demo", "nor32m", "ultimate", "hi3519dv500", "boot-hi3519dv500-dmeb-nor.bin",
 			"0xC0000", "0x1f40000", []string{"ultimate"}},
 	} {
 		s := cat.SoC(tc.soc)
+		if tc.soc == "demo" {
+			s = &demo
+		}
 		if s == nil {
 			t.Fatalf("%s: not in the catalogue", tc.soc)
 		}
@@ -856,7 +869,7 @@ func TestSplitOnlySoCs(t *testing.T) {
 func TestLockCaveatOffersDefibOnlyWhereItsAgentRuns(t *testing.T) {
 	cat, idx := inputs(t)
 	for soc, agent := range map[string]bool{
-		"hi3516ev300": true, "gk7205v510": true, "hi3516cv500": true, "hi3516cv610-ddr3-128m": true,
+		"hi3516ev300": true, "gk7205v510": true, "hi3516cv500": true, "hi3516cv610-20s": true,
 		"nt98566": false, "hi3516cv200": false, "t31a": false,
 	} {
 		body := string(Document(cat.SoC(soc), idx))
@@ -966,6 +979,42 @@ func TestMACFromLinuxOnOpenIPCSigmaStarUBoot(t *testing.T) {
 			if got := cb["mac_in_linux"] == true; got != (once && strings.HasPrefix(cb["flash_type"].(string), "nor")) {
 				t.Errorf("%s %v mac_in_linux %v", soc, cb["flash_type"], cb["mac_in_linux"])
 			}
+		}
+	}
+}
+
+// HiSilicon's DV500 parts are one firmware build (the firmware's
+// hi3519dv500, aliased hi3516dv500) and one catalogue entry each, never one
+// per demo board. Neither names a bootloader, so each page lists the
+// firmware and offers no installation steps or full image.
+func TestDV500IsFirmwareOnly(t *testing.T) {
+	cat, idx := inputs(t)
+	for _, slug := range []string{"hi3519dv500", "hi3516dv500"} {
+		s := cat.SoC(slug)
+		if s == nil {
+			t.Fatalf("%s: not in the catalogue", slug)
+		}
+		if s.UBootFilename != "" || firmware.Board(s, idx) != "hi3519dv500" {
+			t.Errorf("%s: bootloader %q, board %q", slug, s.UBootFilename, firmware.Board(s, idx))
+		}
+		if got := firmware.Availability(s, idx); got != "firmware_only" {
+			t.Errorf("%s: availability %q, want firmware_only", slug, got)
+		}
+		d := decode(t, Document(s, idx))
+		if d["instructable"] != false || d["bootloader_published"] != false {
+			t.Errorf("%s: instructable %v, bootloader published %v", slug, d["instructable"], d["bootloader_published"])
+		}
+		var names []string
+		for _, p := range d["published"].([]any) {
+			names = append(names, p.(map[string]any)["filename"].(string))
+		}
+		if !slices.Contains(names, "openipc.hi3519dv500-nor-ultimate-split.tgz") {
+			t.Errorf("%s: published %v", slug, names)
+		}
+	}
+	for _, old := range []string{"hi3519dv500-dmeb", "hi3519dv500-dmebpro"} {
+		if cat.SoC(old) != nil || cat.Renamed(old) == nil || cat.Renamed(old).URLName != "hi3519dv500" {
+			t.Errorf("%s: still a SoC, or not formerly hi3519dv500", old)
 		}
 	}
 }
