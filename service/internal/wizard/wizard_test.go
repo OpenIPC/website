@@ -298,7 +298,7 @@ func TestHandler(t *testing.T) {
 	}
 	// A SoC renamed since (catalogue formerly) has its document at its own name.
 	for from, to := range map[string]string{
-		"/api/v1/wizard/hi3516cv610-ddr3-128m.json":     "/api/v1/wizard/hi3516cv610-20s.json",
+		"/api/v1/wizard/hi3516cv610-ddr3-128m.json":    "/api/v1/wizard/hi3516cv610-20s.json",
 		"/api/v1/wizard/hi3519dv500-dmeb.json?v=2&x=y": "/api/v1/wizard/hi3519dv500.json?v=2&x=y",
 	} {
 		if w := get(from, ""); w.Code != http.StatusMovedPermanently || w.Header().Get("Location") != to {
