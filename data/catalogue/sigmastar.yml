@@ -1372,7 +1372,7 @@ socs:
   nor_split: true
   nor_split_only: true
   linux_filename: openipc.ssr621q-nor-lite-split.tgz
-  notes: 'Infinity2M (I2m in the IPL tag), an NVR SoC: firmware with the vigil NVR app (decode, display, recording); ipctool does not know it yet'
+  notes: 'Infinity2M (I2m in the IPL tag), an NVR SoC: firmware with the vigil NVR app (decode, display, recording); ipctool names it by its bond strap (0x1B)'
   urlname: ssr621q
   featured: false
   segment: null
