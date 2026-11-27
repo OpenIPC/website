@@ -125,6 +125,7 @@ zh:
       stock_bundle_title: "下载固件包"
       stock_info_html: "本站无法给出这两条命令。内核与根文件系统写到哪里，取决于您摄像机引导程序编译时使用的分区布局，而同一颗芯片的不同摄像机也可能不同——OpenIPC 自己的偏移量是随 OpenIPC 引导程序一起提供的，而这颗 SoC 没有。请用 <code>printenv bootargs</code> 和 <code>printenv mtdparts</code> 查看您的分区布局，然后按<a href=\"https://github.com/OpenIPC/wiki/blob/master/en/installation.md\">安装指南</a>写入这两个文件。如果指南没有涵盖您的摄像机，请<a href=\"/community\">到聊天群里询问</a>——这一步大家都是互相帮忙完成的。"
       stock_lede: "OpenIPC 为这颗 SoC 提供固件，但没有提供引导程序，因此向导式安装和现成的整片镜像都不在这里提供——它们都要先写入 OpenIPC 引导程序。您可以做的是用摄像机自带的引导程序来安装这份固件，而它的第一步在每台摄像机上都是一样的。"
+      stock_protect_caveat_html: "这个引导程序的 <code>sf</code> 没有 <code>lock</code> 子命令：它的闪存驱动会在启动时解除芯片的块保护，但只针对它认识的芯片。仍处于保护状态的闪存会丢弃擦除和写入，却照样报告成功；所以如果每条命令都回答 OK，摄像机重启后却仍是原厂固件，就是这种情况。这个引导程序无法解除这种保护：请用外部编程器烧写芯片。"
       stock_title: "用摄像机自带的引导程序写入这两个文件"
       do_not_paste: "# 请逐行输入命令！不要一次复制粘贴多行！"
       attention: 注意！
@@ -155,7 +156,7 @@ zh:
         continue2: 注意准备中断并进入引导程序的命令行。
         info: 完整的固件由引导加载程序、内核和根文件系统组成，也适用于使用编程器烧写闪存芯片。 请注意，完整固件不包含预设环境，因此 IP 地址等设置需要你自行添加。MAC 地址不在此列 — 摄像机会在首次启动时为自己分配一个固定的唯一地址并保留它。
         link: 下载 OpenIPC 固件 ({name})
-        mac_linux_note_html: "这台摄像机的引导程序会在首次启动时自行生成一个 MAC 地址，之后不再接受其他地址，所以在这里会回答 <code>Can't overwrite \"ethaddr\"</code>。请在摄像机启动进入 Linux 后，用 <code>set_mac aa:bb:cc:dd:ee:ff</code> 设置你在上面填写的地址。如果留空则无需任何操作：摄像机会保留自己的固定唯一地址。"
+        mac_linux_note_html: "这台摄像机的引导程序会在首次启动时自行生成一个 MAC 地址，之后不再接受其他地址，所以在这里会回答 <code>Can't overwrite \"ethaddr\"</code>。请在摄像机启动进入 Linux 后，用 <code>set_mac {mac}</code> 设置你在上面填写的地址。如果留空则无需任何操作：摄像机会保留自己的固定唯一地址。"
         mac_note_html: "完整镜像不包含环境变量，因此你在上面填写的地址正是用在这里。只有在想保留摄像机原有地址（即标签上那个）时才需要它。如果留空，摄像机会在首次启动时为自己选择一个固定的唯一地址并保留它，这里无需设置，之后也不会再向你索要。如果引导程序回答 <code>Can't overwrite \"ethaddr\"</code>，说明地址已经设置，这里无需再做任何事。"
         nand_caveat: 在 NAND 上，该镜像只包含引导程序、内核和 UBI 根文件系统，并非整片闪存，也不适合用编程器烧录——它不含 OOB/ECC 字节，也没有出厂坏块标记。请从 U-Boot 写入，或使用下面的分区命令。
         title: 烧录完整的 OpenIPC 固件

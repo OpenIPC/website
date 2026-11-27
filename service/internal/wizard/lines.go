@@ -18,6 +18,9 @@ const doNotPaste = `<span class="text-danger"># Enter commands line by line! Do 
 var caveats = [][2]string{
 	{"printenv ethaddr", "mac_record_caveat_html"},
 	{"sf lock", "lock_caveat_html"},
+	// What the lock note says for a bootloader whose sf has no lock (the
+	// MStar SDK's, mstarSDK): its driver unlocks only the chips it knows.
+	{stagedErase, "stock_protect_caveat_html"},
 	{"&&", "compound_caveat_html"},
 }
 
@@ -186,20 +189,36 @@ func (c *camera) firmwareBackup() []string {
 //     unlocks a chip it knows at init, and `sf lock 0` prints the usage.
 //   - It is built without the hush parser, so a line joined with && prints
 //     the usage; transfer, erase and write go on separate lines (stagedFlash).
+//
+// sfbin is in the SDK's NOR defconfig of every family these SoCs are
+// (OpenIPC/u-boot-sigmastar: infinity2m, infinity3, infinity5, infinity6,
+// infinity6b0, infinity6c, infinity6e, mercury6 all set CONFIG_MS_ISP_FLASH;
+// only some spinand ones leave it out), and a vendor's infinity6c build
+// (MC-J86, firmware#2758) lists it. tftpput stays as the fallback for a
+// vendor that built without it.
 func (c *camera) mstarSDK() bool {
 	return !c.nand() && (c.soc.Vendor.Name == "SigmaStar" || c.soc.Vendor.Name == "MStar")
 }
 
 // stagedFlash is guardedFlash on separate lines, for a bootloader with no &&
 // (mstarSDK): the erase is left to the reader once the transfer has worked.
+// The guarded line follows for a camera already on OpenIPC's bootloader,
+// which has &&, so a failed transfer there erases nothing.
 func (c *camera) stagedFlash(transfer, offset, eraseSize, writeSize string) []string {
 	return []string{
 		transfer,
-		"# only once that has loaded the whole file, erase and write:",
+		stagedErase,
 		"sf erase " + offset + " " + eraseSize,
 		"sf write " + c.soc.LoadAddress + " " + offset + " " + writeSize,
+		"# on OpenIPC's bootloader (it has &&) this one line does the same, erasing only after the transfer worked:",
+		c.guardedFlash(transfer, offset, eraseSize, writeSize),
 	}
 }
+
+// stagedErase is the line between a transfer and the erase stagedFlash
+// leaves to the reader; it marks the steps that run on an MStar SDK stock
+// U-Boot (see caveatsFor).
+const stagedErase = "# only once that has loaded the whole file, erase and write:"
 
 // load is the start of the line that brings a file into RAM at the load
 // address: from the SD card, or over TFTP.

@@ -902,11 +902,29 @@ func TestMStarSDKStepsRunOnTheStockUBoot(t *testing.T) {
 			}
 			for _, steps := range [][]string{c.flashingUboot(), c.flashingEverything(), c.restoreFromBackup()} {
 				all := strings.Join(steps, "\n")
-				if strings.Contains(all, "&&") || strings.Contains(all, "sf lock") {
-					t.Errorf("%s/%s uses && or sf lock:\n%s", soc, sd, all)
+				if strings.Contains(all, "sf lock") || !slices.Contains(steps, "sf probe 0") {
+					t.Errorf("%s/%s does not probe without sf lock:\n%s", soc, sd, all)
 				}
-				if !slices.Contains(steps, "sf probe 0") || !slices.Contains(steps, "# only once that has loaded the whole file, erase and write:") {
-					t.Errorf("%s/%s is not probe, transfer, erase, write:\n%s", soc, sd, all)
+				// transfer, wait, erase, write; then the one guarded line,
+				// the only one with &&, for OpenIPC's bootloader.
+				i := slices.Index(steps, stagedErase)
+				if i < 1 || strings.Contains(steps[i-1], "&&") || !strings.HasPrefix(steps[i+1], "sf erase ") ||
+					!strings.HasPrefix(steps[i+2], "sf write ") || !strings.HasPrefix(steps[i+3], "# on OpenIPC's bootloader") ||
+					steps[i+4] != steps[i-1]+" && "+steps[i+1]+" && "+steps[i+2] {
+					t.Errorf("%s/%s is not transfer, erase, write, then the guarded line:\n%s", soc, sd, all)
+				}
+				joined := 0
+				for _, l := range steps {
+					if !strings.HasPrefix(l, "#") && strings.Contains(l, "&&") {
+						joined++
+					}
+				}
+				if joined != 1 {
+					t.Errorf("%s/%s has && outside the guarded line:\n%s", soc, sd, all)
+				}
+				if notes := c.caveatsFor(steps); !slices.Contains(notes, "stock_protect_caveat_html") ||
+					slices.Contains(notes, "lock_caveat_programmer_html") {
+					t.Errorf("%s/%s notes %v", soc, sd, notes)
 				}
 			}
 			backup := c.firmwareBackup()

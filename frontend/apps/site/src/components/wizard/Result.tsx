@@ -343,9 +343,11 @@ export default function Result({
                     <>
                       {atPrompt && <p>{install('flashing_full.continue2')}</p>}
                       {macCommand && (
-                        <Html html={install(combination.mac_in_linux
-                          ? 'flashing_full.mac_linux_note_html'
-                          : 'flashing_full.mac_note_html')}
+                        // The address is the reader's, as normalisedMac left it:
+                        // hex digits and colons only, so nothing to escape.
+                        <Html html={combination.mac_in_linux
+                          ? install('flashing_full.mac_linux_note_html', { mac: settings.cameraMacAddress })
+                          : install('flashing_full.mac_note_html')}
                         />
                       )}
                       {combination.default_bootloader_layout === false && (
