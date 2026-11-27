@@ -1383,7 +1383,7 @@
     "vendor": "SigmaStar",
     "model": "SSR621Q",
     "board": "ssr621q",
-    "uboot": "",
+    "uboot": "u-boot-ssr621q-nor.bin",
     "nor_lite": "openipc.ssr621q-nor-lite.tgz",
     "nand_lite": "openipc.ssr621q-nand-lite.tgz"
   },

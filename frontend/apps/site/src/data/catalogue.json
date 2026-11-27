@@ -5891,8 +5891,8 @@
           "family": "INFINITY2M",
           "version": "",
           "urlname": "ssr621q",
-          "status": "neq",
-          "load_address": "",
+          "status": "wip",
+          "load_address": "0x21000000",
           "featured": false,
           "segment": null
         }

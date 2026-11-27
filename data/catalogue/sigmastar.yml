@@ -1364,15 +1364,15 @@ socs:
 - family: INFINITY2M
   model: SSR621Q
   version: ''
-  status: neq
-  load_address: ''
+  status: wip
+  load_address: '0x21000000'
   sdk: ''
   kernel: ''
-  uboot_filename: ''
+  uboot_filename: u-boot-ssr621q-nor.bin
   nor_split: true
   nor_split_only: true
-  linux_filename: ''
-  notes: 'Infinity2M (I2m in the IPL tag), an NVR SoC; ipctool does not know it yet'
+  linux_filename: openipc.ssr621q-nor-lite.tgz
+  notes: 'Infinity2M (I2m in the IPL tag), an NVR SoC: firmware with the vigil NVR app (decode, display, recording); ipctool does not know it yet'
   urlname: ssr621q
   featured: false
   segment: null
