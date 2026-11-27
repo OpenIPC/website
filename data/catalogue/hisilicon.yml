@@ -131,7 +131,7 @@ socs:
   featured: false
   segment: cctv
 - family: HI3516CV610
-  model: HI3516CV610-DDR2-64M
+  model: HI3516CV610-10B
   version: ''
   status: mvp
   load_address: '0x42000000'
@@ -142,11 +142,13 @@ socs:
   nor_split_only: true
   linux_filename: openipc.hi3516cv6xx-nor-lite.tgz
   notes: ''
-  urlname: hi3516cv610-ddr2-64m
+  urlname: hi3516cv610-10b
+  formerly:
+  - hi3516cv610-ddr2-64m
   featured: false
   segment: cctv
 - family: HI3516CV610
-  model: HI3516CV610-DDR3-128M
+  model: HI3516CV610-20S
   version: ''
   status: mvp
   load_address: '0x42000000'
@@ -157,11 +159,13 @@ socs:
   nor_split_only: true
   linux_filename: openipc.hi3516cv6xx-nor-lite.tgz
   notes: ''
-  urlname: hi3516cv610-ddr3-128m
+  urlname: hi3516cv610-20s
+  formerly:
+  - hi3516cv610-ddr3-128m
   featured: false
   segment: cctv
 - family: HI3516CV610
-  model: HI3516CV610-DDR3-512M
+  model: HI3516CV610-00S
   version: ''
   status: mvp
   load_address: '0x42000000'
@@ -172,7 +176,9 @@ socs:
   nor_split_only: true
   linux_filename: openipc.hi3516cv6xx-nor-lite.tgz
   notes: ''
-  urlname: hi3516cv610-ddr3-512m
+  urlname: hi3516cv610-00s
+  formerly:
+  - hi3516cv610-ddr3-512m
   featured: false
   segment: cctv
 - family: HI3516AV100
@@ -217,6 +223,23 @@ socs:
   notes: ''
   nor_split: true
   urlname: hi3516dv300
+  featured: false
+  segment: cctv
+- family: HI3519DV500
+  model: HI3516DV500
+  version: ''
+  status: wip
+  load_address: '0x42000000'
+  sdk: ''
+  kernel: ''
+  uboot_filename: ''
+  nor_split: true
+  nor_split_only: true
+  nor_firmware_offset: '0xc0000'
+  nor_kernel_read: '0x600000'
+  linux_filename: openipc.hi3519dv500-nor-ultimate.tgz
+  notes: ''
+  urlname: hi3516dv500
   featured: false
   segment: cctv
 - family: HI3516CV300
@@ -335,37 +358,23 @@ socs:
   featured: false
   segment: cctv
 - family: HI3519DV500
-  model: HI3519DV500-DMEB
+  model: HI3519DV500
   version: ''
   status: wip
   load_address: '0x42000000'
   sdk: ''
   kernel: ''
-  uboot_filename: boot-hi3519dv500-dmeb-nor.bin
+  uboot_filename: ''
   nor_split: true
   nor_split_only: true
   nor_firmware_offset: '0xc0000'
   nor_kernel_read: '0x600000'
   linux_filename: openipc.hi3519dv500-nor-ultimate.tgz
   notes: ''
-  urlname: hi3519dv500-dmeb
-  featured: false
-  segment: cctv
-- family: HI3519DV500
-  model: HI3519DV500-DMEBPRO
-  version: ''
-  status: wip
-  load_address: '0x42000000'
-  sdk: ''
-  kernel: ''
-  uboot_filename: boot-hi3519dv500-dmebpro-nor.bin
-  nor_split: true
-  nor_split_only: true
-  nor_firmware_offset: '0xc0000'
-  nor_kernel_read: '0x600000'
-  linux_filename: openipc.hi3519dv500-nor-ultimate.tgz
-  notes: ''
-  urlname: hi3519dv500-dmebpro
+  urlname: hi3519dv500
+  formerly:
+  - hi3519dv500-dmeb
+  - hi3519dv500-dmebpro
   featured: false
   segment: cctv
 - family: HI3519V101

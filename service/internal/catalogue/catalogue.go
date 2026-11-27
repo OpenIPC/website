@@ -63,10 +63,15 @@ type SoC struct {
 	// the field read to boot (0x200000 when empty: the fixed layout's kernel
 	// slot; 0x600000 on hi3519dv500). A split firmware.bin whose uImage is
 	// larger is read short by them, so a full image is refused.
-	NORKernelRead string  `yaml:"nor_kernel_read"`
-	LinuxFilename string  `yaml:"linux_filename"`
-	LoadAddress   string  `yaml:"load_address"`
-	Vendor        *Vendor `yaml:"-"`
+	NORKernelRead string `yaml:"nor_kernel_read"`
+	LinuxFilename string `yaml:"linux_filename"`
+	// Formerly are the slugs this SoC was published under before it was
+	// renamed. The service answers an address with one by a redirect to
+	// this SoC's (Renamed), so a download link or a wizard document from
+	// before the rename keeps working; nginx's route map does the pages.
+	Formerly    []string `yaml:"formerly"`
+	LoadAddress string   `yaml:"load_address"`
+	Vendor      *Vendor  `yaml:"-"`
 }
 
 type Vendor struct {
@@ -78,6 +83,7 @@ type Vendor struct {
 type Catalogue struct {
 	Vendors []*Vendor
 	bySlug  map[string]*SoC
+	former  map[string]*SoC
 }
 
 // Load reads every vendor file in dir. A duplicate SoC slug is an error: the
@@ -93,7 +99,7 @@ func Load(dir string) (*Catalogue, error) {
 		return nil, fmt.Errorf("no catalogue files in %s", dir)
 	}
 	sort.Strings(files)
-	c := &Catalogue{bySlug: map[string]*SoC{}}
+	c := &Catalogue{bySlug: map[string]*SoC{}, former: map[string]*SoC{}}
 	for _, file := range files {
 		raw, err := os.ReadFile(file)
 		if err != nil {
@@ -124,14 +130,32 @@ func Load(dir string) (*Catalogue, error) {
 				return nil, fmt.Errorf("%s: SoC %q appears twice", filepath.Base(file), s.URLName)
 			}
 			c.bySlug[s.URLName] = s
+			for _, old := range s.Formerly {
+				if !slugShape.MatchString(old) {
+					return nil, fmt.Errorf("%s: SoC %q: formerly %q is not [a-z0-9][a-z0-9._-]*", filepath.Base(file), s.URLName, old)
+				}
+				if _, dup := c.former[old]; dup {
+					return nil, fmt.Errorf("%s: %q is formerly two SoCs", filepath.Base(file), old)
+				}
+				c.former[old] = s
+			}
 		}
 		c.Vendors = append(c.Vendors, v)
+	}
+	// A former slug that is a SoC's again would send its address away.
+	for old, s := range c.former {
+		if _, live := c.bySlug[old]; live {
+			return nil, fmt.Errorf("SoC %q: formerly %q, which is a SoC's slug", s.URLName, old)
+		}
 	}
 	return c, nil
 }
 
 // SoC finds one by its slug; nil when there is none.
 func (c *Catalogue) SoC(slug string) *SoC { return c.bySlug[slug] }
+
+// Renamed is the SoC a former slug now belongs to (Formerly), or nil.
+func (c *Catalogue) Renamed(slug string) *SoC { return c.former[slug] }
 
 // All is every SoC, by vendor name then model.
 func (c *Catalogue) All() []*SoC {

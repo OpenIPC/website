@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"net/http"
 	"regexp"
+	"strings"
 	"sync"
 
 	"github.com/OpenIPC/website/service/internal/catalogue"
@@ -39,6 +40,14 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	var soc *catalogue.SoC
 	if m != nil {
 		soc = h.Catalogue.SoC(m[1])
+		// A SoC renamed since (catalogue Formerly) has its document at its
+		// own name now.
+		if to := h.Catalogue.Renamed(m[1]); soc == nil && to != nil {
+			u := *r.URL
+			u.Path, u.RawPath = strings.TrimSuffix(u.Path, r.PathValue("file"))+to.URLName+".json", ""
+			http.Redirect(w, r, u.RequestURI(), http.StatusMovedPermanently)
+			return
+		}
 	}
 	if soc == nil {
 		notAvailable(w, http.StatusNotFound)

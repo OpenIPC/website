@@ -221,3 +221,29 @@ func TestTooLargeNamesTheFlashTheBuildNeeds(t *testing.T) {
 		t.Errorf("without a report the message is %q", got)
 	}
 }
+
+// A download link from before a SoC was renamed (catalogue formerly) goes to
+// the same download under its name now, the query and the language kept.
+func TestRenamedSoCDownloadRedirects(t *testing.T) {
+	cat := loadCatalogue(t)
+	h := &Handler{Catalogue: cat, Log: slog.New(slog.NewTextHandler(io.Discard, nil))}
+	mux := http.NewServeMux()
+	mux.Handle("GET /cameras/vendors/{vendor}/socs/{soc}/download_full_image", h)
+	mux.Handle("GET /{locale}/cameras/vendors/{vendor}/socs/{soc}/download_full_image", h)
+	for from, to := range map[string]string{
+		"/cameras/vendors/hisilicon/socs/hi3516cv610-ddr2-64m/download_full_image?flash_type=nor&flash_size=8&fw_release=lite": "/cameras/vendors/hisilicon/socs/hi3516cv610-10b/download_full_image?flash_type=nor&flash_size=8&fw_release=lite",
+		"/ru/cameras/vendors/hisilicon/socs/hi3516cv610-ddr3-512m/download_full_image?flash_size=16":                           "/ru/cameras/vendors/hisilicon/socs/hi3516cv610-00s/download_full_image?flash_size=16",
+		"/cameras/vendors/hisilicon/socs/hi3519dv500-dmebpro/download_full_image":                                              "/cameras/vendors/hisilicon/socs/hi3519dv500/download_full_image",
+	} {
+		rec := httptest.NewRecorder()
+		mux.ServeHTTP(rec, httptest.NewRequest("GET", from, nil))
+		if rec.Code != http.StatusMovedPermanently || rec.Header().Get("Location") != to {
+			t.Errorf("%s: %d %q, want 301 %s", from, rec.Code, rec.Header().Get("Location"), to)
+		}
+	}
+	rec := httptest.NewRecorder()
+	mux.ServeHTTP(rec, httptest.NewRequest("GET", "/cameras/vendors/hisilicon/socs/no-such-soc/download_full_image", nil))
+	if rec.Code != http.StatusNotFound {
+		t.Errorf("an unknown SoC: %d, want 404", rec.Code)
+	}
+}

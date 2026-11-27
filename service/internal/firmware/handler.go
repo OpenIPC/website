@@ -35,6 +35,15 @@ type Handler struct {
 func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	soc := h.Catalogue.SoC(r.PathValue("soc"))
 	if soc == nil {
+		// A link from before the SoC was renamed (catalogue Formerly): the
+		// same download at its name now, the query as it was.
+		if to := h.Catalogue.Renamed(r.PathValue("soc")); to != nil {
+			u := *r.URL
+			u.Path = strings.Replace(u.Path, "/socs/"+r.PathValue("soc")+"/", "/socs/"+to.URLName+"/", 1)
+			u.RawPath = ""
+			http.Redirect(w, r, u.RequestURI(), http.StatusMovedPermanently)
+			return
+		}
 		h.page(w, r, http.StatusNotFound, "This firmware does not exist.", nil)
 		return
 	}

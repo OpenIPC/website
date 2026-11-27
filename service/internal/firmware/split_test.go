@@ -11,6 +11,8 @@ import (
 	"path/filepath"
 	"slices"
 	"testing"
+
+	"github.com/OpenIPC/website/service/internal/catalogue"
 )
 
 // splitFirmware is a firmware.bin as the build packs it: a legacy uImage --
@@ -57,20 +59,21 @@ func splitIndex(t *testing.T, root, boot string, bootSize int, pkg, board string
 func TestSplitImages(t *testing.T) {
 	cat := loadCatalogue(t)
 	for _, tc := range []struct {
-		soc, release, boot, board string
-		size                      int
-		off                       int64
+		soc                  *catalogue.SoC
+		release, boot, board string
+		size                 int
+		off                  int64
 	}{
-		{"hi3519dv500-dmeb", "ultimate", "boot-hi3519dv500-dmeb-nor.bin", "hi3519dv500", 16, 0xC0000},
-		{"hi3516cv610-ddr3-128m", "lite", "boot-hi3516cv610-20s-nor.bin", "hi3516cv6xx", 8, 0x50000},
+		{demoBoard(t, cat), "ultimate", "boot-hi3519dv500-dmeb-nor.bin", "hi3519dv500", 16, 0xC0000},
+		{cat.SoC("hi3516cv610-20s"), "lite", "boot-hi3516cv610-20s-nor.bin", "hi3516cv6xx", 8, 0x50000},
 	} {
-		t.Run(tc.soc, func(t *testing.T) {
+		t.Run(tc.soc.URLName, func(t *testing.T) {
 			dir := t.TempDir()
 			fw := splitFirmware(1_900_000, 3_000_000)
 			pkg := SplitName(tc.board, tc.release)
 			idx := splitIndex(t, filepath.Join(dir, "releases"), tc.boot, 240_640, pkg, tc.board, fw)
 			images := &Images{Root: filepath.Join(dir, "images"), Releases: &Releases{Root: filepath.Join(dir, "releases")}}
-			spec, err := NewSpec(cat.SoC(tc.soc), "nor", tc.release, tc.size, 0)
+			spec, err := NewSpec(tc.soc, "nor", tc.release, tc.size, 0)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -106,9 +109,8 @@ func TestSplitImages(t *testing.T) {
 		})
 	}
 
-	refuse := func(t *testing.T, soc string, size int, bootSize int, fw []byte) error {
+	refuse := func(t *testing.T, s *catalogue.SoC, size int, bootSize int, fw []byte) error {
 		dir := t.TempDir()
-		s := cat.SoC(soc)
 		board := Board(s, nil)
 		idx := splitIndex(t, filepath.Join(dir, "releases"), s.UBootFilename, bootSize,
 			SplitName(board, "ultimate"), board, fw)
@@ -126,7 +128,7 @@ func TestSplitImages(t *testing.T) {
 	}
 	var tl ErrTooLarge
 	t.Run("boot image past the firmware offset", func(t *testing.T) {
-		if err := refuse(t, "hi3519dv500-dmeb", 16, 0xC0001, splitFirmware(1_000_000, 1_000_000)); !errors.As(err, &tl) {
+		if err := refuse(t, demoBoard(t, cat), 16, 0xC0001, splitFirmware(1_000_000, 1_000_000)); !errors.As(err, &tl) {
 			t.Errorf("built, or %v", err)
 		}
 	})
@@ -135,16 +137,16 @@ func TestSplitImages(t *testing.T) {
 		// one byte more.
 		kernel := (64 + 1_000_000 + 0xFFFF) &^ 0xFFFF
 		fw := splitFirmware(1_000_000, 16<<20-0xC0000-0x10000-kernel+1)
-		if err := refuse(t, "hi3519dv500-dmeb", 16, 240_640, fw); !errors.As(err, &tl) {
+		if err := refuse(t, demoBoard(t, cat), 16, 240_640, fw); !errors.As(err, &tl) {
 			t.Errorf("built, or %v", err)
 		}
 	})
 	t.Run("uImage past the kernel read", func(t *testing.T) {
 		// hi3519dv500's bootloaders read 6 MiB; one byte more is refused.
-		if err := refuse(t, "hi3519dv500-dmeb", 16, 240_640, splitFirmware(0x600000-64+1, 1_000_000)); !errors.As(err, &tl) {
+		if err := refuse(t, demoBoard(t, cat), 16, 240_640, splitFirmware(0x600000-64+1, 1_000_000)); !errors.As(err, &tl) {
 			t.Errorf("built, or %v", err)
 		}
-		if err := refuse(t, "hi3519dv500-dmeb", 16, 240_640, splitFirmware(0x600000-64, 1_000_000)); err != nil {
+		if err := refuse(t, demoBoard(t, cat), 16, 240_640, splitFirmware(0x600000-64, 1_000_000)); err != nil {
 			t.Errorf("a uImage of exactly the kernel read is refused: %v", err)
 		}
 	})
@@ -181,7 +183,7 @@ func TestSplitOnlyIgnoresAStalePlainPackage(t *testing.T) {
 		{Name: "openipc.hi3516cv6xx-nor-lite.tgz"},
 		{Name: "openipc.hi3516cv6xx-nor-lite-split.tgz"},
 	}, nil, nil)
-	spec, err := NewSpec(cat.SoC("hi3516cv610-ddr3-128m"), "nor", "lite", 8, 0)
+	spec, err := NewSpec(cat.SoC("hi3516cv610-20s"), "nor", "lite", 8, 0)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -198,7 +200,7 @@ func TestSplitOnlyIgnoresAStalePlainPackage(t *testing.T) {
 // published: a stale plain package alone offers nothing to install.
 func TestSplitOnlyReleasesNeedTheSplitPackage(t *testing.T) {
 	cat := loadCatalogue(t)
-	soc := cat.SoC("hi3516cv610-ddr3-128m")
+	soc := cat.SoC("hi3516cv610-20s")
 	stale := NewIndex("b", []Asset{
 		{Name: "boot-hi3516cv610-20s-nor.bin"},
 		{Name: "openipc.hi3516cv6xx-nor-lite.tgz"},
@@ -285,7 +287,7 @@ func TestSplitImageHasOneLayout(t *testing.T) {
 		{Name: "boot-hi3516cv610-20s-nor.bin"},
 		{Name: "openipc.hi3516cv6xx-nor-ultimate-split.tgz"},
 	}, nil, nil)
-	soc := cat.SoC("hi3516cv610-ddr3-128m")
+	soc := cat.SoC("hi3516cv610-20s")
 	natural, err := NewSpec(soc, "nor", "ultimate", 16, 0)
 	if err != nil {
 		t.Fatal(err)
@@ -432,4 +434,16 @@ func TestGokeOpenIPCBootloadersInstallSplit(t *testing.T) {
 			t.Errorf("%s: %s + %s, split %v", tc.soc, in.UBoot.Name, in.Linux.Name, in.Spec.Split)
 		}
 	}
+}
+
+// demoBoard is HI3519DV500 with the boot image firmware publishes for
+// HiSilicon's DMEB demo board. The catalogue names no bootloader for the
+// SoC: a demo board's DDR set-up is not a camera's. Its layout is the one
+// the split image is assembled on for a bootloader of 512K plus 256K of
+// environment, the case these tests are for.
+func demoBoard(t *testing.T, cat *catalogue.Catalogue) *catalogue.SoC {
+	t.Helper()
+	s := *cat.SoC("hi3519dv500")
+	s.UBootFilename = "boot-hi3519dv500-dmeb-nor.bin"
+	return &s
 }

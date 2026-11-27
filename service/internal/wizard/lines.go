@@ -28,7 +28,7 @@ var caveats = [][2]string{
 // unlock a protected NOR chip on: the keys of `_CHIP_TO_AGENT` in defib's
 // src/defib/agent/client.py. Elsewhere lock_caveat_html's way out through
 // defib does not exist (#537), and the note names the programmer alone. A
-// catalogue row for one memory variant (HI3516CV610-DDR3-128M) is its chip.
+// catalogue row for one variant of a chip (HI3516CV610-20S) is that chip.
 var defibAgents = map[string]bool{
 	"hi3516ev300": true, "hi3516ev200": true, "gk7205v200": true, "gk7205v300": true,
 	"gk7202v300": true, "gk7605v100": true, "hi3516cv300": true, "hi3516cv500": true,

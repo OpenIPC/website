@@ -561,6 +561,10 @@ answered GET  /coupler                  301 https://github.com/OpenIPC/coupler/ 
 answered GET  /wiki/some/deep/path      301 https://github.com/OpenIPC/wiki  nginx
 answered GET  /binaries                 410 -                                nginx
 answered POST /binaries.json            410 -                                nginx
+# A SoC renamed in the catalogue (data/catalogue formerly): its old page goes
+# to the new one, a shared wizard result's settings with it.
+answered GET  "/cameras/vendors/hisilicon/socs/hi3516cv610-ddr2-64m?camera%5Bflash_type%5D=nor8m" 301 "$O/cameras/vendors/hisilicon/socs/hi3516cv610-10b?camera%5Bflash_type%5D=nor8m" nginx
+answered GET  /ru/cameras/vendors/hisilicon/socs/hi3519dv500-dmebpro 301 "$O/ru/cameras/vendors/hisilicon/socs/hi3519dv500" nginx
 # An old `?locale=ru|zh` address goes to the page in that language, with the
 # rest of its query (conf.d/openipc-locale-param.conf). Not when the address
 # already names a language, not for English, not for a file, not for a write.

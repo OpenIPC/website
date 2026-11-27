@@ -625,30 +625,30 @@
           "segment": "cctv"
         },
         {
-          "model": "HI3516CV610-DDR2-64M",
+          "model": "HI3516CV610-10B",
           "family": "HI3516CV610",
           "version": "",
-          "urlname": "hi3516cv610-ddr2-64m",
+          "urlname": "hi3516cv610-10b",
           "status": "mvp",
           "load_address": "0x42000000",
           "featured": false,
           "segment": "cctv"
         },
         {
-          "model": "HI3516CV610-DDR3-128M",
+          "model": "HI3516CV610-20S",
           "family": "HI3516CV610",
           "version": "",
-          "urlname": "hi3516cv610-ddr3-128m",
+          "urlname": "hi3516cv610-20s",
           "status": "mvp",
           "load_address": "0x42000000",
           "featured": false,
           "segment": "cctv"
         },
         {
-          "model": "HI3516CV610-DDR3-512M",
+          "model": "HI3516CV610-00S",
           "family": "HI3516CV610",
           "version": "",
-          "urlname": "hi3516cv610-ddr3-512m",
+          "urlname": "hi3516cv610-00s",
           "status": "mvp",
           "load_address": "0x42000000",
           "featured": false,
@@ -681,6 +681,16 @@
           "urlname": "hi3516dv300",
           "status": "done",
           "load_address": "0x82000000",
+          "featured": false,
+          "segment": "cctv"
+        },
+        {
+          "model": "HI3516DV500",
+          "family": "HI3519DV500",
+          "version": "",
+          "urlname": "hi3516dv500",
+          "status": "wip",
+          "load_address": "0x42000000",
           "featured": false,
           "segment": "cctv"
         },
@@ -765,20 +775,10 @@
           "segment": "cctv"
         },
         {
-          "model": "HI3519DV500-DMEB",
+          "model": "HI3519DV500",
           "family": "HI3519DV500",
           "version": "",
-          "urlname": "hi3519dv500-dmeb",
-          "status": "wip",
-          "load_address": "0x42000000",
-          "featured": false,
-          "segment": "cctv"
-        },
-        {
-          "model": "HI3519DV500-DMEBPRO",
-          "family": "HI3519DV500",
-          "version": "",
-          "urlname": "hi3519dv500-dmebpro",
+          "urlname": "hi3519dv500",
           "status": "wip",
           "load_address": "0x42000000",
           "featured": false,

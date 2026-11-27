@@ -211,11 +211,6 @@ var socShorthand = map[string]string{
 	"msc335": "ssc335", "msc30kq": "ssc30kq",
 	// MStar's own parts, written with its name in place of the MSC prefix.
 	"mstar313e": "msc313e", "mstar316dm": "msc316dm",
-	// Hi3516CV610 as its package is marked (RNCV610-10B): the catalogue names
-	// the variants by their memory, with the u-boot each one's -10B, -20S or
-	// -00S takes (boot-hi3516cv610-10b-nor.bin is the DDR2 64M one's).
-	"hi3516cv610-10b": "hi3516cv610-ddr2-64m", "hi3516cv610-20s": "hi3516cv610-ddr3-128m",
-	"hi3516cv610-00s": "hi3516cv610-ddr3-512m",
 }
 
 //go:embed aliases.yml
