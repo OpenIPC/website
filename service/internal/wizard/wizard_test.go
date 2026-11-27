@@ -297,9 +297,13 @@ func TestHandler(t *testing.T) {
 		t.Errorf("a matching ETag got %d, want 304", w2.Code)
 	}
 	// A SoC renamed since (catalogue formerly) has its document at its own name.
-	if w := get("/api/v1/wizard/hi3516cv610-ddr3-128m.json", ""); w.Code != http.StatusMovedPermanently ||
-		w.Header().Get("Location") != "/api/v1/wizard/hi3516cv610-20s.json" {
-		t.Errorf("a former slug: %d %q", w.Code, w.Header().Get("Location"))
+	for from, to := range map[string]string{
+		"/api/v1/wizard/hi3516cv610-ddr3-128m.json":     "/api/v1/wizard/hi3516cv610-20s.json",
+		"/api/v1/wizard/hi3519dv500-dmeb.json?v=2&x=y": "/api/v1/wizard/hi3519dv500.json?v=2&x=y",
+	} {
+		if w := get(from, ""); w.Code != http.StatusMovedPermanently || w.Header().Get("Location") != to {
+			t.Errorf("%s: %d %q, want 301 %s", from, w.Code, w.Header().Get("Location"), to)
+		}
 	}
 	for _, path := range []string{"/api/v1/wizard/no-such-soc.json", "/api/v1/wizard/hi3516ev300", "/api/v1/wizard/..json"} {
 		if w := get(path, ""); w.Code != 404 {

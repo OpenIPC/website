@@ -43,7 +43,9 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		// A SoC renamed since (catalogue Formerly) has its document at its
 		// own name now.
 		if to := h.Catalogue.Renamed(m[1]); soc == nil && to != nil {
-			http.Redirect(w, r, strings.TrimSuffix(r.URL.Path, r.PathValue("file"))+to.URLName+".json", http.StatusMovedPermanently)
+			u := *r.URL
+			u.Path, u.RawPath = strings.TrimSuffix(u.Path, r.PathValue("file"))+to.URLName+".json", ""
+			http.Redirect(w, r, u.RequestURI(), http.StatusMovedPermanently)
 			return
 		}
 	}
