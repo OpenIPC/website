@@ -5773,6 +5773,16 @@
           }
         },
         {
+          "model": "SSC375",
+          "family": "",
+          "version": "",
+          "urlname": "ssc375",
+          "status": "neq",
+          "load_address": "",
+          "featured": false,
+          "segment": null
+        },
+        {
           "model": "SSC385",
           "family": "SSC38X",
           "version": "",
@@ -5885,6 +5895,26 @@
               }
             ]
           }
+        },
+        {
+          "model": "SSD201",
+          "family": "INFINITY2M",
+          "version": "",
+          "urlname": "ssd201",
+          "status": "neq",
+          "load_address": "",
+          "featured": false,
+          "segment": null
+        },
+        {
+          "model": "SSD202D",
+          "family": "INFINITY2M",
+          "version": "",
+          "urlname": "ssd202d",
+          "status": "neq",
+          "load_address": "",
+          "featured": false,
+          "segment": null
         },
         {
           "model": "SSR621Q",

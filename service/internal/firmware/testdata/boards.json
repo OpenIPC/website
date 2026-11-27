@@ -1352,6 +1352,15 @@
     "nand_lite": "openipc.ssc378qe-nand-lite.tgz"
   },
   {
+    "urlname": "ssc375",
+    "vendor": "SigmaStar",
+    "model": "SSC375",
+    "board": "ssc375",
+    "uboot": "",
+    "nor_lite": "openipc.ssc375-nor-lite.tgz",
+    "nand_lite": "openipc.ssc375-nand-lite.tgz"
+  },
+  {
     "urlname": "ssc385",
     "vendor": "SigmaStar",
     "model": "SSC385",
@@ -1377,6 +1386,24 @@
     "uboot": "",
     "nor_lite": "openipc.ssc387-nor-lite.tgz",
     "nand_lite": "openipc.ssc387-nand-lite.tgz"
+  },
+  {
+    "urlname": "ssd201",
+    "vendor": "SigmaStar",
+    "model": "SSD201",
+    "board": "ssd201",
+    "uboot": "",
+    "nor_lite": "openipc.ssd201-nor-lite.tgz",
+    "nand_lite": "openipc.ssd201-nand-lite.tgz"
+  },
+  {
+    "urlname": "ssd202d",
+    "vendor": "SigmaStar",
+    "model": "SSD202D",
+    "board": "ssd202d",
+    "uboot": "",
+    "nor_lite": "openipc.ssd202d-nor-lite.tgz",
+    "nand_lite": "openipc.ssd202d-nand-lite.tgz"
   },
   {
     "urlname": "ssr621q",

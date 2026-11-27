@@ -118,6 +118,7 @@ ssc338g	sigmastar	INFINITY6E
 ssc338q	sigmastar	INFINITY6E	fpv
 ssc339g	sigmastar	INFINITY6E	
 ssc359g	sigmastar	MERCURY6	
+ssc375	sigmastar		
 ssc377	sigmastar	INFINITY6C	
 ssc377d	sigmastar	INFINITY6C	
 ssc377de	sigmastar	INFINITY6C	
@@ -127,6 +128,8 @@ ssc378qe	sigmastar	INFINITY6C	fpv
 ssc385	sigmastar	SSC38X	
 ssc385d	sigmastar	SSC38X	
 ssc387	sigmastar	SSC38X	
+ssd201	sigmastar	INFINITY2M	
+ssd202d	sigmastar	INFINITY2M	
 ssr621q	sigmastar	INFINITY2M	
 t10	ingenic	T21	consumer
 t20	ingenic	T21	consumer
