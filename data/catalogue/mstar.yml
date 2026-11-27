@@ -16,7 +16,7 @@ socs:
   load_address: '0x21000000'
   sdk: ''
   kernel: ''
-  uboot_filename: u-boot-msc313e-universal.bin
+  uboot_filename: u-boot-msc313e-nor.bin
   linux_filename: openipc.msc313e-nor-lite.tgz
   notes: ''
   urlname: msc313e
@@ -29,7 +29,7 @@ socs:
   load_address: '0x21000000'
   sdk: ''
   kernel: ''
-  uboot_filename: ''
+  uboot_filename: u-boot-msc316dc-nor.bin
   linux_filename: openipc.msc316dc-nor-lite.tgz
   notes: ''
   urlname: msc316dc
@@ -42,7 +42,7 @@ socs:
   load_address: '0x21000000'
   sdk: ''
   kernel: ''
-  uboot_filename: ''
+  uboot_filename: u-boot-msc316dm-nor.bin
   linux_filename: openipc.msc316dm-nor-lite.tgz
   notes: ''
   urlname: msc316dm

@@ -33,7 +33,7 @@ interface Doc {
 }
 
 // Only the pages that show the form: the gate is Form.tsx's `usable`. A SoC
-// with nothing published (msc313e) gets a message instead, and no button.
+// with nothing published (ssc323) gets a message instead, and no button.
 const socs = Object.entries(fixture.socs as unknown as Record<string, Doc>)
   .filter(([, doc]) => doc.bootloader_published && doc.linux_filename !== ''
     && doc.load_address !== '' && doc.availability !== 'none');

@@ -969,7 +969,7 @@
     "vendor": "MStar",
     "model": "MSC313E",
     "board": "msc313e",
-    "uboot": "u-boot-msc313e-universal.bin",
+    "uboot": "u-boot-msc313e-nor.bin",
     "nor_lite": "openipc.msc313e-nor-lite.tgz",
     "nand_lite": "openipc.msc313e-nand-lite.tgz"
   },
@@ -978,7 +978,7 @@
     "vendor": "MStar",
     "model": "MSC316DC",
     "board": "msc316dc",
-    "uboot": "",
+    "uboot": "u-boot-msc316dc-nor.bin",
     "nor_lite": "openipc.msc316dc-nor-lite.tgz",
     "nand_lite": "openipc.msc316dc-nand-lite.tgz"
   },
@@ -987,7 +987,7 @@
     "vendor": "MStar",
     "model": "MSC316DM",
     "board": "msc316dm",
-    "uboot": "",
+    "uboot": "u-boot-msc316dm-nor.bin",
     "nor_lite": "openipc.msc316dm-nor-lite.tgz",
     "nand_lite": "openipc.msc316dm-nand-lite.tgz"
   },

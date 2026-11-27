@@ -1706,6 +1706,42 @@
       "digest": "sha256:26c2504fe4df2dc7290572ca03caa20be926f2a6200bd344dfd367c8f5114af6",
       "updated_at": "2026-11-17T08:26:21Z",
       "release": "latest"
+    },
+    "u-boot-msc313e-nor.bin": {
+      "size": 262144,
+      "digest": "sha256:6810aa7c57546f1a642eefd79124007d3712e3e9500b2fb1a4c5fc45db0a86ac",
+      "updated_at": "2026-11-27T07:34:54Z",
+      "release": "latest"
+    },
+    "u-boot-msc316dc-nor.bin": {
+      "size": 262144,
+      "digest": "sha256:94aceb64eeb12a2080f84b201c67dc1fd396c2a154c6ea53234b19a72735a236",
+      "updated_at": "2026-11-27T07:34:56Z",
+      "release": "latest"
+    },
+    "u-boot-msc316dm-nor.bin": {
+      "size": 262144,
+      "digest": "sha256:0d0c803b82d8c5a85374ca85349364035ef7b26b25b2df3db15082f1fb50d603",
+      "updated_at": "2026-11-27T07:34:58Z",
+      "release": "latest"
+    },
+    "openipc.msc313e-nor-lite.tgz": {
+      "size": 6997844,
+      "digest": "sha256:54ac63a51be031e930abb4abaa86bbcfbf5bf176775bb2d6fe1b092d1b15c105",
+      "updated_at": "2026-11-27T09:19:27Z",
+      "release": "nightly-20261127-f526ba8"
+    },
+    "openipc.msc316dc-nor-lite.tgz": {
+      "size": 6997340,
+      "digest": "sha256:4c57f7dd7e33f715604c3b283cdbf40d775483250b6148d77e3f63e108175b09",
+      "updated_at": "2026-11-27T09:19:30Z",
+      "release": "nightly-20261127-f526ba8"
+    },
+    "openipc.msc316dm-nor-lite.tgz": {
+      "size": 6998371,
+      "digest": "sha256:28185259e38053d82a0eee279db90fb1fa2ec51a1f04dd876b8dd1077b912b40",
+      "updated_at": "2026-11-27T09:19:34Z",
+      "release": "nightly-20261127-f526ba8"
     }
   },
   "fits": {
@@ -1988,6 +2024,21 @@
       "flash_mb": 8,
       "kernel_kb": 1709,
       "rootfs_kb": 3908
+    },
+    "msc313e-lite": {
+      "flash_mb": 8,
+      "kernel_kb": 1879,
+      "rootfs_kb": 4960
+    },
+    "msc316dc-lite": {
+      "flash_mb": 8,
+      "kernel_kb": 1878,
+      "rootfs_kb": 4960
+    },
+    "msc316dm-lite": {
+      "flash_mb": 8,
+      "kernel_kb": 1879,
+      "rootfs_kb": 4960
     },
     "nt98562-lite": {
       "flash_mb": 8,
