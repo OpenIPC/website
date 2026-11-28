@@ -297,7 +297,6 @@ func reportsCommand(ctx context.Context, cfg *config.Config, log *slog.Logger, a
 		if err != nil {
 			return err
 		}
-		log.Info("reports: claim", "report", c.ID, "member", pos[1], "points", c.Points, "evidence", *evidence, "by", *by)
 		return out.Encode(c)
 	case "photo", "file":
 		if err := need(3); err != nil {
