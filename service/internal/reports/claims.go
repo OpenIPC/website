@@ -6,10 +6,12 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"errors"
+	"fmt"
 	"regexp"
 	"sort"
 	"strings"
 	"time"
+	"unicode/utf8"
 
 	"github.com/jackc/pgx/v5"
 )
@@ -92,47 +94,115 @@ func (s *Store) Claim(ctx context.Context, member, code string) (Claimed, error)
 		if claimed != nil {
 			return ErrClaimed
 		}
-		if _, err := tx.Exec(ctx, `SELECT pg_advisory_xact_lock(hashtextextended('report-stars:' || $1, 0))`, c.ID); err != nil {
+		if err := s.take(ctx, tx, member, c.ID, &d); err != nil {
 			return err
-		}
-		var owner *string
-		err = tx.QueryRow(ctx, `SELECT member_id FROM report_submissions WHERE report_id = $1`, c.ID).Scan(&owner)
-		switch {
-		case errors.Is(err, pgx.ErrNoRows):
-			if _, err := tx.Exec(ctx, `INSERT INTO report_submissions (report_id, member_id) VALUES ($1, $2)`, c.ID, member); err != nil {
-				return err
-			}
-		case err != nil:
-			return err
-		case owner != nil:
-			return ErrClaimed
-		default:
-			// Sent with a board, signed out: the row is there, nobody's.
-			// The guard lets member_id alone be set (migration 058).
-			if _, err := tx.Exec(ctx, `SET LOCAL openipc.report_claim = 'on'`); err != nil {
-				return err
-			}
-			if _, err := tx.Exec(ctx, `UPDATE report_submissions SET member_id = $2 WHERE report_id = $1`, c.ID, member); err != nil {
-				return err
-			}
-			if _, err := tx.Exec(ctx, `SET LOCAL openipc.report_claim = ''`); err != nil {
-				return err
-			}
-		}
-		if _, err := tx.Exec(ctx, `UPDATE report_claims SET claimed_at = now() WHERE report_id = $1`, c.ID); err != nil {
-			return err
-		}
-		st, err := s.status(ctx, tx, c.ID)
-		if err != nil {
-			return err
-		}
-		if st.State == "published" {
-			if err := s.payClaimed(ctx, tx, member, c.ID, &d); err != nil {
-				return err
-			}
 		}
 		// Read inside the claim: a total that cannot be read leaves the
 		// claim undone, to be tried again, not done and answered as failed.
+		return tx.QueryRow(ctx, `SELECT coalesce(sum(points), 0) FROM report_stars WHERE member_id = $1`, member).Scan(&c.Total)
+	})
+	if err != nil {
+		return Claimed{}, err
+	}
+	c.Points = d.Points
+	return c, nil
+}
+
+// take makes report id member's inside a claim's or an assignment's
+// transaction, the member's lock held: under the report's lock, the
+// submission given its member (ErrClaimed when it has one), a claim code
+// marked used, and a report published already paid its stars.
+func (s *Store) take(ctx context.Context, tx pgx.Tx, member, id string, d *Decided) error {
+	if _, err := tx.Exec(ctx, `SELECT pg_advisory_xact_lock(hashtextextended('report-stars:' || $1, 0))`, id); err != nil {
+		return err
+	}
+	var owner *string
+	err := tx.QueryRow(ctx, `SELECT member_id FROM report_submissions WHERE report_id = $1`, id).Scan(&owner)
+	switch {
+	case errors.Is(err, pgx.ErrNoRows):
+		if _, err := tx.Exec(ctx, `INSERT INTO report_submissions (report_id, member_id) VALUES ($1, $2)`, id, member); err != nil {
+			return err
+		}
+	case err != nil:
+		return err
+	case owner != nil:
+		return ErrClaimed
+	default:
+		// Sent with a board, signed out: the row is there, nobody's.
+		// The guard lets member_id alone be set (migration 058).
+		if _, err := tx.Exec(ctx, `SET LOCAL openipc.report_claim = 'on'`); err != nil {
+			return err
+		}
+		if _, err := tx.Exec(ctx, `UPDATE report_submissions SET member_id = $2 WHERE report_id = $1`, id, member); err != nil {
+			return err
+		}
+		if _, err := tx.Exec(ctx, `SET LOCAL openipc.report_claim = ''`); err != nil {
+			return err
+		}
+	}
+	if _, err := tx.Exec(ctx, `UPDATE report_claims SET claimed_at = now() WHERE report_id = $1 AND claimed_at IS NULL`, id); err != nil {
+		return err
+	}
+	st, err := s.status(ctx, tx, id)
+	if err != nil {
+		return err
+	}
+	if st.State == "published" {
+		return s.payClaimed(ctx, tx, member, id, d)
+	}
+	return nil
+}
+
+var (
+	// ErrBadAssign is an assignment missing who gives the report or why.
+	ErrBadAssign = errors.New("bad assignment")
+	// ErrOwned is an assignment of a report that is a member's already.
+	ErrOwned = errors.New("the report is a member's already")
+)
+
+// Assign is a maintainer giving report id to the member who sent it signed
+// out, as their claim would (migration 060): for a report sent before claim
+// codes, or a sender who lost theirs. Evidence -- what shows the report is
+// theirs -- and by are required and kept. A report with a member already is
+// ErrOwned; an unknown report or member, ErrNotFound.
+func (s *Store) Assign(ctx context.Context, id, member, by, evidence string) (Claimed, error) {
+	evidence = strings.Join(strings.Fields(evidence), " ")
+	by = strings.TrimSpace(by)
+	switch {
+	case evidence == "":
+		return Claimed{}, fmt.Errorf("%w: evidence: what shows the report is theirs, e.g. \"same connection as their r-433shrng, asked in firmware#2987\"", ErrBadAssign)
+	case utf8.RuneCountInString(evidence) > 1000:
+		return Claimed{}, fmt.Errorf("%w: evidence: at most 1000 characters", ErrBadAssign)
+	case by == "":
+		return Claimed{}, fmt.Errorf("%w: by: who gives it", ErrBadAssign)
+	}
+	c := Claimed{ID: id}
+	var d Decided
+	err := pgx.BeginFunc(ctx, s.DB, func(tx pgx.Tx) error {
+		var known bool
+		if err := tx.QueryRow(ctx, `SELECT EXISTS (SELECT 1 FROM reports WHERE id = $1) AND EXISTS (SELECT 1 FROM club_members WHERE id = $2)`,
+			id, member).Scan(&known); err != nil {
+			return err
+		}
+		if !known {
+			return ErrNotFound
+		}
+		if _, err := tx.Exec(ctx, `SELECT pg_advisory_xact_lock(hashtextextended('report-stars-member:' || $1, 0))`, member); err != nil {
+			return err
+		}
+		// A claim code's row before the report's lock, as Claim takes them.
+		if _, err := tx.Exec(ctx, `SELECT 1 FROM report_claims WHERE report_id = $1 FOR UPDATE`, id); err != nil {
+			return err
+		}
+		if err := s.take(ctx, tx, member, id, &d); errors.Is(err, ErrClaimed) {
+			return ErrOwned
+		} else if err != nil {
+			return err
+		}
+		if _, err := tx.Exec(ctx, `INSERT INTO report_assignments (report_id, member_id, by_who, evidence) VALUES ($1, $2, $3, $4)`,
+			id, member, by, evidence); err != nil {
+			return err
+		}
 		return tx.QueryRow(ctx, `SELECT coalesce(sum(points), 0) FROM report_stars WHERE member_id = $1`, member).Scan(&c.Total)
 	})
 	if err != nil {
