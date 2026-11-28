@@ -182,11 +182,14 @@ func TestAMaintainerGivesAReportSentBeforeClaimCodesToItsSender(t *testing.T) {
 	}{
 		{member, "maintainer", "  ", reports.ErrBadAssign},
 		{member, " ", "asked in firmware#2987", reports.ErrBadAssign},
-		{"m-0000000000", "maintainer", "asked in firmware#2987", reports.ErrNotFound},
+		{"m-0000000000", "maintainer", "asked in firmware#2987", reports.ErrNoMember},
 	} {
 		if _, err := st.Assign(ctx, old, tc.member, tc.by, tc.evidence); !errors.Is(err, tc.want) {
 			t.Errorf("assign by %q for %q: %v, want %v", tc.by, tc.evidence, err, tc.want)
 		}
+	}
+	if _, err := st.Assign(ctx, "r-00000000", member, "maintainer", "asked in firmware#2987"); !errors.Is(err, reports.ErrNotFound) {
+		t.Errorf("assign an unknown report: %v", err)
 	}
 
 	c, err := st.Assign(ctx, old, member, "maintainer", "same connection as their r-433shrng,\n asked in firmware#2987")

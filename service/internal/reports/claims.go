@@ -158,13 +158,16 @@ var (
 	ErrBadAssign = errors.New("bad assignment")
 	// ErrOwned is an assignment of a report that is a member's already.
 	ErrOwned = errors.New("the report is a member's already")
+	// ErrNoMember is an assignment to a member id no Club member has.
+	ErrNoMember = errors.New("no such Club member")
 )
 
 // Assign is a maintainer giving report id to the member who sent it signed
 // out, as their claim would (migration 060): for a report sent before claim
 // codes, or a sender who lost theirs. Evidence -- what shows the report is
 // theirs -- and by are required and kept. A report with a member already is
-// ErrOwned; an unknown report or member, ErrNotFound.
+// ErrOwned; an unknown report, ErrNotFound; an
+// unknown member, ErrNoMember.
 func (s *Store) Assign(ctx context.Context, id, member, by, evidence string) (Claimed, error) {
 	evidence = strings.Join(strings.Fields(evidence), " ")
 	by = strings.TrimSpace(by)
@@ -179,13 +182,16 @@ func (s *Store) Assign(ctx context.Context, id, member, by, evidence string) (Cl
 	c := Claimed{ID: id}
 	var d Decided
 	err := pgx.BeginFunc(ctx, s.DB, func(tx pgx.Tx) error {
-		var known bool
-		if err := tx.QueryRow(ctx, `SELECT EXISTS (SELECT 1 FROM reports WHERE id = $1) AND EXISTS (SELECT 1 FROM club_members WHERE id = $2)`,
-			id, member).Scan(&known); err != nil {
+		var report, known bool
+		if err := tx.QueryRow(ctx, `SELECT EXISTS (SELECT 1 FROM reports WHERE id = $1), EXISTS (SELECT 1 FROM club_members WHERE id = $2)`,
+			id, member).Scan(&report, &known); err != nil {
 			return err
 		}
-		if !known {
+		if !report {
 			return ErrNotFound
+		}
+		if !known {
+			return ErrNoMember
 		}
 		if _, err := tx.Exec(ctx, `SELECT pg_advisory_xact_lock(hashtextextended('report-stars-member:' || $1, 0))`, member); err != nil {
 			return err
