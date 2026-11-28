@@ -45,6 +45,11 @@ const reportsUsage = `usage: openipc reports
                                                 device tree or boot header, a photo of the marking) over
                                                 the one it was sent with, which stays as sent; "" "" with
                                                 --evidence takes it back. Kept, with who and why
+  claim <id> <member id> --evidence why [--by who]
+                                                give a report sent signed out to the Club member who sent it,
+                                                as their claim code would (one sent before claim codes, or a
+                                                code lost): theirs on /club, its stars paid if published.
+                                                Evidence: what shows it is theirs. Kept, with who and why
   photo <id> <position> blur|private|as_sent [--region x,y,w,h]...
                                                 what a photo publishes: a copy with the regions blurred
                                                 (fractions of the photo, upright), nothing (not the
@@ -104,7 +109,7 @@ func reportsCommand(ctx context.Context, cfg *config.Config, log *slog.Logger, a
 	fs.Var(&regions, "region", "with photo blur: x,y,w,h of a region to blur, as fractions of the photo (repeatable)")
 	newBoard := fs.Bool("new-board", false, "add the camera the report proposed to the catalogue, and link the report to it")
 	certainty := fs.String("certainty", reports.Confirmed, "how sure the link is: confirmed, probable or guess")
-	evidence := fs.String("evidence", "", "why the link is as sure as it is, shown beside one not confirmed; with chip, what shows the chip")
+	evidence := fs.String("evidence", "", "why the link is as sure as it is, shown beside one not confirmed; with chip, what shows the chip; with claim, what shows the report is the member's")
 	var fix boardFix
 	fs.StringVar(&fix.maker, "maker", "", "with --new-board: the maker's name, for the proposal's")
 	fs.StringVar(&fix.marking, "marking", "", "with --new-board: the marking as printed, for the proposal's")
@@ -284,6 +289,15 @@ func reportsCommand(ctx context.Context, cfg *config.Config, log *slog.Logger, a
 		refreshReportUnits(ctx, cfg, log, pool)
 		log.Info("reports: chip", "report", pos[0], "vendor", pos[1], "model", pos[2], "evidence", *evidence, "by", *by)
 		return nil
+	case "claim":
+		if err := need(2); err != nil {
+			return err
+		}
+		c, err := st.Assign(ctx, pos[0], pos[1], *by, *evidence)
+		if err != nil {
+			return err
+		}
+		return out.Encode(c)
 	case "photo", "file":
 		if err := need(3); err != nil {
 			return err
